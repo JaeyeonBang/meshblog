@@ -39,16 +39,22 @@ scripts/             build-index, generate-qa, export-graph, publish
 
 ```bash
 bun install
-bun run dev
+bun run setup              # copies .env.example → .env.local + mkdir .data
+# edit .env.local — set OPENROUTER_API_KEY
+bun run build-index        # MD → SQLite entity index
+bun run test               # vitest: 6 tests (smoke + schema + idempotency)
+bun run dev                # Astro dev @ http://localhost:4321
+bun run build              # Astro static build → dist/
 ```
-
-Astro 기본 dev server는 `http://localhost:4321`.
 
 ## Commands
 
 | Command | Action |
 | :--- | :--- |
 | `bun install` | Install dependencies |
-| `bun run dev` | Dev server |
-| `bun run build` | Build to `./dist/` |
+| `bun run setup` | First-time setup (.env.local + .data/) |
+| `bun run build-index` | Harvest entities from content/**/*.md into `.data/index.db` |
+| `bun run test` | Run vitest suite |
+| `bun run dev` | Astro dev server |
+| `bun run build` | Static build to `./dist/` |
 | `bun run preview` | Preview build |
