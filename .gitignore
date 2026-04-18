@@ -27,6 +27,9 @@ pnpm-debug.log*
 
 # meshblog: build-time RAG index and generated content caches
 .data/
+# PGR-3: .data/qa/ is committed to repo (local gen + commit + CI astro-build)
+!.data/qa/
+!.data/qa/**
 public/qa/
 public/graph/
 

@@ -13,7 +13,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build-index": "tsx scripts/build-index.ts",
-    "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data; echo 'setup done'"
+    "generate-qa": "tsx scripts/generate-qa.ts",
+    "build-qa": "tsx scripts/generate-qa.ts",
+    "build-qa:fresh": "tsx scripts/generate-qa.ts --clear",
+    "export-graph": "tsx scripts/export-graph.ts",
+    "build-all": "bun run build-index && bun run generate-qa && bun run export-graph",
+    "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'"
   },
   "dependencies": {
     "astro": "^6.1.6",
