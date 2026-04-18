@@ -9,9 +9,23 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build-index": "bun run scripts/build-index.ts",
+    "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data; echo 'setup done'"
   },
   "dependencies": {
-    "astro": "^6.1.6"
+    "astro": "^6.1.6",
+    "better-sqlite3": "^12.9.0",
+    "dotenv": "^17.4.2",
+    "gray-matter": "^4.0.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
   }
 }
