@@ -33,3 +33,4 @@ public/graph/
 # local Obsidian vault if symlinked inside repo
 content/.obsidian/
 
+.gstack/
