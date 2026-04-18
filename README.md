@@ -35,17 +35,29 @@ scripts/             build-index, generate-qa, export-graph, publish
 .github/workflows/   deploy.yml (gh-pages)
 ```
 
-## Dev
+## Setup
 
 ```bash
+git clone <repo> meshblog && cd meshblog
 bun install
-bun run setup              # copies .env.example → .env.local + mkdir .data
-# edit .env.local — set OPENROUTER_API_KEY
-bun run build-index        # MD → SQLite entity index
-bun run test               # vitest: 6 tests (smoke + schema + idempotency)
+bun run setup              # copies .env.example → .env.local + creates .data/
+# edit .env.local (see Required env vars below)
+bun run build-index        # MD → SQLite (entities, embeddings, concepts)
+bun run generate-qa        # 3-tier FAQ cards via Claude Code CLI subprocess
+bun run export-graph       # Note/Concept graph × L1-L3 → public/graph/*.json
 bun run dev                # Astro dev @ http://localhost:4321
-bun run build              # Astro static build → dist/
 ```
+
+## Required env vars
+
+| Variable | Purpose | Where to get it |
+| :--- | :--- | :--- |
+| `OPENAI_API_KEY` | Embeddings (`text-embedding-3-small`) | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+
+**Claude Code CLI** must be installed and authenticated on your local machine.
+Verify with: `claude --version` (must succeed before running `bun run generate-qa`).
+
+Note: `OPENROUTER_API_KEY` is **not** used. Q&A generation uses the local Claude Code CLI subprocess, not OpenRouter.
 
 ## Commands
 
@@ -53,8 +65,64 @@ bun run build              # Astro static build → dist/
 | :--- | :--- |
 | `bun install` | Install dependencies |
 | `bun run setup` | First-time setup (.env.local + .data/) |
-| `bun run build-index` | Harvest entities from content/**/*.md into `.data/index.db` |
+| `bun run build-index` | MD → SQLite: entities, embeddings, concepts |
+| `bun run generate-qa` | 3-tier FAQ cards via Claude Code CLI (local only, commits JSON) |
+| `bun run export-graph` | Note/Concept graph × L1–L3 → `public/graph/*.json` |
 | `bun run test` | Run vitest suite |
 | `bun run dev` | Astro dev server |
 | `bun run build` | Static build to `./dist/` |
 | `bun run preview` | Preview build |
+
+## Architecture
+
+```
+content/{posts,notes}/*.md
+        │
+        ▼
+scripts/build-index.ts      extract → embed → cluster
+        │ (writes)
+        ▼
+.data/index.db              SQLite: notes, entities, note_embeddings, concepts, qa_cards, graph_levels
+        │
+        ├─ scripts/generate-qa.ts   ──► claude -p <prompt> (local Claude Code CLI subprocess)
+        │                                └─ writes .data/qa/{tier}/{id}.json  (committed to repo)
+        │
+        └─ scripts/export-graph.ts  ──► public/graph/note-l{1,2,3}.json
+                                         public/graph/concept-l{1,2,3}.json
+
+CI (GitHub Actions):
+  - Runs: astro build  (no LLM calls; reads committed .data/qa/*.json)
+  - Does NOT run: generate-qa (requires local Claude Code auth)
+```
+
+**LLM roles:**
+- Entity extraction + Q&A generation: **Claude Code CLI** (`claude -p`), local subprocess, zero API cost.
+- Embeddings: **OpenAI** `text-embedding-3-small` (`OPENAI_API_KEY` required).
+- No OpenRouter. No runtime LLM calls from the deployed site.
+
+## Troubleshooting
+
+### Missing `OPENAI_API_KEY`
+```
+Error: OPENAI_API_KEY is not set
+Fix: add OPENAI_API_KEY=sk-... to .env.local
+```
+
+### `claude` binary not found
+```
+Error: claude: command not found
+Fix: install Claude Code CLI → https://docs.anthropic.com/claude-code
+     then: claude --version  (must succeed)
+```
+
+### OpenAI rate limit (429)
+`build-index` retries with exponential backoff (3 retries, up to 10s). If it still fails, wait 60s and re-run. Already-indexed notes are skipped.
+
+### SQLite busy / locked
+Schema uses `PRAGMA journal_mode=WAL`. If you see `SQLITE_BUSY`, ensure no other process has `.data/index.db` open.
+
+### Corrupt or unparseable frontmatter
+`build-index` logs the failing file path and continues. Fix the YAML front matter in the offending note, then re-run.
+
+### Empty graph (no nodes/links in exported JSON)
+Ensure `content/notes/` contains at least one published note with `public: true` in frontmatter. Run `bun run build-index` before `export-graph`.
