@@ -59,6 +59,8 @@ describe("build-index smoke (mocked LLM)", () => {
       dbPath: TMP_DB,
       baseDirs: FIXTURE_DIRS,
       extract: stubExtract,
+      skipEmbed: true,
+      skipConcepts: true,
     })
     expect(result.counts.notes).toBeGreaterThan(0)
     expect(result.counts.entities).toBeGreaterThan(0)
@@ -73,13 +75,13 @@ describe("build-index smoke (mocked LLM)", () => {
   })
 
   it("is idempotent: 2nd run skips unchanged notes (Patch D2 hash skip)", async () => {
-    const r1 = await runBuildIndex({ dbPath: TMP_DB, baseDirs: FIXTURE_DIRS, extract: stubExtract })
+    const r1 = await runBuildIndex({ dbPath: TMP_DB, baseDirs: FIXTURE_DIRS, extract: stubExtract, skipEmbed: true, skipConcepts: true })
     const db1 = createDb(TMP_DB)
     const ec1 = (db1.prepare("SELECT COUNT(*) as n FROM entities").get() as any).n
     const mc1 = (db1.prepare("SELECT SUM(mention_count) as n FROM entities").get() as any).n
     db1.close()
 
-    const r2 = await runBuildIndex({ dbPath: TMP_DB, baseDirs: FIXTURE_DIRS, extract: stubExtract })
+    const r2 = await runBuildIndex({ dbPath: TMP_DB, baseDirs: FIXTURE_DIRS, extract: stubExtract, skipEmbed: true, skipConcepts: true })
     const db2 = createDb(TMP_DB)
     const ec2 = (db2.prepare("SELECT COUNT(*) as n FROM entities").get() as any).n
     const mc2 = (db2.prepare("SELECT SUM(mention_count) as n FROM entities").get() as any).n
