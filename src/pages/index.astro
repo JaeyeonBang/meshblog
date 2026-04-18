@@ -1,17 +1,50 @@
 ---
+import Database from "better-sqlite3"
+import { existsSync } from "node:fs"
 
+const DB_PATH = process.env.MESHBLOG_DB ?? ".data/index.db"
+
+type EntityRow = { name: string; entity_type: string; mention_count: number }
+
+let topEntities: EntityRow[] = []
+let dbAvailable = false
+
+if (existsSync(DB_PATH)) {
+  try {
+    const db = new Database(DB_PATH, { readonly: true })
+    topEntities = db
+      .prepare("SELECT name, entity_type, mention_count FROM entities ORDER BY mention_count DESC LIMIT 10")
+      .all() as EntityRow[]
+    db.close()
+    dbAvailable = true
+  } catch (err) {
+    console.error("[index.astro] DB read failed:", err)
+  }
+}
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>meshblog — Phase 1</title>
+  </head>
+  <body>
+    <h1>meshblog</h1>
+    <section>
+      <h2>Top Entities</h2>
+      {!dbAvailable && <p>No index yet. Run <code>bun run setup</code> then <code>bun run build-index</code>.</p>}
+      {dbAvailable && topEntities.length === 0 && <p>Index is empty.</p>}
+      {dbAvailable && topEntities.length > 0 && (
+        <ul>
+          {topEntities.map((e) => (
+            <li>
+              <strong>{e.name}</strong> <em>({e.entity_type})</em> — {e.mention_count} mention(s)
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  </body>
 </html>
