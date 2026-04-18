@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS notes (
   folder_path   TEXT NOT NULL DEFAULT '/',
   tags          TEXT NOT NULL DEFAULT '[]', -- JSON array
   graph_status  TEXT NOT NULL DEFAULT 'pending', -- pending | done | failed
+  level_pin     INTEGER,                  -- frontmatter override: 1 | 2 | 3 | NULL
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );

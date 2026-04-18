@@ -1,12 +1,20 @@
 import OpenAI from "openai"
 
-const apiKey = process.env.OPENAI_API_KEY
-if (!apiKey) {
-  throw new Error("OPENAI_API_KEY is required but not set")
-}
-
+/**
+ * Lazily validates OPENAI_API_KEY at call time (not at module import).
+ * This allows tests to import `chunkText`, `embeddingToBlob`, `blobToEmbedding`
+ * without an API key — those functions don't call OpenAI.
+ */
 function getOpenAI(): OpenAI {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    throw new Error(
+      "Problem: OPENAI_API_KEY is not set.\n" +
+      "Cause:   generateEmbedding() requires the OpenAI API.\n" +
+      "Fix:     Add OPENAI_API_KEY=sk-... to .env.local (get from platform.openai.com/api-keys).",
+    )
+  }
+  return new OpenAI({ apiKey })
 }
 
 export async function generateEmbedding(text: string): Promise<number[]> {
