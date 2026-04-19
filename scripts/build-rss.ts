@@ -10,7 +10,7 @@ import { listPosts } from '../src/lib/pages/posts'
 
 // TODO: read from astro.config once env path stabilizes
 const SITE =
-  process.env.PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://qkdwodus777.github.io/meshblog'
+  process.env.PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://jaeyeonbang.github.io/meshblog'
 
 // ── XML escape helper ─────────────────────────────────────────────────────────
 function xmlEscape(s: string): string {

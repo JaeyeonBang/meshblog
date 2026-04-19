@@ -34,7 +34,7 @@ function inferLang(content: unknown): 'ko' | 'en' {
 
 const lang = langProp ?? inferLang(title + ' ' + description)
 
-const siteBase = Astro.site ?? new URL('https://qkdwodus777.github.io')
+const siteBase = Astro.site ?? new URL('https://jaeyeonbang.github.io')
 const canonicalUrl = new URL(Astro.url.pathname, siteBase).toString()
 // Prefix base path for public/ assets (e.g. /meshblog/og/index.png)
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '')

@@ -3,7 +3,7 @@ import { defineConfig } from 'astro/config'
 import react from '@astrojs/react'
 
 export default defineConfig({
-  site: 'https://qkdwodus777.github.io',
+  site: 'https://jaeyeonbang.github.io',
   base: '/meshblog',
   trailingSlash: 'ignore',
   integrations: [react()],
