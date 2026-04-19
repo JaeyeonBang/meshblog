@@ -83,13 +83,14 @@ CREATE TABLE IF NOT EXISTS note_embeddings (
 
 -- Q&A cards: 3-tier (per-note / per-concept / global)
 CREATE TABLE IF NOT EXISTS qa_cards (
-  id         TEXT PRIMARY KEY,           -- crypto.randomUUID()
-  tier       TEXT NOT NULL CHECK (tier IN ('note', 'concept', 'global')),
-  note_id    TEXT,                       -- non-null when tier = 'note'
-  concept_id TEXT,                       -- non-null when tier = 'concept'
-  question   TEXT NOT NULL,
-  answer     TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  id           TEXT PRIMARY KEY,           -- crypto.randomUUID()
+  tier         TEXT NOT NULL CHECK (tier IN ('note', 'concept', 'global')),
+  note_id      TEXT,                       -- non-null when tier = 'note'
+  concept_id   TEXT,                       -- non-null when tier = 'concept'
+  question     TEXT NOT NULL,
+  answer       TEXT NOT NULL,
+  content_hash TEXT,                       -- sha256(content+PROMPT_VERSION+MODEL_VERSION) for cache
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (note_id)    REFERENCES notes(id)    ON DELETE CASCADE,
   FOREIGN KEY (concept_id) REFERENCES concepts(id) ON DELETE CASCADE
 );

@@ -1,52 +1,233 @@
 ---
-import Database from "better-sqlite3"
-import { existsSync } from "node:fs"
+import Base from '../layouts/Base.astro'
+import QAChips from '../components/QAChips.tsx'
+import { listPosts, getHomepageQa } from '../lib/pages/index.ts'
+import { withBase } from '../lib/url'
 
-const DB_PATH = process.env.MESHBLOG_DB ?? ".data/index.db"
-
-type EntityRow = { name: string; entity_type: string; mention_count: number }
-
-let topEntities: EntityRow[] = []
-let dbAvailable = false
-
-if (existsSync(DB_PATH)) {
-  try {
-    const db = new Database(DB_PATH, { readonly: true })
-    topEntities = db
-      .prepare("SELECT name, entity_type, mention_count FROM entities ORDER BY mention_count DESC LIMIT 10")
-      .all() as EntityRow[]
-    db.close()
-    dbAvailable = true
-  } catch (err) {
-    console.error("[index.astro] DB read failed:", err)
-  }
-}
+const posts = listPosts().slice(0, 5)
+const qa = getHomepageQa(10)
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
-    <title>meshblog — Phase 1</title>
-  </head>
-  <body>
-    <h1>meshblog</h1>
-    <section>
-      <h2>Top Entities</h2>
-      {!dbAvailable && <p>No index yet. Run <code>bun run setup</code> then <code>bun run build-index</code>.</p>}
-      {dbAvailable && topEntities.length === 0 && <p>Index is empty.</p>}
-      {dbAvailable && topEntities.length > 0 && (
-        <ul>
-          {topEntities.map((e) => (
-            <li>
-              <strong>{e.name}</strong> <em>({e.entity_type})</em> — {e.mention_count} mention(s)
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  </body>
-</html>
+<Base
+  title="meshblog"
+  description="Personal 2nd brain — posts, notes, and an AI-powered knowledge graph."
+  ogImage="/og/index.png"
+>
+  <!-- Hero band: h1 + tagline + QA chips -->
+  <section class="hero" aria-labelledby="hero-heading">
+    <h1 id="hero-heading">meshblog</h1>
+    <p class="tagline">A personal knowledge graph — writing that thinks back.</p>
+
+    {qa.length > 0 && (
+      <div class="chips-wrapper">
+        <QAChips qas={qa} scope="global" client:idle />
+      </div>
+    )}
+  </section>
+
+  <!-- Posts strip: 5 latest posts, directly below hero -->
+  <section class="posts-strip" aria-labelledby="posts-heading">
+    <h2 id="posts-heading">Recent posts</h2>
+    {posts.length === 0 ? (
+      <p>No posts yet. Run <code>bun run build-index</code>.</p>
+    ) : (
+      <ul class="posts-list">
+        {posts.map((post) => (
+          <li class="post-item">
+            <a href={withBase(`/posts/${post.slug}`)} class="post-link">{post.title}</a>
+            <time class="post-date" datetime={post.created_at}>
+              {new Date(post.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })}
+            </time>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  <!-- Graph link: third screen -->
+  <section class="graph-section" aria-labelledby="graph-heading">
+    <h2 id="graph-heading">Explore the mesh</h2>
+    <p class="graph-desc">Navigate every concept, post, and connection in the knowledge graph.</p>
+    <a href={withBase('/graph')} class="cta">Open graph &rarr;</a>
+  </section>
+</Base>
+
+<style>
+  /* ── Hero ──────────────────────────────────────────────────── */
+
+  .hero {
+    max-width: 720px;
+    margin-inline: auto;
+    padding: var(--meshblog-space-16) var(--meshblog-space-4);
+  }
+
+  .hero h1 {
+    font-size: var(--meshblog-font-size-4xl);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin: 0 0 var(--meshblog-space-3) 0;
+  }
+
+  .tagline {
+    font-size: var(--meshblog-font-size-lg);
+    color: var(--meshblog-color-text-secondary);
+    margin: 0 0 var(--meshblog-space-8) 0;
+    line-height: 1.5;
+  }
+
+  /* On mobile: hide chips beyond 4th via CSS */
+  .chips-wrapper :global(.list > li:nth-child(n + 5)) {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .hero h1 {
+      font-size: var(--meshblog-font-size-5xl);
+    }
+
+    /* Show up to 6 chips on tablet+ */
+    .chips-wrapper :global(.list > li:nth-child(n + 5)) {
+      display: revert;
+    }
+    .chips-wrapper :global(.list > li:nth-child(n + 7)) {
+      display: none;
+    }
+  }
+
+  /* ── Posts strip ───────────────────────────────────────────── */
+
+  .posts-strip {
+    max-width: 960px;
+    margin-inline: auto;
+    padding: var(--meshblog-space-12) var(--meshblog-space-4);
+  }
+
+  .posts-strip h2 {
+    font-size: var(--meshblog-font-size-2xl);
+    font-weight: 700;
+    margin: 0 0 var(--meshblog-space-6) 0;
+  }
+
+  .posts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .post-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--meshblog-space-1);
+    padding: var(--meshblog-space-3) 0;
+    border-bottom: 1px solid var(--meshblog-color-border);
+    transition: background var(--meshblog-dur-fast) var(--meshblog-ease);
+  }
+
+  .post-item:first-child {
+    border-top: 1px solid var(--meshblog-color-border);
+  }
+
+  .post-item:hover {
+    background: var(--meshblog-color-surface);
+    padding-inline: var(--meshblog-space-3);
+    margin-inline: calc(-1 * var(--meshblog-space-3));
+  }
+
+  .post-link {
+    font-size: var(--meshblog-font-size-base);
+    font-weight: 500;
+    color: var(--meshblog-color-text-primary);
+    text-decoration: none;
+    line-height: 1.4;
+  }
+
+  .post-link:hover {
+    color: var(--meshblog-color-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .post-link:focus-visible {
+    outline: 2px solid var(--meshblog-color-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--meshblog-radius-sm);
+  }
+
+  .post-date {
+    font-size: var(--meshblog-font-size-sm);
+    color: var(--meshblog-color-muted);
+  }
+
+  @media (min-width: 768px) {
+    .posts-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 var(--meshblog-space-8);
+    }
+
+    .post-item {
+      border-bottom: 1px solid var(--meshblog-color-border);
+    }
+
+    .post-item:first-child {
+      border-top: 1px solid var(--meshblog-color-border);
+    }
+
+    /* Second item also gets a top border (first in second column at ≥768) */
+    .post-item:nth-child(2) {
+      border-top: 1px solid var(--meshblog-color-border);
+    }
+  }
+
+  /* ── Graph section ─────────────────────────────────────────── */
+
+  .graph-section {
+    background: var(--meshblog-color-surface);
+    padding: var(--meshblog-space-16) var(--meshblog-space-4);
+    text-align: center;
+  }
+
+  .graph-section h2 {
+    font-size: var(--meshblog-font-size-2xl);
+    font-weight: 700;
+    margin: 0 0 var(--meshblog-space-4) 0;
+  }
+
+  .graph-desc {
+    color: var(--meshblog-color-text-secondary);
+    font-size: var(--meshblog-font-size-lg);
+    margin: 0 0 var(--meshblog-space-8) 0;
+    max-width: 480px;
+    margin-inline: auto;
+    margin-bottom: var(--meshblog-space-8);
+  }
+
+  .cta {
+    display: inline-block;
+    background: var(--meshblog-color-accent);
+    color: var(--meshblog-color-on-accent);
+    padding: var(--meshblog-space-3) var(--meshblog-space-6);
+    border-radius: var(--meshblog-radius-md);
+    font-weight: 600;
+    font-size: var(--meshblog-font-size-base);
+    text-decoration: none;
+    transition:
+      background var(--meshblog-dur-fast) var(--meshblog-ease),
+      box-shadow var(--meshblog-dur-fast) var(--meshblog-ease);
+  }
+
+  .cta:hover {
+    background: var(--meshblog-color-accent-hover);
+  }
+
+  .cta:focus-visible {
+    outline: 3px solid var(--meshblog-color-focus-ring);
+    outline-offset: 3px;
+    border-radius: var(--meshblog-radius-md);
+  }
+</style>

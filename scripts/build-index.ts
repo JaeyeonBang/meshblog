@@ -286,6 +286,20 @@ const isMainModule =
   process.argv[1]?.endsWith("build-index.ts")
 
 if (isMainModule) {
+  // ── FIXTURE_ONLY mode: seed DB from canned fixtures, skip all LLM calls ──
+  if (process.env.FIXTURE_ONLY === "1") {
+    console.log("[build-index] FIXTURE_ONLY=1 — seeding from test/fixtures/seed.sql")
+    const db = createDb(DB_PATH)
+    const seed = readFileSync(
+      new URL("../test/fixtures/seed.sql", import.meta.url),
+      "utf-8",
+    )
+    db.exec(seed)
+    console.log("[build-index] fixture seed complete")
+    db.close()
+    process.exit(0)
+  }
+
   const args = process.argv.slice(2)
   const opts: BuildIndexOptions = {
     skipEmbed: args.includes("--skip-embed"),

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /** Current schema version. Increment when adding new tables or altering columns. */
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
 
 export function applyMigrations(db: Database.Database): void {
   // WAL + busy timeout (Amendment A / DX #3)
@@ -48,5 +48,15 @@ export function applyMigrations(db: Database.Database): void {
     } else {
       db.prepare("UPDATE schema_version SET version = ?").run(SCHEMA_VERSION)
     }
+  }
+
+  // Phase 2 → Phase 3: add content_hash to qa_cards (previously added lazily by generate-qa)
+  if (currentVersion < 3) {
+    const qaInfo = db.pragma("table_info(qa_cards)") as { name: string }[]
+    const qaCols = new Set(qaInfo.map((c) => c.name))
+    if (!qaCols.has("content_hash")) {
+      db.exec("ALTER TABLE qa_cards ADD COLUMN content_hash TEXT")
+    }
+    db.prepare("UPDATE schema_version SET version = ?").run(SCHEMA_VERSION)
   }
 }

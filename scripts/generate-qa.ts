@@ -124,6 +124,12 @@ async function generateFaqs(
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
+  // ── FIXTURE_ONLY mode: skip entirely — qa_cards are preseeded ──
+  if (process.env.FIXTURE_ONLY === "1") {
+    console.log("[generate-qa] FIXTURE_ONLY=1 — skipping (qa_cards preseeded)")
+    process.exit(0)
+  }
+
   // Env + tool checks
   checkClaudeAvailable()
   if (!process.env.OPENAI_API_KEY) {

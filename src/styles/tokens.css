@@ -1,0 +1,77 @@
+/* meshblog design tokens — single source of truth
+ * Prefix: --meshblog-  (grep-auditable: no hex literals outside this file)
+ * Dark mode: @media (prefers-color-scheme: dark) override below.
+ * Light is the SSR default — no flash, no toggle, no JS required.
+ */
+
+:root {
+  /* ─── Colors ─────────────────────────────────────────────── */
+  --meshblog-color-bg:            #fafafa;
+  --meshblog-color-surface:       #ffffff;
+  --meshblog-color-border:        #e5e5e5;
+  --meshblog-color-text-primary:  #171717;
+  --meshblog-color-text-secondary:#525252;
+  --meshblog-color-accent:        #1d4ed8;
+  --meshblog-color-accent-hover:  #1e40af;
+  --meshblog-color-muted:         #737373;
+  --meshblog-color-focus-ring:    #2563eb;
+  --meshblog-color-on-accent:     #fafafa;   /* text on accent background — always light */
+  --meshblog-color-success:       #10b981;
+  --meshblog-color-warn:          #f59e0b;
+  --meshblog-color-error:         #ef4444;
+
+  /* ─── Type scale (rem, 1rem = 16px) ──────────────────────── */
+  --meshblog-font-size-xs:   0.75rem;   /*  12px */
+  --meshblog-font-size-sm:   0.875rem;  /*  14px */
+  --meshblog-font-size-base: 1rem;      /*  16px */
+  --meshblog-font-size-lg:   1.125rem;  /*  18px */
+  --meshblog-font-size-xl:   1.25rem;   /*  20px */
+  --meshblog-font-size-2xl:  1.5rem;    /*  24px */
+  --meshblog-font-size-3xl:  1.875rem;  /*  30px */
+  --meshblog-font-size-4xl:  2.25rem;   /*  36px */
+  --meshblog-font-size-5xl:  3rem;      /*  48px */
+
+  /* ─── Spacing (4-based, 0.25rem increments) ──────────────── */
+  --meshblog-space-1:  0.25rem;  /*  4px */
+  --meshblog-space-2:  0.5rem;   /*  8px */
+  --meshblog-space-3:  0.75rem;  /* 12px */
+  --meshblog-space-4:  1rem;     /* 16px */
+  --meshblog-space-5:  1.25rem;  /* 20px */
+  --meshblog-space-6:  1.5rem;   /* 24px */
+  --meshblog-space-8:  2rem;     /* 32px */
+  --meshblog-space-10: 2.5rem;   /* 40px */
+  --meshblog-space-12: 3rem;     /* 48px */
+  --meshblog-space-16: 4rem;     /* 64px */
+  --meshblog-space-24: 6rem;     /* 96px */
+  --meshblog-space-32: 8rem;     /* 128px */
+
+  /* ─── Border radii ───────────────────────────────────────── */
+  --meshblog-radius-sm:   4px;
+  --meshblog-radius-md:   8px;
+  --meshblog-radius-lg:   12px;
+  --meshblog-radius-full: 9999px;
+
+  /* ─── Shadows ─────────────────────────────────────────────── */
+  --meshblog-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --meshblog-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --meshblog-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+
+  /* ─── Motion ──────────────────────────────────────────────── */
+  --meshblog-ease:     cubic-bezier(0.4, 0, 0.2, 1);
+  --meshblog-dur-fast: 120ms;
+  --meshblog-dur-base: 200ms;
+  --meshblog-dur-slow: 400ms;
+}
+
+/* Dark mode overrides — system preference only, no JS toggle */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --meshblog-color-bg:            #0a0a0a;
+    --meshblog-color-surface:       #141414;
+    --meshblog-color-border:        #262626;
+    --meshblog-color-text-primary:  #fafafa;
+    --meshblog-color-text-secondary:#a3a3a3;
+    --meshblog-color-muted:         #8a8a8a;
+    /* accent, focus-ring, success, warn, error unchanged in dark mode */
+  }
+}

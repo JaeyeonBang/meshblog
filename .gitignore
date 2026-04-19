@@ -33,6 +33,13 @@ pnpm-debug.log*
 public/qa/
 public/graph/
 
+# Generated artifacts (Phase 3 T7)
+/public/graph/
+/public/og/
+/public/atom.xml
+/public/notes-manifest.json
+/.data/
+
 # local Obsidian vault if symlinked inside repo
 content/.obsidian/
 

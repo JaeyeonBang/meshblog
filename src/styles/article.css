@@ -1,0 +1,164 @@
+/* article.css — shared prose layout + article-page components
+ * Imported by both src/pages/posts/[slug].astro and src/pages/notes/[slug].astro.
+ * The .prose class is defined in fonts.css (h1/h2/h3/p/code/pre sizing).
+ * This file adds layout constraints + article-specific UI components.
+ */
+
+/* ── Prose container ──────────────────────────────────────────────────────── */
+
+.prose {
+  max-width: 65ch;
+  margin-inline: auto;
+  padding-inline: var(--meshblog-space-4);
+  padding-block: var(--meshblog-space-12);
+  /* Prevent any direct child from causing horizontal overflow */
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 768px) {
+  .prose {
+    padding-inline: var(--meshblog-space-8);
+  }
+}
+
+/* ── Responsive images in prose ───────────────────────────────────────────── */
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--meshblog-radius-md);
+}
+
+/* ── Heading overflow protection (Korean word-break) ─────────────────────── */
+
+.prose h1,
+.prose h2,
+.prose h3 {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* ── Article header ───────────────────────────────────────────────────────── */
+
+.article-header {
+  margin-bottom: var(--meshblog-space-10);
+}
+
+.article-header h1 {
+  margin-top: var(--meshblog-space-4);
+  margin-bottom: 0;
+}
+
+/* ── Metadata row ─────────────────────────────────────────────────────────── */
+
+.metadata-row {
+  display: flex;
+  gap: var(--meshblog-space-4);
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: var(--meshblog-font-size-sm);
+  color: var(--meshblog-color-text-secondary);
+  margin-bottom: var(--meshblog-space-4);
+}
+
+/* ── Kind badges ──────────────────────────────────────────────────────────── */
+
+.kind-badge {
+  display: inline-block;
+  padding: var(--meshblog-space-1) var(--meshblog-space-3);
+  border-radius: var(--meshblog-radius-full);
+  font-size: var(--meshblog-font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Posts: accent pill */
+.kind-badge--post {
+  background: var(--meshblog-color-accent);
+  color: var(--meshblog-color-on-accent);
+}
+
+/* Notes: quieter muted border style */
+.kind-badge--note {
+  background: transparent;
+  color: var(--meshblog-color-text-secondary);
+  border: 1px solid var(--meshblog-color-border);
+}
+
+/* ── Reading time ─────────────────────────────────────────────────────────── */
+
+.reading-time {
+  color: var(--meshblog-color-muted);
+}
+
+/* ── Tags list (inline) ───────────────────────────────────────────────────── */
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--meshblog-space-2);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tag-list a {
+  font-size: var(--meshblog-font-size-xs);
+  color: var(--meshblog-color-text-secondary);
+  text-decoration: none;
+}
+
+.tag-list a:hover {
+  color: var(--meshblog-color-accent);
+  text-decoration: underline;
+}
+
+/* ── Related / Backlinks aside ────────────────────────────────────────────── */
+
+.related-aside,
+.backlinks-aside {
+  margin-top: var(--meshblog-space-16);
+  padding: var(--meshblog-space-6);
+  border: 1px solid var(--meshblog-color-border);
+  border-radius: var(--meshblog-radius-lg);
+  background: var(--meshblog-color-surface);
+}
+
+.related-aside h2,
+.backlinks-aside h2 {
+  font-size: var(--meshblog-font-size-lg);
+  margin-top: 0;
+  margin-bottom: var(--meshblog-space-4);
+}
+
+.related-aside ul,
+.backlinks-aside ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--meshblog-space-2);
+}
+
+.related-aside a,
+.backlinks-aside a {
+  color: var(--meshblog-color-accent);
+  text-decoration: none;
+  transition: color var(--meshblog-dur-fast) var(--meshblog-ease),
+              text-decoration var(--meshblog-dur-fast) var(--meshblog-ease);
+}
+
+.related-aside a:hover,
+.backlinks-aside a:hover {
+  color: var(--meshblog-color-accent-hover);
+  text-decoration: underline;
+}
+
+.related-aside a:focus-visible,
+.backlinks-aside a:focus-visible {
+  outline: 2px solid var(--meshblog-color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--meshblog-radius-sm);
+}

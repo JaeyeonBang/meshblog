@@ -1,0 +1,136 @@
+---
+import { readFileSync } from 'node:fs'
+import Base from '../../layouts/Base.astro'
+import QAChips from '../../components/QAChips'
+import { renderMarkdownToHtml } from '../../lib/markdown/render'
+import {
+  listPosts,
+  getQaForNote,
+  getRelatedNotes,
+  openReadonlyDb,
+} from '../../lib/pages/index'
+import type { QaCard } from '../../lib/pages/index'
+import { estimateReadingMinutes } from '../../lib/reading-time'
+import { withBase } from '../../lib/url'
+import '../../styles/article.css'
+
+export async function getStaticPaths() {
+  return listPosts().map((p) => ({
+    params: { slug: p.slug },
+    props: { post: p },
+  }))
+}
+
+const { post } = Astro.props
+
+// Guard: shouldn't happen post-getStaticPaths, but be safe
+if (!post) {
+  return Astro.redirect('/404')
+}
+
+// --- QA cards ---
+const noteQa: QaCard[] = getQaForNote(post.id)
+
+// Concept-tier QA for concepts that this note's entities belong to
+let conceptQa: QaCard[] = []
+const db = openReadonlyDb()
+if (db) {
+  try {
+    const rows = db
+      .prepare(
+        `SELECT q.id, q.tier, q.question, q.answer, q.note_id, q.concept_id
+         FROM qa_cards q
+         JOIN concept_entities ce ON ce.concept_id = q.concept_id
+         JOIN note_entities ne ON ne.entity_id = ce.entity_id
+         WHERE ne.note_id = ? AND q.tier = 'concept'
+         GROUP BY q.id`
+      )
+      .all(post.id) as any[]
+    conceptQa = rows.map((row: any): QaCard => ({
+      id: row.id,
+      tier: row.tier,
+      question: row.question,
+      answer: row.answer,
+      lang: row.lang ?? 'en',
+      scope_id: row.note_id ?? row.concept_id ?? null,
+    }))
+  } finally {
+    db.close()
+  }
+}
+
+const allQa: QaCard[] = [...noteQa, ...conceptQa]
+
+// --- Related notes ---
+const related = getRelatedNotes(post.id, 3)
+
+// --- Notes manifest for resolving hrefs ---
+type ManifestEntry = { id: string; href: string; title: string; folder: string }
+let manifest: Record<string, ManifestEntry> = {}
+try {
+  manifest = JSON.parse(readFileSync('public/notes-manifest.json', 'utf8'))
+} catch {
+  manifest = {}
+}
+
+const resolveHref = (id: string): string => {
+  const href = manifest[id]?.href
+  return href ? withBase(href) : '#'
+}
+
+// --- Metadata ---
+const readingMinutes = estimateReadingMinutes(post.content)
+const formattedDate = new Date(post.created_at).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+})
+const excerpt = post.content.replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
+const contentHtml = await renderMarkdownToHtml(post.content)
+---
+
+<Base
+  title={post.title}
+  description={excerpt}
+  ogImage={`/og/posts/${post.slug}.png`}
+>
+  <article class="prose">
+    <header class="article-header">
+      <div class="metadata-row">
+        <span class="kind-badge kind-badge--post">post</span>
+        <time datetime={post.created_at}>{formattedDate}</time>
+        <span class="reading-time">{readingMinutes} min read</span>
+      </div>
+      <h1>{post.title}</h1>
+      {post.tags && post.tags.length > 0 && (
+        <ul class="tag-list" aria-label="tags">
+          {post.tags.map((tag: string) => (
+            <li key={tag}>
+              <a href={withBase(`/tags/${tag}`)}>{tag}</a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </header>
+
+    <div class="article-body" set:html={contentHtml} />
+
+    {related.length > 0 && (
+      <aside class="related-aside" aria-labelledby="related-heading">
+        <h2 id="related-heading">Related</h2>
+        <ul>
+          {related.map((r) => (
+            <li key={r.id}>
+              <a href={resolveHref(r.id)}>{r.title}</a>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    )}
+
+    {allQa.length > 0 && (
+      <QAChips qas={allQa} scope="page" client:visible />
+    )}
+  </article>
+</Base>
+

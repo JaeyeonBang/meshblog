@@ -21,13 +21,55 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.x
+          node-version: 20
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      - name: Build
+
+      - name: Build index (entity + embeddings)
+        run: bun run build-index || true
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      - name: Generate Q&A (skip if claude CLI unavailable)
+        run: |
+          if command -v claude >/dev/null 2>&1; then
+            bun run generate-qa
+          else
+            echo "::warning::claude CLI unavailable — skipping Q&A generation"
+          fi
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      - name: Export graph
+        run: bun run export-graph || true
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      - name: Build OG images (skip if script missing)
+        run: |
+          if [ -f scripts/build-og.ts ]; then
+            bun run build-og
+          fi
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Build RSS feed (skip if script missing)
+        run: |
+          if [ -f scripts/build-rss.ts ]; then
+            bun run build-rss
+          fi
+
+      - name: Astro build
         run: bun run build
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist

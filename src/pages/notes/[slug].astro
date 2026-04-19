@@ -1,0 +1,151 @@
+---
+import Base from '../../layouts/Base.astro'
+import QAChips from '../../components/QAChips.tsx'
+import { renderMarkdownToHtml } from '../../lib/markdown/render'
+import {
+  listNotes,
+  getQaForNote,
+  getRelatedNotes,
+  openReadonlyDb,
+} from '../../lib/pages/index.ts'
+import type { NoteRow, QaCard, RelatedNote } from '../../lib/pages/index.ts'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
+import { estimateReadingMinutes } from '../../lib/reading-time'
+import { withBase } from '../../lib/url'
+import '../../styles/article.css'
+
+export function getStaticPaths() {
+  const notes = listNotes()
+  return notes.map((n) => ({
+    params: { slug: n.slug },
+    props: { note: n },
+  }))
+}
+
+interface Props {
+  note: NoteRow
+}
+
+const { note } = Astro.props
+
+// Fetch note-tier QA cards
+const noteQa: QaCard[] = getQaForNote(note.id)
+
+// Fetch concept-tier QA cards via inline SQL
+let conceptQa: QaCard[] = []
+const db = openReadonlyDb()
+if (db) {
+  try {
+    const rows = db
+      .prepare(
+        `SELECT q.id, q.tier, q.question, q.answer, q.note_id, q.concept_id
+         FROM qa_cards q
+         JOIN concept_entities ce ON ce.concept_id = q.concept_id
+         JOIN note_entities ne ON ne.entity_id = ce.entity_id
+         WHERE ne.note_id = ? AND q.tier = 'concept'
+         GROUP BY q.id`
+      )
+      .all(note.id) as any[]
+    conceptQa = rows.map((row) => ({
+      id: row.id,
+      tier: row.tier as 'concept',
+      question: row.question,
+      answer: row.answer,
+      lang: row.lang ?? 'en',
+      scope_id: row.concept_id ?? null,
+    }))
+  } finally {
+    db.close()
+  }
+}
+
+const allQa: QaCard[] = [...noteQa, ...conceptQa]
+
+// Fetch related notes
+// TODO(Phase 6): distinguish backlinks (inbound refs) from related (topic similarity).
+// Currently getRelatedNotes returns entity-overlap similarity only.
+// When the DB gains a wikilink/backlink table, split into:
+//   const backlinks = getBacklinksForNote(note.id)  // inbound
+//   const related   = getRelatedNotes(note.id, 3)   // outbound similarity
+const related: RelatedNote[] = getRelatedNotes(note.id, 3)
+
+// Read manifest for resolving hrefs
+type ManifestEntry = { id: string; href: string; title: string; folder: string }
+type Manifest = Record<string, ManifestEntry>
+
+let manifest: Manifest = {}
+try {
+  const manifestPath = join(
+    fileURLToPath(new URL('../../../public/notes-manifest.json', import.meta.url))
+  )
+  manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as Manifest
+} catch {
+  // manifest not found — hrefs will fall back to /notes/<slug>/
+}
+
+function resolveHref(id: string, slug: string): string {
+  const entry = manifest[id]
+  return withBase(entry?.href ?? `/notes/${slug}/`)
+}
+
+// --- Metadata ---
+const readingMinutes = estimateReadingMinutes(note.content)
+const formattedDate = new Date(note.updated_at).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+})
+const excerpt = note.content.replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
+const contentHtml = await renderMarkdownToHtml(note.content)
+---
+
+<Base
+  title={note.title}
+  description={excerpt}
+  ogImage={`/og/notes/${note.slug}.png`}
+>
+  <article class="prose">
+    <header class="article-header">
+      <div class="metadata-row">
+        <span class="kind-badge kind-badge--note">note</span>
+        <time datetime={note.updated_at}>{formattedDate}</time>
+        <span class="reading-time">{readingMinutes} min read</span>
+      </div>
+      <h1>{note.title}</h1>
+      {note.tags && note.tags.length > 0 && (
+        <ul class="tag-list" aria-label="tags">
+          {note.tags.map((tag: string) => (
+            <li key={tag}>
+              <a href={withBase(`/tags/${tag}`)}>{tag}</a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </header>
+
+    <div class="article-body" set:html={contentHtml} />
+
+    {related.length > 0 && (
+      <aside class="related-aside" aria-labelledby="related-heading">
+        <h2 id="related-heading">Related</h2>
+        <ul>
+          {related.map((r) => (
+            <li>
+              <a href={resolveHref(r.id, r.slug)}>{r.title}</a>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    )}
+
+    {allQa.length > 0 && (
+      <section aria-labelledby="qa-heading">
+        <h2 id="qa-heading">Q&A</h2>
+        <QAChips qas={allQa} scope="page" client:visible />
+      </section>
+    )}
+  </article>
+</Base>
+

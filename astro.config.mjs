@@ -1,5 +1,16 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig } from 'astro/config'
+import react from '@astrojs/react'
 
-// https://astro.build/config
-export default defineConfig({});
+export default defineConfig({
+  site: 'https://qkdwodus777.github.io',
+  base: '/meshblog',
+  trailingSlash: 'ignore',
+  integrations: [react()],
+  output: 'static',
+  build: { format: 'directory' },
+  vite: {
+    ssr: { noExternal: [] },
+    optimizeDeps: { exclude: ['better-sqlite3'] },
+  },
+})
