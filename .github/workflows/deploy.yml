@@ -30,7 +30,13 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build index (entity + embeddings)
-        run: bun run build-index || true
+        run: |
+          if [ -n "${OPENAI_API_KEY:-}" ]; then
+            bun run build-index
+          else
+            echo "::warning::OPENAI_API_KEY missing — running build-index with --skip-embed"
+            bun run build-index -- --skip-embed
+          fi
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
@@ -47,10 +53,13 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
       - name: Export graph
-        run: bun run export-graph || true
+        run: bun run export-graph
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      - name: Build notes manifest
+        run: bun run build-manifest
 
       - name: Build OG images (skip if script missing)
         run: |
