@@ -8,7 +8,7 @@ const { label = 'hero · figure', src, alt } = Astro.props;
 ---
 {src ? (
   <figure class="hero-figure hero-figure--img">
-    <img src={src} alt={alt ?? label} />
+    <img src={src} alt={alt ?? label} loading="lazy" decoding="async" />
   </figure>
 ) : (
   <figure class="hero-figure" aria-label={label}>
