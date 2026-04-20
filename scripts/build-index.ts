@@ -136,14 +136,14 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
     const raw = readFileSync(path, "utf-8")
     const { data: fm, content } = matter(raw)
 
-    if (fm.public === false) {
-      // If note was previously public, delete stale data (Amendment F #14)
+    if (fm.public === false || fm.draft === true) {
+      const reason = fm.draft === true ? "draft:true" : "public:false"
       const prev = queryOne<{ id: string }>(db, "SELECT id FROM notes WHERE id = ?", [basename(path, extname(path))])
       if (prev) {
         execute(db, "DELETE FROM notes WHERE id = ?", [prev.id])
-        console.log(`[build-index] deleted stale data for private note: ${path}`)
+        console.log(`[build-index] deleted stale data for ${reason} note: ${path}`)
       }
-      console.log(`[build-index] skip (public:false): ${path}`)
+      console.log(`[build-index] skip (${reason}): ${path}`)
       continue
     }
 

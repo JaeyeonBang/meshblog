@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest"
-import { unlinkSync, existsSync, mkdirSync } from "node:fs"
+import { unlinkSync, existsSync, mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { runBuildIndex } from "../build-index.ts"
 import { createDb } from "../../src/lib/db/index.ts"
@@ -72,6 +73,67 @@ describe("build-index smoke (mocked LLM)", () => {
     const draftRow = db.prepare("SELECT id FROM notes WHERE id = ?").get("04-secret")
     expect(draftRow).toBeUndefined()
     db.close()
+  })
+
+  it("skips notes with draft: true frontmatter (D3)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "build-index-draft-"))
+    writeFileSync(
+      join(dir, "clean.md"),
+      "---\ntitle: Clean Note\n---\nbody",
+    )
+    writeFileSync(
+      join(dir, "drafted.md"),
+      "---\ntitle: Drafted Note\ndraft: true\n---\nbody",
+    )
+    try {
+      await runBuildIndex({
+        dbPath: TMP_DB,
+        baseDirs: [dir],
+        extract: stubExtract,
+        skipEmbed: true,
+        skipConcepts: true,
+      })
+      const db = createDb(TMP_DB)
+      const clean = db.prepare("SELECT id FROM notes WHERE id = ?").get("clean")
+      const drafted = db.prepare("SELECT id FROM notes WHERE id = ?").get("drafted")
+      expect(clean).toBeDefined()
+      expect(drafted).toBeUndefined()
+      db.close()
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it("deletes stale data when a published note flips to draft: true (D3)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "build-index-flip-"))
+    const file = join(dir, "flip.md")
+    writeFileSync(file, "---\ntitle: Flip\n---\nv1 body")
+    try {
+      await runBuildIndex({
+        dbPath: TMP_DB,
+        baseDirs: [dir],
+        extract: stubExtract,
+        skipEmbed: true,
+        skipConcepts: true,
+      })
+      const db1 = createDb(TMP_DB)
+      expect(db1.prepare("SELECT id FROM notes WHERE id = ?").get("flip")).toBeDefined()
+      db1.close()
+
+      writeFileSync(file, "---\ntitle: Flip\ndraft: true\n---\nv1 body")
+      await runBuildIndex({
+        dbPath: TMP_DB,
+        baseDirs: [dir],
+        extract: stubExtract,
+        skipEmbed: true,
+        skipConcepts: true,
+      })
+      const db2 = createDb(TMP_DB)
+      expect(db2.prepare("SELECT id FROM notes WHERE id = ?").get("flip")).toBeUndefined()
+      db2.close()
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   it("is idempotent: 2nd run skips unchanged notes (Patch D2 hash skip)", async () => {
