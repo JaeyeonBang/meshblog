@@ -60,9 +60,12 @@ describe("build smoke", { timeout: 180_000 }, () => {
     expect(existsSync(join(DIST, "index.html"))).toBe(true)
   })
 
-  it("dist/index.html contains meshblog inside an h1 element", () => {
+  it("dist/index.html renders a hero h1 and the meshblog wordmark", () => {
     const html = readFileSync(join(DIST, "index.html"), "utf-8")
-    expect(html).toMatch(/<h1[^>]*>meshblog<\/h1>/)
+    // Editorial redesign: the wordmark is a .logo span in TopBar, and the home
+    // hero uses an h1 for site-specific intro copy. Require both to be present.
+    expect(html).toMatch(/<h1\b[^>]*>[^<]+<\/h1>|<h1\b[^>]*>[\s\S]*?<\/h1>/)
+    expect(html).toMatch(/class="[^"]*\blogo\b[^"]*"[^>]*>meshblog/)
   })
 
   // ── dist/graph/index.html ────────────────────────────────────────────────────
@@ -157,7 +160,8 @@ describe("build smoke", { timeout: 180_000 }, () => {
     expect(slugWithHtml).toBeDefined()
 
     const html = readFileSync(join(notesDir, slugWithHtml!, "index.html"), "utf-8")
-    expect(html).toContain('class="prose"')
+    // Accept either `class="prose"` alone or `class="prose ..."` (e.g. prose note-prose)
+    expect(html).toMatch(/class="[^"]*\bprose\b[^"]*"/)
   })
 
   it("a sampled note page has .kind-badge element (T3)", () => {

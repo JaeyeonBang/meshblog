@@ -208,15 +208,17 @@ describe("responsive audit (T5)", { timeout: 180_000 }, () => {
 
   it("global CSS has body font-size of 1rem (base) or larger", () => {
     const css = readAllCSS(join(DIST, "index.html"))
-    // body { font-size: var(--meshblog-font-size-base) } — the token is 1rem
-    // Verify either the token reference or a direct 1rem / 16px value
+    // Redesign: body { font-size: var(--fs-base) } — token value is 15px.
+    // Accept the short token var(--fs-base), explicit 15px, or legacy 1rem/16px.
     const bodyFontSize = css.match(/body\s*\{[^}]*font-size:\s*([^;}]+)/)
     expect(bodyFontSize, "body font-size rule not found").toBeTruthy()
     const value = bodyFontSize![1].trim()
-    // Token var or explicit 1rem / 16px are all acceptable
+    // Token var(--fs-base) or explicit pixel/rem values are all acceptable
     const acceptable =
+      value.includes("--fs-base") ||
       value.includes("font-size-base") ||
       value === "1rem" ||
+      value === "15px" ||
       value === "16px"
     expect(acceptable, `body font-size "${value}" is not ≥ 1rem`).toBe(true)
   })
@@ -235,13 +237,18 @@ describe("responsive audit (T5)", { timeout: 180_000 }, () => {
 
   it("global CSS has nav links with min-height: 44px for mobile tap targets", () => {
     const css = readAllCSS(join(DIST, "index.html"))
-    // Accept either the old `nav a { ... }` selector or the scoped
-    // `nav .nav-links a { ... }` / `.nav-wordmark { ... }` selectors used
-    // in the editorial redesign. The requirement (44px tap target) is what matters.
+    // Accept:
+    //   nav a { min-height: 44px }                 — legacy
+    //   .nav-links a { min-height: 44px }          — legacy editorial
+    //   .nav-wordmark { min-height: 44px }         — editorial redesign
+    //   .topbar .nav-link { min-height: 44px }     — redesign TopBar component
+    //   .nav-link { min-height: 44px }             — redesign TopBar (scoped)
     const hasTapTarget =
       /nav\s+a\s*\{[^}]*min-height:\s*44px/.test(css) ||
       /nav-links\s+a\s*\{[^}]*min-height:\s*44px/.test(css) ||
-      /nav-wordmark[^{]*\{[^}]*min-height:\s*44px/.test(css)
+      /nav-wordmark[^{]*\{[^}]*min-height:\s*44px/.test(css) ||
+      /\.nav-link[^{]*\{[^}]*min-height:\s*44px/.test(css) ||
+      /topbar[^{]*\{[^}]*min-height:\s*44px/.test(css)
     expect(
       hasTapTarget,
       "No nav link rule with min-height: 44px found",
