@@ -1,7 +1,8 @@
-import { readdirSync, readFileSync, existsSync } from "node:fs"
-import { join, basename, extname } from "node:path"
+import { readFileSync, existsSync } from "node:fs"
+import { basename, extname } from "node:path"
 import matter from "gray-matter"
 import { createDb, queryMany } from "../src/lib/db/index.ts"
+import { discoverMarkdown } from "../src/lib/content/discover.ts"
 
 const DEFAULT_DB = process.env.MESHBLOG_DB ?? ".data/index.db"
 const DEFAULT_DIRS = ["content/posts", "content/notes"]
@@ -19,23 +20,11 @@ export type AuditOptions = {
 }
 
 function discoverAll(baseDirs: string[]): { path: string; id: string; fm: Record<string, unknown> }[] {
-  const found: { path: string; id: string; fm: Record<string, unknown> }[] = []
-  for (const dir of baseDirs) {
-    let entries: string[]
-    try {
-      entries = readdirSync(dir)
-    } catch {
-      continue
-    }
-    for (const name of entries) {
-      if (!name.endsWith(".md")) continue
-      const path = join(dir, name)
-      const raw = readFileSync(path, "utf-8")
-      const { data } = matter(raw)
-      found.push({ path, id: basename(path, extname(path)), fm: data })
-    }
-  }
-  return found
+  return discoverMarkdown(baseDirs, { skipUnderscore: false }).map((f) => {
+    const raw = readFileSync(f.path, "utf-8")
+    const { data } = matter(raw)
+    return { path: f.path, id: basename(f.path, extname(f.path)), fm: data }
+  })
 }
 
 export function auditDrafts(options: AuditOptions = {}): AuditResult {

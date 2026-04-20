@@ -1,35 +1,20 @@
 import dotenv from "dotenv"
 dotenv.config({ path: ".env.local" })
 
-import { readdirSync, readFileSync } from "node:fs"
-import { join, basename, extname } from "node:path"
+import { readFileSync } from "node:fs"
+import { basename, extname } from "node:path"
 import { createHash, randomUUID } from "node:crypto"
 import matter from "gray-matter"
 import { createDb, queryOne, queryMany, execute, type Database } from "../src/lib/db/index.ts"
 import { extractEntities } from "../src/lib/rag/graph.ts"
 import { generateEmbedding, chunkText, embeddingToBlob } from "../src/lib/rag/embed.ts"
+import { discoverMarkdown } from "../src/lib/content/discover.ts"
+
+export type { DiscoveredFile } from "../src/lib/content/discover.ts"
+export { discoverMarkdown }
 
 const DB_PATH = process.env.MESHBLOG_DB ?? ".data/index.db"
 const CONTENT_DIRS = ["content/posts", "content/notes"]
-
-export type DiscoveredFile = { path: string; folder: string }
-
-export function discoverMarkdown(baseDirs: string[] = CONTENT_DIRS): DiscoveredFile[] {
-  const found: DiscoveredFile[] = []
-  for (const dir of baseDirs) {
-    let entries: string[]
-    try {
-      entries = readdirSync(dir)
-    } catch {
-      continue
-    }
-    for (const name of entries) {
-      if (name.startsWith("_") || !name.endsWith(".md")) continue
-      found.push({ path: join(dir, name), folder: dir })
-    }
-  }
-  return found
-}
 
 function sha256(s: string): string {
   return createHash("sha256").update(s).digest("hex")
