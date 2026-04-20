@@ -49,6 +49,11 @@ export default function GraphView() {
         setGraph(g)
         setManifest(m)
         setStatus(g.nodes.length === 0 ? 'empty' : 'ready')
+        // Hide/show the Astro empty-state overlay
+        const emptyEl = document.getElementById('graphEmptyState')
+        if (emptyEl) {
+          emptyEl.setAttribute('aria-hidden', g.nodes.length === 0 ? 'false' : 'true')
+        }
       })
       .catch(() => {
         if (!cancelled) setStatus('error')
@@ -76,9 +81,14 @@ export default function GraphView() {
   })
 
   return (
-    <div className={styles.root}>
-      {/* AF3 — SSR sr-only list for screen readers */}
-      <ul className="sr-only" aria-label="graph nodes list">
+    <div
+      className={styles.root}
+      role="region"
+      aria-label="knowledge graph"
+      aria-describedby="graphNodesList"
+    >
+      {/* Screen-reader node list */}
+      <ul id="graphNodesList" className="sr-only" aria-label="graph nodes list">
         {graph?.nodes.map(n => {
           const m = manifest[n.id]
           return (
@@ -89,7 +99,7 @@ export default function GraphView() {
         })}
       </ul>
 
-      {/* Controls — segmented toggles, no browser radio chrome */}
+      {/* Internal controls (hidden — GraphControls.astro is the visible toolbar) */}
       <div role="toolbar" aria-label="graph controls" className={styles.toolbar}>
         <div role="radiogroup" aria-label="View mode" className={styles.segmentGroup}>
           <span className={styles.segmentGroupLabel}>Mode</span>
@@ -122,7 +132,7 @@ export default function GraphView() {
         </div>
       </div>
 
-      {/* AF4 — 3-state loading / error / empty UI */}
+      {/* 3-state loading / error / empty */}
       {status === 'loading' && (
         <p className={styles.status}>그래프를 불러오는 중…</p>
       )}
@@ -148,6 +158,7 @@ export default function GraphView() {
         aria-hidden="true"
       />
 
+      {/* Stats: absolute-positioned inside .root */}
       {status === 'ready' && graph && (
         <p className={styles.stats}>
           {graph.nodes.length} nodes · {graph.links.length} links

@@ -3,85 +3,59 @@
  */
 
 .root {
-  max-width: var(--w-page-graph);
-  padding: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* Entrance: fade in the whole root over 320ms */
+  opacity: 0;
 }
 
-/* ── Toolbar ─────────────────────────────────────────────────────── */
+/* ── Entrance animation ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .root {
+    animation: gv-fade-in 320ms var(--ease) forwards;
+  }
+
+  @keyframes gv-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+}
+
+/* Reduced-motion: just show immediately */
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    opacity: 1;
+  }
+}
+
+/* ── Toolbar (now hidden — controls live in GraphControls.astro) ─── */
 
 .toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-6);
-  align-items: baseline;
-  font-family: var(--f-sans);
-  padding: 14px 0;
-  border-bottom: 1px solid var(--ink);
-  margin-bottom: var(--space-6);
+  display: none;
 }
 
-.segmentGroup {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  border: 1px solid var(--ink);
-}
-
-.segmentGroupLabel {
-  font-family: var(--f-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  margin-right: var(--space-3);
-  user-select: none;
-  border: none;
-  padding: 6px 14px;
-  background: transparent;
-}
-
-.segment {
-  font-family: var(--f-mono);
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  color: var(--ink-3);
-  padding: 6px 14px;
-  border: none;
-  border-right: 1px solid var(--ink);
-  background: transparent;
-  cursor: pointer;
-  line-height: 1;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  transition: all var(--dur-fast) var(--ease);
-}
-
-.segment:last-child {
-  border-right: 0;
-}
-
-.segment:hover:not(.segmentActive) {
-  background: var(--paper-2);
-  color: var(--ink);
-}
-
-.segmentActive {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.segment:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-}
+/* Keep these classes in CSS module for TS compatibility — used in GraphView.tsx */
+.segmentGroup {}
+.segmentGroupLabel {}
+.segment {}
+.segmentActive {}
 
 /* ── Status messages ─────────────────────────────────────────────── */
 
 .status {
-  font-family: var(--f-sans);
-  font-size: var(--fs-sm);
+  font-family: var(--f-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--ink-3);
-  margin-top: var(--space-6);
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
 }
 
 /* ── SVG canvas ──────────────────────────────────────────────────── */
@@ -89,77 +63,113 @@
 .svg {
   display: block;
   width: 100%;
-  height: 600px;
-  border-top: 1px solid var(--rule);
-  margin-top: var(--space-6);
-  padding-top: var(--space-6);
+  height: 100%;
 }
 
-/* SVG child elements via :global */
-.svg :global(.links line) {
-  stroke: var(--ink);
-  stroke-opacity: 0.35;
-  stroke-width: 0.25px;
-}
+/* ── Node kinds ──────────────────────────────────────────────────── */
 
-.svg :global(.nodes circle) {
+/*
+  note nodes — outlined circle (r=5 default, scaled by pagerank)
+  stroke: var(--ink); fill: var(--paper)
+*/
+.svg :global(.nodes circle[data-kind="note"]),
+.svg :global(.nodes circle:not([data-kind])) {
   fill: var(--paper);
   stroke: var(--ink);
   stroke-width: 1.5px;
 }
 
-.svg :global(.nodes circle:hover),
-.svg :global(.nodes circle:focus) {
+/*
+  concept nodes — filled circle (r=7 default, scaled by pagerank)
+  fill: var(--ink); no stroke
+*/
+.svg :global(.nodes circle[data-kind="concept"]) {
   fill: var(--ink);
-  outline: none;
+  stroke: none;
 }
 
+/* ── Edge hairlines ──────────────────────────────────────────────── */
+
+.svg :global(.links line) {
+  stroke: var(--ink);
+  stroke-opacity: 0.3;
+  stroke-width: 0.25px;
+}
+
+/* ── Node hover ──────────────────────────────────────────────────── */
+
+.svg :global(.nodes circle:hover) {
+  stroke-width: 2px;
+  cursor: pointer;
+}
+
+/* note on hover: invert (paper → ink background) */
+.svg :global(.nodes circle[data-kind="note"]:hover),
+.svg :global(.nodes circle:not([data-kind]):hover) {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+
+/* concept on hover: show paper bg (inverse) */
+.svg :global(.nodes circle[data-kind="concept"]:hover) {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 2px;
+}
+
+/* ── Node focus ──────────────────────────────────────────────────── */
+
+.svg :global(.nodes circle:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* ── Hover label (show sibling text on circle hover) ────────────── */
+
+/* Labels are always rendered; opacity 0 by default, 1 on parent hover */
 .svg :global(.labels text) {
   fill: var(--ink);
-  font-family: var(--f-sans);
-  font-size: 11px;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
-/* Mesh node pills in the graph canvas (positioned absolutely by D3/simulation) */
-.svg :global(.mesh-node) {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  background: var(--paper);
-  padding: 4px 10px;
-  font-family: var(--f-sans);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink);
-  border: 1px solid var(--ink);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all var(--dur-fast) var(--ease);
+.svg :global(.labels text.label--visible) {
+  opacity: 1;
 }
 
-.svg :global(.mesh-node:hover) {
-  background: var(--ink);
-  color: var(--paper);
-  transform: translate(-50%, -50%) scale(1.05);
+/* Always show label for selected / pinned nodes */
+.svg :global(.nodes circle.selected ~ text),
+.svg :global(.labels text[data-selected="true"]) {
+  opacity: 1;
 }
 
-.svg :global(.mesh-node.hub) {
-  font-weight: 700;
-  font-size: 13px;
-  padding: 5px 12px;
+/* ── Node entrance stagger (capped at 600ms) ─────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .svg :global(.nodes circle) {
+    opacity: 0;
+    animation: node-appear 200ms var(--ease) forwards;
+  }
+
+  @keyframes node-appear {
+    from {
+      opacity: 0;
+      r: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }
 
-.svg :global(.mesh-node.selected) {
-  background: var(--ink);
-  color: var(--paper);
-  font-weight: 600;
-}
-
-.svg :global(.mesh-node.concept) {
-  font-weight: 600;
-  font-family: var(--f-disp);
-  font-style: italic;
-  padding: 4px 12px;
-  border-width: 2px;
+@media (prefers-reduced-motion: reduce) {
+  .svg :global(.nodes circle) {
+    opacity: 1;
+  }
 }
 
 /* ── Stats line ──────────────────────────────────────────────────── */
@@ -170,20 +180,28 @@
   color: var(--ink-3);
   letter-spacing: 0.04em;
   margin-top: var(--space-3);
+  position: absolute;
+  bottom: var(--space-3);
+  left: var(--space-4);
+  pointer-events: none;
 }
 
 /* ── Retry button ────────────────────────────────────────────────── */
 
 .retryBtn {
-  font-family: var(--f-sans);
-  font-size: var(--fs-sm);
+  font-family: var(--f-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   font-weight: 500;
   padding: 6px 12px;
   border: 1px solid var(--ink);
   cursor: pointer;
   background: var(--paper);
   color: var(--ink);
-  transition: all var(--dur-fast) var(--ease);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
   margin-top: var(--space-3);
   display: inline-block;
 }
