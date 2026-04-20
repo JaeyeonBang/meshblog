@@ -17,14 +17,16 @@
     "build-qa": "tsx scripts/generate-qa.ts",
     "build-qa:fresh": "tsx scripts/generate-qa.ts --clear",
     "export-graph": "tsx scripts/export-graph.ts",
+    "build-tokens": "tsx scripts/build-tokens.ts",
     "build-manifest": "tsx scripts/build-manifest.ts",
     "build-og": "tsx scripts/build-og.ts",
     "build-rss": "tsx scripts/build-rss.ts",
-    "build-all": "bun run build-index && bun run generate-qa && bun run export-graph && bun run build-manifest && bun run build",
+    "build-all": "bun run build-index && bun run generate-qa && bun run export-graph && bun run build-manifest && bun run build-tokens && bun run build",
     "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run export-graph && bun run build",
     "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.8",
     "@astrojs/react": "^5.0.3",
     "@resvg/resvg-js": "^2.6.2",
     "astro": "^6.1.6",
