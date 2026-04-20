@@ -1,5 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
+import GraphControls from '../components/ui/organisms/GraphControls.astro'
+import Button from '../components/ui/atoms/Button.astro'
 import GraphView from '../components/GraphView'
 import { withBase } from '../lib/url'
 ---
@@ -8,62 +10,235 @@ import { withBase } from '../lib/url'
   title="Graph — meshblog"
   description="Explore the concept graph."
   ogImage="/og/index.png"
+  topBarActive="graph"
 >
-  <div class="graph-page">
-    <h1>Graph</h1>
-    <p><em>Click any note node to open that post.</em></p>
+  <div class="graph-layout">
+    <div class="graph-header">
+      <h1>Knowledge mesh</h1>
+      <span class="meta" id="graphMeta">nodes · links · mode: notes · L2</span>
+    </div>
 
-    <div class="graph-container">
-      <GraphView client:only="react" />
+    <GraphControls mode="notes" level={2} />
+
+    <div class="graph-main">
+      <div class="graph-canvas">
+        <GraphView client:only="react" />
+      </div>
+
+      <aside class="graph-aside">
+        <div class="block">
+          <div class="block-label">selected · post</div>
+          <h4 id="graphSelectedTitle">—</h4>
+          <p class="block-meta" id="graphSelectedMeta"></p>
+          <p class="block-excerpt" id="graphSelectedExcerpt"></p>
+          <Button variant="primary" size="sm" href="#" id="graphOpenBtn">글 열기 →</Button>
+        </div>
+
+        <div class="block">
+          <div class="block-label">neighbors · 0</div>
+          <div id="graphNeighbors" class="neighbors-list">
+            <!-- populated by GraphView via window.updateGraphAside -->
+          </div>
+        </div>
+
+        <div class="block">
+          <div class="block-label">legend</div>
+          <div class="legend-row">
+            <span class="mesh-node-demo">note</span>
+            <span>일반 메모</span>
+          </div>
+          <div class="legend-row">
+            <span class="mesh-node-demo hub">hub</span>
+            <span>high PageRank</span>
+          </div>
+          <div class="legend-row">
+            <span class="mesh-node-demo concept">concept</span>
+            <span>개념 (L2+)</span>
+          </div>
+          <div class="legend-row">
+            <span class="mesh-node-demo selected">selected</span>
+            <span>현재 선택</span>
+          </div>
+        </div>
+      </aside>
     </div>
 
     <noscript>
-      <p>
-        Graph requires JavaScript. See the <a href={withBase('/')}>home page</a> for latest
-        posts.
+      <p class="noscript-notice">
+        Graph requires JavaScript. See the <a href={withBase('/')}>home page</a> for latest posts.
       </p>
     </noscript>
   </div>
 </Base>
 
 <style>
-  /* ── Graph page layout ─────────────────────────────────────────── */
-
-  .graph-page {
-    max-width: 1120px;
-    margin-inline: auto;
-    padding: var(--meshblog-space-8) var(--meshblog-space-4);
+  /* ── Graph layout ──────────────────────────────────────────── */
+  .graph-layout {
+    max-width: var(--w-page-graph);
+    margin: 0 auto;
+    padding: 0 var(--space-8) var(--space-24);
   }
 
-  @media (min-width: 768px) {
-    .graph-page {
-      padding-inline: var(--meshblog-space-8);
+  /* ── Graph header ──────────────────────────────────────────── */
+  .graph-header {
+    padding: var(--space-6) 0 var(--space-5);
+    border-bottom: 1px solid var(--ink);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+    margin-bottom: 0;
+  }
+
+  .graph-header h1 {
+    font-family: var(--f-disp);
+    font-weight: 500;
+    font-size: var(--fs-5xl);
+    margin: 0;
+    letter-spacing: -.02em;
+    font-variation-settings: "opsz" 144;
+  }
+
+  .graph-header .meta {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    margin-left: auto;
+    letter-spacing: .04em;
+  }
+
+  /* ── Graph main canvas + aside ─────────────────────────────── */
+  .graph-main {
+    display: grid;
+    grid-template-columns: 1fr var(--w-graph-side);
+    gap: 0;
+    height: 640px;
+    border: 1px solid var(--ink);
+    overflow: hidden;
+  }
+
+  @media (max-width: 980px) {
+    .graph-main {
+      grid-template-columns: 1fr;
+      height: auto;
     }
   }
 
-  .graph-page h1 {
-    font-family: var(--meshblog-font-serif);
-    font-size: var(--meshblog-font-size-3xl);
-    font-weight: 500;
-    color: var(--meshblog-color-text-primary);
-    margin: 0 0 var(--meshblog-space-3) 0;
-    text-align: left;
-  }
-
-  .graph-page > p {
-    font-family: var(--meshblog-font-serif);
-    font-style: italic;
-    color: var(--meshblog-color-muted);
-    font-size: var(--meshblog-font-size-base);
-    line-height: 1.5;
-    margin: 0 0 var(--meshblog-space-6) 0;
-    text-align: left;
-  }
-
-  /* ── Graph canvas container — prevents SVG overflow on narrow viewports ── */
-
-  .graph-container {
-    width: 100%;
+  /* ── Graph canvas ──────────────────────────────────────────── */
+  .graph-canvas {
+    position: relative;
+    background: var(--paper);
     overflow: hidden;
+    background-image:
+      linear-gradient(to right, var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--rule-soft) 1px, transparent 1px);
+    background-size: 40px 40px;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Graph aside ───────────────────────────────────────────── */
+  .graph-aside {
+    border-left: 1px solid var(--ink);
+    overflow-y: auto;
+    background: var(--paper-2);
+  }
+
+  .block {
+    padding: var(--space-5) 22px;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .block:last-child {
+    border-bottom: 0;
+  }
+
+  .block-label {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .graph-aside h4 {
+    font-family: var(--f-disp);
+    font-weight: 600;
+    font-size: 19px;
+    margin: 0 0 var(--space-1);
+    letter-spacing: -.01em;
+  }
+
+  .block-meta {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    margin: 2px 0 var(--space-4);
+    letter-spacing: .04em;
+  }
+
+  .block-excerpt {
+    font-family: var(--f-serif);
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+    margin: 0 0 var(--space-4);
+  }
+
+  /* ── Neighbors list ────────────────────────────────────────── */
+  .neighbors-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Legend ────────────────────────────────────────────────── */
+  .legend-row {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: var(--space-3);
+    align-items: center;
+    padding: 6px 0;
+    font-size: 11.5px;
+    color: var(--ink-3);
+    font-family: var(--f-sans);
+  }
+
+  .mesh-node-demo {
+    font-family: var(--f-sans);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    padding: 3px 8px;
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .mesh-node-demo.hub {
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .mesh-node-demo.concept {
+    font-family: var(--f-disp);
+    font-style: italic;
+    font-weight: 600;
+    border-width: 2px;
+  }
+
+  .mesh-node-demo.selected {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* ── Noscript ──────────────────────────────────────────────── */
+  .noscript-notice {
+    font-family: var(--f-serif);
+    font-size: var(--fs-base);
+    color: var(--ink-3);
+    margin-top: var(--space-6);
   }
 </style>

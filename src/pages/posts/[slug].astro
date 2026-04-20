@@ -2,6 +2,15 @@
 import { readFileSync } from 'node:fs'
 import Base from '../../layouts/Base.astro'
 import QAChips from '../../components/QAChips'
+import Breadcrumbs from '../../components/ui/molecules/Breadcrumbs.astro'
+import KindBadge from '../../components/ui/atoms/KindBadge.astro'
+import Tag from '../../components/ui/atoms/Tag.astro'
+import HeroFigure from '../../components/ui/molecules/HeroFigure.astro'
+import PageQa from '../../components/ui/molecules/PageQa.astro'
+import RelatedGrid from '../../components/ui/molecules/RelatedGrid.astro'
+import Pager from '../../components/ui/molecules/Pager.astro'
+import TOC from '../../components/ui/molecules/TOC.astro'
+import MiniMesh from '../../components/ui/molecules/MiniMesh.astro'
 import { renderMarkdownToHtml } from '../../lib/markdown/render'
 import {
   listPosts,
@@ -62,7 +71,7 @@ if (db) {
 const allQa: QaCard[] = [...noteQa, ...conceptQa]
 
 // --- Related notes ---
-const related = getRelatedNotes(post.id, 3)
+const related = getRelatedNotes(post.id, 4)
 
 // --- Notes manifest for resolving hrefs ---
 type ManifestEntry = { id: string; href: string; title: string; folder: string }
@@ -80,59 +89,194 @@ const resolveHref = (id: string): string => {
 
 // --- Metadata ---
 const readingMinutes = estimateReadingMinutes(post.content)
-const formattedDate = new Date(post.created_at).toLocaleDateString('en-US', {
+const formattedDate = new Date(post.created_at).toLocaleDateString('ko-KR', {
   year: 'numeric',
-  month: 'long',
-  day: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
 })
 const excerpt = post.content.replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
 const contentHtml = await renderMarkdownToHtml(post.content)
+
+// All posts list for pager
+const allPosts = listPosts()
+const currentIndex = allPosts.findIndex((p) => p.slug === post.slug)
+const prevPost = currentIndex > 0 ? allPosts[currentIndex - 1] : undefined
+const nextPost = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : undefined
+
+// Related grid items
+const relatedItems = related.map((r, i) => ({
+  kind: 'note' as const,
+  number: `N / ${String(i + 1).padStart(2, '0')}`,
+  title: r.title,
+  meta: '',
+  href: resolveHref(r.id),
+}))
+
+// TOC items (static scaffold — real TOC requires runtime heading extraction)
+const tocItems = [
+  { label: '도입', level: 1 as const },
+]
+
+// Mini mesh nodes (static scaffold for aside)
+const meshNodes = [
+  { label: 'this', x: 50, y: 52, kind: 'selected' as const },
+  { label: 'llm',   x: 22, y: 28, kind: 'hub' as const },
+  { label: 'graph', x: 80, y: 32, kind: 'hub' as const },
+]
+const meshEdges = [
+  { from: 0, to: 1 },
+  { from: 0, to: 2 },
+]
 ---
 
 <Base
   title={post.title}
   description={excerpt}
   ogImage={`/og/posts/${post.slug}.png`}
+  topBarActive="posts"
 >
-  <article class="prose">
-    <header class="article-header">
-      <div class="metadata-row">
-        <span class="kind-badge kind-badge--post">post</span>
-        <span aria-hidden="true" class="metadata-sep">·</span>
-        <time datetime={post.created_at}>{formattedDate}</time>
-        <span aria-hidden="true" class="metadata-sep">·</span>
-        <span class="reading-time">{readingMinutes} min read</span>
+  <div class="reader-layout">
+    <article class="reader-article">
+      <Breadcrumbs
+        items={[
+          { label: 'home', href: withBase('/') },
+          { label: 'posts', href: withBase('/') },
+          { label: post.slug, current: true },
+        ]}
+      />
+
+      <header class="article-header">
+        <div class="kind-row">
+          <KindBadge kind="post" number={`P / ${String(currentIndex + 1).padStart(2, '0')}`} />
+          <span class="meta">{formattedDate} · {readingMinutes} min read</span>
+        </div>
+        <h1>{post.title}</h1>
+        {post.tags && post.tags.length > 0 && (
+          <div class="tags">
+            {post.tags.map((tag: string) => (
+              <Tag>{tag}</Tag>
+            ))}
+          </div>
+        )}
+      </header>
+
+      <HeroFigure label={`hero · ${post.slug}`} />
+
+      <div class="prose">
+        <div set:html={contentHtml} />
       </div>
-      <h1>{post.title}</h1>
-      {post.tags && post.tags.length > 0 && (
-        <ul class="tag-list" aria-label="tags">
-          {post.tags.map((tag: string) => (
-            <li key={tag}>
-              <a href={withBase(`/tags/${tag}`)}>{tag}</a>
-            </li>
-          ))}
-        </ul>
+
+      {allQa.length > 0 && (
+        <div class="page-qa-wrapper">
+          <PageQa
+            scope="page"
+            items={allQa.map((q) => ({ question: q.question, answer: q.answer ?? undefined }))}
+          />
+          <QAChips qas={allQa} scope="page" client:visible />
+        </div>
       )}
-    </header>
 
-    <div class="article-body" set:html={contentHtml} />
+      {relatedItems.length > 0 && (
+        <RelatedGrid items={relatedItems} />
+      )}
 
-    {related.length > 0 && (
-      <aside class="related-aside" aria-labelledby="related-heading">
-        <h2 id="related-heading">Related</h2>
-        <ul>
-          {related.map((r) => (
-            <li key={r.id}>
-              <a href={resolveHref(r.id)}>{r.title}</a>
-            </li>
-          ))}
-        </ul>
-      </aside>
-    )}
+      <Pager
+        prev={prevPost ? {
+          number: `P / ${String(currentIndex).padStart(2, '0')}`,
+          title: prevPost.title,
+          href: withBase(`/posts/${prevPost.slug}`),
+        } : undefined}
+        next={nextPost ? {
+          number: `P / ${String(currentIndex + 2).padStart(2, '0')}`,
+          title: nextPost.title,
+          href: withBase(`/posts/${nextPost.slug}`),
+        } : undefined}
+      />
+    </article>
 
-    {allQa.length > 0 && (
-      <QAChips qas={allQa} scope="page" client:visible />
-    )}
-  </article>
+    <aside class="reader-aside">
+      <TOC label="contents" items={tocItems} />
+      <TOC label="related mesh" mesh={true}>
+        <MiniMesh nodes={meshNodes} edges={meshEdges} size="sm" />
+      </TOC>
+      <TOC label="backlinks · 0" items={[]} />
+    </aside>
+  </div>
 </Base>
 
+<style>
+  /* ── Reader layout ─────────────────────────────────────────── */
+  .reader-layout {
+    max-width: var(--w-page);
+    margin: 0 auto;
+    padding: 0 var(--space-8) var(--space-24);
+    display: grid;
+    grid-template-columns: 1fr var(--w-reader-side);
+    gap: var(--space-12);
+  }
+
+  @media (max-width: 980px) {
+    .reader-layout {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+
+    .reader-aside {
+      order: -1;
+    }
+  }
+
+  /* ── Article header ────────────────────────────────────────── */
+  .article-header {
+    padding: var(--space-5) 0 var(--space-8);
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: var(--space-8);
+  }
+
+  .article-header .kind-row {
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+    margin-bottom: var(--space-6);
+    flex-wrap: wrap;
+  }
+
+  .article-header .meta {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    letter-spacing: .04em;
+  }
+
+  .article-header h1 {
+    font-family: var(--f-disp);
+    font-weight: 500;
+    font-size: var(--fs-article);
+    line-height: 1.02;
+    margin: 0 0 var(--space-5);
+    letter-spacing: -.02em;
+    max-width: 18ch;
+    font-variation-settings: "opsz" 144;
+    word-break: keep-all;
+  }
+
+  .article-header .tags {
+    margin-top: var(--space-6);
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  /* ── Reader aside ──────────────────────────────────────────── */
+  .reader-aside {
+    align-self: start;
+    position: sticky;
+    top: 96px;
+    padding-top: var(--space-5);
+  }
+
+  /* ── Page QA wrapper ───────────────────────────────────────── */
+  .page-qa-wrapper {
+    margin-top: var(--space-12);
+  }
+</style>

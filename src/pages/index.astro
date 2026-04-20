@@ -1,278 +1,244 @@
 ---
 import Base from '../layouts/Base.astro'
+import PostCard from '../components/ui/molecules/PostCard.astro'
+import NoteRow from '../components/ui/molecules/NoteRow.astro'
+import SectionBreak from '../components/ui/molecules/SectionBreak.astro'
+import TOC from '../components/ui/molecules/TOC.astro'
+import QaCard from '../components/ui/molecules/QaCard.astro'
+import MiniMesh from '../components/ui/molecules/MiniMesh.astro'
+import Button from '../components/ui/atoms/Button.astro'
+import Input from '../components/ui/atoms/Input.astro'
 import QAChips from '../components/QAChips.tsx'
-import { listPosts, getHomepageQa } from '../lib/pages/index.ts'
+import { listPosts, listNotes, getHomepageQa } from '../lib/pages/index.ts'
 import { withBase } from '../lib/url'
 
 const posts = listPosts().slice(0, 5)
+const notes = listNotes().slice(0, 6)
 const qa = getHomepageQa(10)
+
+// Static concept mesh nodes for home sidebar
+const meshNodes = [
+  { label: 'knowledge', x: 36, y: 30, kind: 'hub' as const },
+  { label: 'llm',       x: 70, y: 58, kind: 'hub' as const },
+  { label: 'rag',       x: 70, y: 22 },
+  { label: 'astro',     x: 22, y: 62 },
+  { label: 'sqlite',    x: 48, y: 82 },
+  { label: 'faq',       x: 14, y: 24 },
+]
+const meshEdges = [
+  { from: 0, to: 2 },
+  { from: 0, to: 1 },
+  { from: 1, to: 3 },
+  { from: 1, to: 4 },
+  { from: 0, to: 5 },
+]
 ---
 
 <Base
   title="meshblog"
   description="Personal 2nd brain — posts, notes, and an AI-powered knowledge graph."
   ogImage="/og/index.png"
+  topBarActive="posts"
 >
-  <div class="page-column">
+  <div class="home-layout">
+    <div class="home-main">
+      <!-- Home hero — site-specific content, stays inline -->
+      <div class="home-hero">
+        <div class="eyebrow">issue nº 012 · 2026 · q2</div>
+        <h1>두 번째 뇌를, 남들이 읽을 수 있게 <em>내보내기</em>.</h1>
+        <p class="sub">Obsidian vault에서 키우고 정적 사이트로 내보내는 개인 블로그. 글은 서로 참조하고, 개념은 그물처럼 얽힌다.</p>
+      </div>
 
-    <!-- Masthead -->
-    <section class="masthead" aria-labelledby="masthead-heading">
-      <p class="masthead-kicker" aria-hidden="true">AN ONGOING JOURNAL &middot; EST. 2026</p>
-      <h1 id="masthead-heading" class="masthead-title">meshblog</h1>
-      <p class="masthead-sub">A second brain made public — writing that thinks back.</p>
-    </section>
+      <div class="feed">
+        {posts.map((post, i) => (
+          <PostCard
+            kind="post"
+            number={String(i + 1).padStart(2, '0')}
+            href={withBase(`/posts/${post.slug}`)}
+            title={post.title}
+            excerpt={post.content.replace(/[#*`_~\[\]]/g, '').slice(0, 120).trimEnd()}
+            date={new Date(post.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+            tags={post.tags ?? []}
+          />
+        ))}
 
-    <!-- Posts index -->
-    <section class="posts-index" aria-labelledby="posts-heading">
-      <h2 id="posts-heading" class="sr-only">Recent posts</h2>
-      {posts.length === 0 ? (
-        <p class="posts-empty">No posts yet. Run <code>bun run build-index</code>.</p>
-      ) : (
-        <ol class="posts-list" aria-label="Recent posts">
-          {posts.map((post, i) => (
-            <li class="post-row">
-              <span class="post-index" aria-hidden="true">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <a
-                href={withBase(`/posts/${post.slug}`)}
-                class="post-title"
-              >
-                {post.title}
-              </a>
-              <time
-                class="post-date"
-                datetime={post.created_at}
-              >
-                {new Date(post.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </time>
-            </li>
-          ))}
-        </ol>
-      )}
-    </section>
+        <SectionBreak label="notes · atomic" count={`${notes.length} entries`} />
 
-    <!-- Q&A chips -->
-    {qa.length > 0 && (
-      <section class="qa-section" aria-labelledby="qa-heading">
-        <h2 id="qa-heading" class="section-label">RECENT QUESTIONS</h2>
-        <div class="chips-wrapper">
-          <QAChips qas={qa} scope="global" client:idle />
+        {notes.map((note, i) => (
+          <NoteRow
+            number={`N / ${String(i + 1).padStart(2, '0')}`}
+            title={note.title}
+            meta="2 min"
+            href={withBase(`/notes/${note.slug}`)}
+          />
+        ))}
+
+        <div class="feed-cta">
+          <Button href={withBase('/notes')}>notes 전체 보기 →</Button>
         </div>
-      </section>
-    )}
+      </div>
+    </div>
 
-    <!-- Graph invitation -->
-    <p class="graph-invite">
-      Or explore the mesh — every concept, post, and connection, as a graph.{' '}
-      <a href={withBase('/graph')} class="graph-link">Open the graph &rarr;</a>
-    </p>
+    <aside class="home-side">
+      <TOC label="ask the vault">
+        <Input placeholder="e.g. RAG란?" />
+        {qa.length > 0 ? (
+          <QAChips qas={qa} scope="global" client:idle />
+        ) : (
+          qa.map((q) => (
+            <QaCard question={q.question} answer={q.answer ?? undefined} />
+          ))
+        )}
+      </TOC>
 
+      <TOC label="concept mesh">
+        <MiniMesh nodes={meshNodes} edges={meshEdges} size="md" />
+        <div class="mesh-cta">
+          <Button href={withBase('/graph')}>전체 그래프 →</Button>
+        </div>
+      </TOC>
+
+      <TOC label="feed">
+        <div class="feed-links">
+          <a href={withBase('/atom.xml')}>→ atom · rss</a>
+          <a href="https://github.com/jaeyeonbang">→ github</a>
+        </div>
+      </TOC>
+    </aside>
   </div>
 </Base>
 
 <style>
-  /* ── Page column ────────────────────────────────────────────── */
-
-  .page-column {
-    max-width: 800px;
-    margin-inline: auto;
-    padding: var(--meshblog-space-12) var(--meshblog-space-4) var(--meshblog-space-16);
-  }
-
-  @media (min-width: 768px) {
-    .page-column {
-      padding-inline: var(--meshblog-space-6);
-      padding-top: var(--meshblog-space-16);
-    }
-  }
-
-  /* ── Masthead ───────────────────────────────────────────────── */
-
-  .masthead {
-    padding-bottom: var(--meshblog-space-12);
-  }
-
-  .masthead-kicker {
-    font-family: var(--meshblog-font-sans);
-    font-size: var(--meshblog-font-size-xs);
-    letter-spacing: 0.15em;
-    color: var(--meshblog-color-muted);
-    margin: 0 0 var(--meshblog-space-4) 0;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-
-  .masthead-title {
-    font-family: var(--meshblog-font-serif);
-    font-size: var(--meshblog-font-size-4xl);
-    font-weight: 500;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    color: var(--meshblog-color-text-primary);
-    margin: 0 0 var(--meshblog-space-5) 0;
-  }
-
-  @media (min-width: 640px) {
-    .masthead-title {
-      font-size: var(--meshblog-font-size-5xl);
-    }
-  }
-
-  .masthead-sub {
-    font-family: var(--meshblog-font-serif);
-    font-style: italic;
-    font-size: var(--meshblog-font-size-lg);
-    color: var(--meshblog-color-text-secondary);
-    margin: 0;
-    line-height: 1.45;
-  }
-
-  /* ── Posts index ────────────────────────────────────────────── */
-
-  .posts-index {
-    padding-bottom: var(--meshblog-space-12);
-  }
-
-  .posts-empty {
-    color: var(--meshblog-color-muted);
-    font-size: var(--meshblog-font-size-base);
-  }
-
-  .posts-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .post-row {
+  /* ── Home layout ───────────────────────────────────────────── */
+  .home-layout {
+    max-width: var(--w-page);
+    margin: 0 auto;
+    padding: 0 var(--space-8) var(--space-24);
     display: grid;
-    grid-template-columns: 2.5rem 1fr auto;
-    align-items: baseline;
-    column-gap: var(--meshblog-space-4);
-    padding: var(--meshblog-space-4) 0;
-    border-top: 1px solid var(--meshblog-color-rule);
+    grid-template-columns: 1fr var(--w-side);
+    gap: 0;
   }
 
-  .post-row:last-child {
-    border-bottom: 1px solid var(--meshblog-color-rule);
+  @media (max-width: 980px) {
+    .home-layout {
+      grid-template-columns: 1fr;
+    }
   }
 
-  .post-index {
-    font-family: var(--meshblog-font-serif);
-    font-size: var(--meshblog-font-size-sm);
-    color: var(--meshblog-color-muted);
-    font-variant-numeric: oldstyle-nums;
-    line-height: 1;
-    padding-top: 0.1em;
+  /* ── Home main column ──────────────────────────────────────── */
+  .home-main {
+    padding-right: var(--space-12);
+    border-right: 1px solid var(--ink);
+    padding-bottom: var(--space-16);
   }
 
-  .post-title {
-    font-family: var(--meshblog-font-serif);
-    font-size: var(--meshblog-font-size-md);
-    font-weight: 600;
-    color: var(--meshblog-color-text-primary);
-    text-decoration: none;
-    line-height: 1.35;
-    transition: color var(--meshblog-dur-fast) var(--meshblog-ease);
+  @media (max-width: 980px) {
+    .home-main {
+      padding-right: 0;
+      border-right: 0;
+    }
   }
 
-  .post-title:hover {
-    color: var(--meshblog-color-accent);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    text-decoration-color: var(--meshblog-color-accent);
+  /* ── Home hero ─────────────────────────────────────────────── */
+  .home-hero {
+    padding: var(--space-12) 0 var(--space-10);
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: var(--space-12);
   }
 
-  .post-title:focus-visible {
-    outline: 2px solid var(--meshblog-color-focus-ring);
-    outline-offset: 2px;
-    border-radius: var(--meshblog-radius-sm);
-  }
-
-  .post-date {
-    font-family: var(--meshblog-font-sans);
-    font-size: var(--meshblog-font-size-xs);
-    color: var(--meshblog-color-muted);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    letter-spacing: 0.03em;
+  .home-hero .eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: .22em;
     text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: var(--space-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
   }
 
-  /* On very small screens, let the date wrap beneath the title */
-  @media (max-width: 480px) {
-    .post-row {
-      grid-template-columns: 2.5rem 1fr;
-      grid-template-rows: auto auto;
-    }
-
-    .post-date {
-      grid-column: 2;
-      margin-top: var(--meshblog-space-1);
-    }
+  .home-hero .eyebrow::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--ink);
   }
 
-  /* ── Q&A section ────────────────────────────────────────────── */
-
-  .qa-section {
-    padding-bottom: var(--meshblog-space-10);
-  }
-
-  .section-label {
-    font-family: var(--meshblog-font-sans);
-    font-size: var(--meshblog-font-size-xs);
+  .home-hero h1 {
+    font-family: var(--f-disp);
     font-weight: 500;
-    letter-spacing: 0.12em;
-    color: var(--meshblog-color-muted);
-    margin: 0 0 var(--meshblog-space-4) 0;
+    font-size: var(--fs-hero);
+    line-height: .96;
+    margin: 0 0 var(--space-6);
+    letter-spacing: -.025em;
+    max-width: 14ch;
+    font-variation-settings: "opsz" 144;
   }
 
-  /* On mobile: hide chips beyond 4th via CSS */
-  .chips-wrapper :global(.list > li:nth-child(n + 5)) {
-    display: none;
+  .home-hero h1 em {
+    font-style: italic;
+    font-weight: 400;
+    font-family: var(--f-disp);
   }
 
-  @media (min-width: 768px) {
-    .chips-wrapper :global(.list > li:nth-child(n + 5)) {
-      display: revert;
-    }
-    .chips-wrapper :global(.list > li:nth-child(n + 7)) {
-      display: none;
-    }
-  }
-
-  /* ── Graph invitation ───────────────────────────────────────── */
-
-  .graph-invite {
-    font-family: var(--meshblog-font-serif);
-    font-size: var(--meshblog-font-size-base);
-    color: var(--meshblog-color-text-secondary);
+  .home-hero .sub {
+    font-family: var(--f-serif);
+    font-size: var(--fs-xl);
+    color: var(--ink-2);
+    line-height: 1.5;
+    max-width: 52ch;
+    font-weight: 400;
     margin: 0;
-    line-height: 1.6;
   }
 
-  .graph-link {
-    color: var(--meshblog-color-text-secondary);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    text-decoration-color: var(--meshblog-color-rule);
-    transition: color var(--meshblog-dur-fast) var(--meshblog-ease),
-      text-decoration-color var(--meshblog-dur-fast) var(--meshblog-ease);
+  /* ── Feed ──────────────────────────────────────────────────── */
+  .feed {
+    display: flex;
+    flex-direction: column;
   }
 
-  .graph-link:hover {
-    color: var(--meshblog-color-accent);
-    text-decoration-color: var(--meshblog-color-accent);
+  .feed-cta {
+    margin-top: var(--space-8);
+    align-self: flex-start;
   }
 
-  .graph-link:focus-visible {
-    outline: 2px solid var(--meshblog-color-focus-ring);
-    outline-offset: 2px;
-    border-radius: var(--meshblog-radius-sm);
+  /* ── Home side ─────────────────────────────────────────────── */
+  .home-side {
+    padding: var(--space-10) 0 0 var(--space-10);
+  }
+
+  @media (max-width: 980px) {
+    .home-side {
+      padding: 0;
+      border-top: 1px solid var(--ink);
+      margin-top: var(--space-10);
+      padding-top: var(--space-10);
+    }
+  }
+
+  .mesh-cta {
+    margin-top: var(--space-4);
+    width: 100%;
+  }
+
+  .feed-links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .feed-links a {
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+    padding: 4px 0;
+    display: block;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .feed-links a:hover {
+    color: var(--ink);
   }
 </style>
