@@ -13,9 +13,9 @@ function nodeRadius(pagerank: number): number {
   return Math.max(4, Math.sqrt(pagerank * 1000))
 }
 
-function nodeColor(type: GraphNode['type']): string {
-  return type === 'note' ? '#3b82f6' : '#10b981'
-}
+// Node colour is painted entirely via CSS tokens in GraphView.module.css
+// (.svg .nodes circle { fill: var(--meshblog-graph-node) })
+// so no JS colour function is needed.
 
 export function useForceSimulation(
   svgRef: RefObject<SVGSVGElement | null>,
@@ -78,8 +78,6 @@ export function useForceSimulation(
       .selectAll<SVGLineElement, SimLink>('line')
       .data(links)
       .join('line')
-      .attr('stroke', '#94a3b8')
-      .attr('stroke-opacity', 0.6)
       .attr('stroke-width', d => Math.max(0.5, d.weight))
       .attr('x1', d => d.source.x ?? 0)
       .attr('y1', d => d.source.y ?? 0)
@@ -94,9 +92,7 @@ export function useForceSimulation(
       .data(nodes)
       .join('circle')
       .attr('r', d => nodeRadius(d.pagerank))
-      .attr('fill', d => nodeColor(d.type))
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 1.5)
+      // fill + stroke painted by CSS tokens via GraphView.module.css
       .attr('cx', d => d.x ?? 0)
       .attr('cy', d => d.y ?? 0)
       .attr('tabindex', 0)
@@ -111,7 +107,7 @@ export function useForceSimulation(
       .data(nodes)
       .join('text')
       .attr('font-size', 10)
-      .attr('fill', '#1e293b')
+      // fill painted by CSS tokens via GraphView.module.css
       .attr('text-anchor', 'middle')
       .attr('dy', d => nodeRadius(d.pagerank) + 12)
       .attr('x', d => d.x ?? 0)

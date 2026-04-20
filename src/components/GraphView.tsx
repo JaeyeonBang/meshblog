@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { GraphJson, Manifest, GraphNode } from './graph/types'
 import { useForceSimulation } from './graph/useForceSimulation'
 import { withBase } from '../lib/url'
+import styles from './GraphView.module.css'
 
 type Mode = 'note' | 'concept'
 type Level = 1 | 2 | 3
@@ -75,18 +76,8 @@ export default function GraphView() {
   })
 
   return (
-    <div>
+    <div className={styles.root}>
       {/* AF3 — SSR sr-only list for screen readers */}
-      <style>{`
-        .sr-only {
-          position: absolute !important;
-          width: 1px; height: 1px;
-          padding: 0; margin: -1px;
-          overflow: hidden;
-          clip: rect(0, 0, 0, 0);
-          white-space: nowrap; border: 0;
-        }
-      `}</style>
       <ul className="sr-only" aria-label="graph nodes list">
         {graph?.nodes.map(n => {
           const m = manifest[n.id]
@@ -98,73 +89,68 @@ export default function GraphView() {
         })}
       </ul>
 
-      {/* Controls */}
-      <div role="toolbar" aria-label="graph controls">
-        <fieldset>
-          <legend>Mode</legend>
-          <label>
-            <input
-              type="radio"
-              name="mode"
-              checked={mode === 'note'}
-              onChange={() => setMode('note')}
-            />{' '}
-            Notes
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="mode"
-              checked={mode === 'concept'}
-              onChange={() => setMode('concept')}
-            />{' '}
-            Concepts
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>Level</legend>
-          {([1, 2, 3] as Level[]).map(l => (
-            <label key={l}>
-              <input
-                type="radio"
-                name="level"
-                checked={level === l}
-                onChange={() => setLevel(l)}
-              />{' '}
-              L{l}
-            </label>
+      {/* Controls — segmented toggles, no browser radio chrome */}
+      <div role="toolbar" aria-label="graph controls" className={styles.toolbar}>
+        <div role="radiogroup" aria-label="View mode" className={styles.segmentGroup}>
+          <span className={styles.segmentGroupLabel}>Mode</span>
+          {(['note', 'concept'] as Mode[]).map(m => (
+            <button
+              key={m}
+              role="radio"
+              aria-checked={mode === m}
+              className={`${styles.segment}${mode === m ? ` ${styles.segmentActive}` : ''}`}
+              onClick={() => setMode(m)}
+            >
+              {m === 'note' ? 'Notes' : 'Concepts'}
+            </button>
           ))}
-        </fieldset>
+        </div>
+
+        <div role="radiogroup" aria-label="Depth level" className={styles.segmentGroup}>
+          <span className={styles.segmentGroupLabel}>Level</span>
+          {([1, 2, 3] as Level[]).map(l => (
+            <button
+              key={l}
+              role="radio"
+              aria-checked={level === l}
+              className={`${styles.segment}${level === l ? ` ${styles.segmentActive}` : ''}`}
+              onClick={() => setLevel(l)}
+            >
+              L{l}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* AF4 — 3-state loading / error / empty UI */}
-      {status === 'loading' && <p>그래프를 불러오는 중...</p>}
+      {status === 'loading' && (
+        <p className={styles.status}>그래프를 불러오는 중…</p>
+      )}
 
       {status === 'error' && (
-        <div>
+        <div className={styles.status}>
           <p role="alert">그래프를 불러올 수 없습니다.</p>
-          <button onClick={() => setRetry(r => r + 1)}>
+          <button className={styles.retryBtn} onClick={() => setRetry(r => r + 1)}>
             다시 시도
           </button>
         </div>
       )}
 
-      {status === 'empty' && <p>아직 표시할 노드가 없습니다.</p>}
+      {status === 'empty' && (
+        <p className={styles.status}>아직 표시할 노드가 없습니다.</p>
+      )}
 
       {/* SVG — always rendered so svgRef is stable */}
       <svg
         ref={svgRef}
-        width="100%"
-        height="600"
-        style={{ border: '1px solid #ccc', display: status === 'ready' ? 'block' : 'none' }}
+        className={styles.svg}
+        style={{ display: status === 'ready' ? 'block' : 'none' }}
         aria-hidden="true"
       />
 
       {status === 'ready' && graph && (
-        <p>
-          <small>
-            {graph.nodes.length} nodes · {graph.links.length} links
-          </small>
+        <p className={styles.stats}>
+          {graph.nodes.length} nodes · {graph.links.length} links
         </p>
       )}
     </div>

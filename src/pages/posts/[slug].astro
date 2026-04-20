@@ -98,7 +98,9 @@ const contentHtml = await renderMarkdownToHtml(post.content)
     <header class="article-header">
       <div class="metadata-row">
         <span class="kind-badge kind-badge--post">post</span>
+        <span aria-hidden="true" class="metadata-sep">·</span>
         <time datetime={post.created_at}>{formattedDate}</time>
+        <span aria-hidden="true" class="metadata-sep">·</span>
         <span class="reading-time">{readingMinutes} min read</span>
       </div>
       <h1>{post.title}</h1>

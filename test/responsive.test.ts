@@ -164,8 +164,8 @@ describe("responsive audit (T5)", { timeout: 180_000 }, () => {
     const dir = noteSlug ? "notes" : "posts"
     expect(slug, "No article page (note or post) found in dist/").toBeDefined()
     const css = readAllCSS(join(DIST, dir, slug!, "index.html"))
-    // Accept either minified (65ch) or spaced form
-    expect(css).toMatch(/\.prose\s*\{[^}]*max-width:\s*65ch/)
+    // Editorial redesign uses 64ch; accept any narrow reading column (60–75ch).
+    expect(css).toMatch(/\.prose\s*\{[^}]*max-width:\s*(6[0-9]|7[0-5])ch/)
   })
 
   // ── 4. .prose pre has overflow-x: auto ──────────────────────────────────────
@@ -233,9 +233,19 @@ describe("responsive audit (T5)", { timeout: 180_000 }, () => {
 
   // ── 9. Nav links have min-height for tap targets ────────────────────────────
 
-  it("global CSS has nav a min-height: 44px for mobile tap targets", () => {
+  it("global CSS has nav links with min-height: 44px for mobile tap targets", () => {
     const css = readAllCSS(join(DIST, "index.html"))
-    expect(css).toMatch(/nav\s+a\s*\{[^}]*min-height:\s*44px/)
+    // Accept either the old `nav a { ... }` selector or the scoped
+    // `nav .nav-links a { ... }` / `.nav-wordmark { ... }` selectors used
+    // in the editorial redesign. The requirement (44px tap target) is what matters.
+    const hasTapTarget =
+      /nav\s+a\s*\{[^}]*min-height:\s*44px/.test(css) ||
+      /nav-links\s+a\s*\{[^}]*min-height:\s*44px/.test(css) ||
+      /nav-wordmark[^{]*\{[^}]*min-height:\s*44px/.test(css)
+    expect(
+      hasTapTarget,
+      "No nav link rule with min-height: 44px found",
+    ).toBe(true)
   })
 
   // ── 10. No img tags without max-width context (inline check) ─────────────────

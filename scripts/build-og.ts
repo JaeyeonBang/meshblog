@@ -39,12 +39,21 @@ function truncate(s: string, max = 60): string {
 
 // ── SVG template ─────────────────────────────────────────────────────────────
 function buildSvg(title: string): string {
+  // Hex values below are intentional duplicates of the OKLCH design tokens in
+  // tokens.css, approximated for SVG/PNG output (SVG cannot resolve CSS custom
+  // properties at resvg render time):
+  //   #f6f4ef ≈ oklch(0.982 0.008 85)  — warm near-white background
+  //   #2a2620 ≈ oklch(0.18 0.012 60)   — near-black warm title
+  //   #d1cbbd ≈ oklch(0.81 0.014 80)   — warm muted divider rule
+  //   #8a8270 ≈ oklch(0.55 0.018 75)   — muted warm label
+  //   #6e6658 ≈ oklch(0.46 0.018 75)   — muted warm subtitle
   const safeTitle = xmlEscape(truncate(title))
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
-  <rect width="1200" height="630" fill="#ffffff"/>
-  <rect width="1200" height="8" y="622" fill="#3b82f6"/>
-  <text x="60" y="120" font-family="sans-serif" font-size="64" font-weight="700" fill="#111">${safeTitle}</text>
-  <text x="60" y="580" font-family="sans-serif" font-size="24" fill="#666">meshblog</text>
+  <rect width="1200" height="630" fill="#f6f4ef"/>
+  <text x="80" y="200" font-family="Georgia, 'Times New Roman', serif" font-size="80" font-weight="500" fill="#2a2620">${safeTitle}</text>
+  <text x="80" y="256" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-style="italic" fill="#6e6658">— an ongoing journal</text>
+  <rect width="1200" height="1" y="570" fill="#d1cbbd"/>
+  <text x="80" y="595" font-family="sans-serif" font-size="20" font-weight="400" fill="#8a8270" letter-spacing="6">MESHBLOG</text>
 </svg>`
 }
 

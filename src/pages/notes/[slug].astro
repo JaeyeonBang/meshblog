@@ -110,7 +110,9 @@ const contentHtml = await renderMarkdownToHtml(note.content)
     <header class="article-header">
       <div class="metadata-row">
         <span class="kind-badge kind-badge--note">note</span>
+        <span aria-hidden="true" class="metadata-sep">·</span>
         <time datetime={note.updated_at}>{formattedDate}</time>
+        <span aria-hidden="true" class="metadata-sep">·</span>
         <span class="reading-time">{readingMinutes} min read</span>
       </div>
       <h1>{note.title}</h1>
@@ -128,7 +130,7 @@ const contentHtml = await renderMarkdownToHtml(note.content)
     <div class="article-body" set:html={contentHtml} />
 
     {related.length > 0 && (
-      <aside class="related-aside" aria-labelledby="related-heading">
+      <aside class="backlinks-aside" aria-labelledby="related-heading">
         <h2 id="related-heading">Related</h2>
         <ul>
           {related.map((r) => (

@@ -13,104 +13,134 @@ const qa = getHomepageQa(10)
   description="Personal 2nd brain — posts, notes, and an AI-powered knowledge graph."
   ogImage="/og/index.png"
 >
-  <!-- Hero band: h1 + tagline + QA chips -->
-  <section class="hero" aria-labelledby="hero-heading">
-    <h1 id="hero-heading">meshblog</h1>
-    <p class="tagline">A personal knowledge graph — writing that thinks back.</p>
+  <div class="page-column">
 
+    <!-- Masthead -->
+    <section class="masthead" aria-labelledby="masthead-heading">
+      <p class="masthead-kicker" aria-hidden="true">AN ONGOING JOURNAL &middot; EST. 2026</p>
+      <h1 id="masthead-heading" class="masthead-title">meshblog</h1>
+      <p class="masthead-sub">A second brain made public — writing that thinks back.</p>
+    </section>
+
+    <!-- Posts index -->
+    <section class="posts-index" aria-labelledby="posts-heading">
+      <h2 id="posts-heading" class="sr-only">Recent posts</h2>
+      {posts.length === 0 ? (
+        <p class="posts-empty">No posts yet. Run <code>bun run build-index</code>.</p>
+      ) : (
+        <ol class="posts-list" aria-label="Recent posts">
+          {posts.map((post, i) => (
+            <li class="post-row">
+              <span class="post-index" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <a
+                href={withBase(`/posts/${post.slug}`)}
+                class="post-title"
+              >
+                {post.title}
+              </a>
+              <time
+                class="post-date"
+                datetime={post.created_at}
+              >
+                {new Date(post.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </time>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+
+    <!-- Q&A chips -->
     {qa.length > 0 && (
-      <div class="chips-wrapper">
-        <QAChips qas={qa} scope="global" client:idle />
-      </div>
+      <section class="qa-section" aria-labelledby="qa-heading">
+        <h2 id="qa-heading" class="section-label">RECENT QUESTIONS</h2>
+        <div class="chips-wrapper">
+          <QAChips qas={qa} scope="global" client:idle />
+        </div>
+      </section>
     )}
-  </section>
 
-  <!-- Posts strip: 5 latest posts, directly below hero -->
-  <section class="posts-strip" aria-labelledby="posts-heading">
-    <h2 id="posts-heading">Recent posts</h2>
-    {posts.length === 0 ? (
-      <p>No posts yet. Run <code>bun run build-index</code>.</p>
-    ) : (
-      <ul class="posts-list">
-        {posts.map((post) => (
-          <li class="post-item">
-            <a href={withBase(`/posts/${post.slug}`)} class="post-link">{post.title}</a>
-            <time class="post-date" datetime={post.created_at}>
-              {new Date(post.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })}
-            </time>
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
+    <!-- Graph invitation -->
+    <p class="graph-invite">
+      Or explore the mesh — every concept, post, and connection, as a graph.{' '}
+      <a href={withBase('/graph')} class="graph-link">Open the graph &rarr;</a>
+    </p>
 
-  <!-- Graph link: third screen -->
-  <section class="graph-section" aria-labelledby="graph-heading">
-    <h2 id="graph-heading">Explore the mesh</h2>
-    <p class="graph-desc">Navigate every concept, post, and connection in the knowledge graph.</p>
-    <a href={withBase('/graph')} class="cta">Open graph &rarr;</a>
-  </section>
+  </div>
 </Base>
 
 <style>
-  /* ── Hero ──────────────────────────────────────────────────── */
+  /* ── Page column ────────────────────────────────────────────── */
 
-  .hero {
-    max-width: 720px;
+  .page-column {
+    max-width: 800px;
     margin-inline: auto;
-    padding: var(--meshblog-space-16) var(--meshblog-space-4);
-  }
-
-  .hero h1 {
-    font-size: var(--meshblog-font-size-4xl);
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    margin: 0 0 var(--meshblog-space-3) 0;
-  }
-
-  .tagline {
-    font-size: var(--meshblog-font-size-lg);
-    color: var(--meshblog-color-text-secondary);
-    margin: 0 0 var(--meshblog-space-8) 0;
-    line-height: 1.5;
-  }
-
-  /* On mobile: hide chips beyond 4th via CSS */
-  .chips-wrapper :global(.list > li:nth-child(n + 5)) {
-    display: none;
+    padding: var(--meshblog-space-12) var(--meshblog-space-4) var(--meshblog-space-16);
   }
 
   @media (min-width: 768px) {
-    .hero h1 {
+    .page-column {
+      padding-inline: var(--meshblog-space-6);
+      padding-top: var(--meshblog-space-16);
+    }
+  }
+
+  /* ── Masthead ───────────────────────────────────────────────── */
+
+  .masthead {
+    padding-bottom: var(--meshblog-space-12);
+  }
+
+  .masthead-kicker {
+    font-family: var(--meshblog-font-sans);
+    font-size: var(--meshblog-font-size-xs);
+    letter-spacing: 0.15em;
+    color: var(--meshblog-color-muted);
+    margin: 0 0 var(--meshblog-space-4) 0;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .masthead-title {
+    font-family: var(--meshblog-font-serif);
+    font-size: var(--meshblog-font-size-4xl);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--meshblog-color-text-primary);
+    margin: 0 0 var(--meshblog-space-5) 0;
+  }
+
+  @media (min-width: 640px) {
+    .masthead-title {
       font-size: var(--meshblog-font-size-5xl);
     }
-
-    /* Show up to 6 chips on tablet+ */
-    .chips-wrapper :global(.list > li:nth-child(n + 5)) {
-      display: revert;
-    }
-    .chips-wrapper :global(.list > li:nth-child(n + 7)) {
-      display: none;
-    }
   }
 
-  /* ── Posts strip ───────────────────────────────────────────── */
-
-  .posts-strip {
-    max-width: 960px;
-    margin-inline: auto;
-    padding: var(--meshblog-space-12) var(--meshblog-space-4);
+  .masthead-sub {
+    font-family: var(--meshblog-font-serif);
+    font-style: italic;
+    font-size: var(--meshblog-font-size-lg);
+    color: var(--meshblog-color-text-secondary);
+    margin: 0;
+    line-height: 1.45;
   }
 
-  .posts-strip h2 {
-    font-size: var(--meshblog-font-size-2xl);
-    font-weight: 700;
-    margin: 0 0 var(--meshblog-space-6) 0;
+  /* ── Posts index ────────────────────────────────────────────── */
+
+  .posts-index {
+    padding-bottom: var(--meshblog-space-12);
+  }
+
+  .posts-empty {
+    color: var(--meshblog-color-muted);
+    font-size: var(--meshblog-font-size-base);
   }
 
   .posts-list {
@@ -119,115 +149,130 @@ const qa = getHomepageQa(10)
     margin: 0;
   }
 
-  .post-item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--meshblog-space-1);
-    padding: var(--meshblog-space-3) 0;
-    border-bottom: 1px solid var(--meshblog-color-border);
-    transition: background var(--meshblog-dur-fast) var(--meshblog-ease);
+  .post-row {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr auto;
+    align-items: baseline;
+    column-gap: var(--meshblog-space-4);
+    padding: var(--meshblog-space-4) 0;
+    border-top: 1px solid var(--meshblog-color-rule);
   }
 
-  .post-item:first-child {
-    border-top: 1px solid var(--meshblog-color-border);
+  .post-row:last-child {
+    border-bottom: 1px solid var(--meshblog-color-rule);
   }
 
-  .post-item:hover {
-    background: var(--meshblog-color-surface);
-    padding-inline: var(--meshblog-space-3);
-    margin-inline: calc(-1 * var(--meshblog-space-3));
+  .post-index {
+    font-family: var(--meshblog-font-serif);
+    font-size: var(--meshblog-font-size-sm);
+    color: var(--meshblog-color-muted);
+    font-variant-numeric: oldstyle-nums;
+    line-height: 1;
+    padding-top: 0.1em;
   }
 
-  .post-link {
-    font-size: var(--meshblog-font-size-base);
-    font-weight: 500;
+  .post-title {
+    font-family: var(--meshblog-font-serif);
+    font-size: var(--meshblog-font-size-md);
+    font-weight: 600;
     color: var(--meshblog-color-text-primary);
     text-decoration: none;
-    line-height: 1.4;
+    line-height: 1.35;
+    transition: color var(--meshblog-dur-fast) var(--meshblog-ease);
   }
 
-  .post-link:hover {
+  .post-title:hover {
     color: var(--meshblog-color-accent);
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--meshblog-color-accent);
   }
 
-  .post-link:focus-visible {
+  .post-title:focus-visible {
     outline: 2px solid var(--meshblog-color-focus-ring);
     outline-offset: 2px;
     border-radius: var(--meshblog-radius-sm);
   }
 
   .post-date {
-    font-size: var(--meshblog-font-size-sm);
+    font-family: var(--meshblog-font-sans);
+    font-size: var(--meshblog-font-size-xs);
     color: var(--meshblog-color-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
   }
 
-  @media (min-width: 768px) {
-    .posts-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0 var(--meshblog-space-8);
+  /* On very small screens, let the date wrap beneath the title */
+  @media (max-width: 480px) {
+    .post-row {
+      grid-template-columns: 2.5rem 1fr;
+      grid-template-rows: auto auto;
     }
 
-    .post-item {
-      border-bottom: 1px solid var(--meshblog-color-border);
-    }
-
-    .post-item:first-child {
-      border-top: 1px solid var(--meshblog-color-border);
-    }
-
-    /* Second item also gets a top border (first in second column at ≥768) */
-    .post-item:nth-child(2) {
-      border-top: 1px solid var(--meshblog-color-border);
+    .post-date {
+      grid-column: 2;
+      margin-top: var(--meshblog-space-1);
     }
   }
 
-  /* ── Graph section ─────────────────────────────────────────── */
+  /* ── Q&A section ────────────────────────────────────────────── */
 
-  .graph-section {
-    background: var(--meshblog-color-surface);
-    padding: var(--meshblog-space-16) var(--meshblog-space-4);
-    text-align: center;
+  .qa-section {
+    padding-bottom: var(--meshblog-space-10);
   }
 
-  .graph-section h2 {
-    font-size: var(--meshblog-font-size-2xl);
-    font-weight: 700;
+  .section-label {
+    font-family: var(--meshblog-font-sans);
+    font-size: var(--meshblog-font-size-xs);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--meshblog-color-muted);
     margin: 0 0 var(--meshblog-space-4) 0;
   }
 
-  .graph-desc {
-    color: var(--meshblog-color-text-secondary);
-    font-size: var(--meshblog-font-size-lg);
-    margin: 0 0 var(--meshblog-space-8) 0;
-    max-width: 480px;
-    margin-inline: auto;
-    margin-bottom: var(--meshblog-space-8);
+  /* On mobile: hide chips beyond 4th via CSS */
+  .chips-wrapper :global(.list > li:nth-child(n + 5)) {
+    display: none;
   }
 
-  .cta {
-    display: inline-block;
-    background: var(--meshblog-color-accent);
-    color: var(--meshblog-color-on-accent);
-    padding: var(--meshblog-space-3) var(--meshblog-space-6);
-    border-radius: var(--meshblog-radius-md);
-    font-weight: 600;
+  @media (min-width: 768px) {
+    .chips-wrapper :global(.list > li:nth-child(n + 5)) {
+      display: revert;
+    }
+    .chips-wrapper :global(.list > li:nth-child(n + 7)) {
+      display: none;
+    }
+  }
+
+  /* ── Graph invitation ───────────────────────────────────────── */
+
+  .graph-invite {
+    font-family: var(--meshblog-font-serif);
     font-size: var(--meshblog-font-size-base);
-    text-decoration: none;
-    transition:
-      background var(--meshblog-dur-fast) var(--meshblog-ease),
-      box-shadow var(--meshblog-dur-fast) var(--meshblog-ease);
+    color: var(--meshblog-color-text-secondary);
+    margin: 0;
+    line-height: 1.6;
   }
 
-  .cta:hover {
-    background: var(--meshblog-color-accent-hover);
+  .graph-link {
+    color: var(--meshblog-color-text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--meshblog-color-rule);
+    transition: color var(--meshblog-dur-fast) var(--meshblog-ease),
+      text-decoration-color var(--meshblog-dur-fast) var(--meshblog-ease);
   }
 
-  .cta:focus-visible {
-    outline: 3px solid var(--meshblog-color-focus-ring);
-    outline-offset: 3px;
-    border-radius: var(--meshblog-radius-md);
+  .graph-link:hover {
+    color: var(--meshblog-color-accent);
+    text-decoration-color: var(--meshblog-color-accent);
+  }
+
+  .graph-link:focus-visible {
+    outline: 2px solid var(--meshblog-color-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--meshblog-radius-sm);
   }
 </style>

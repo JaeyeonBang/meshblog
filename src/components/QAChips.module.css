@@ -1,5 +1,6 @@
 /* QAChips.module.css — scoped styles for the Q&A chips component
  * All values reference --meshblog-* tokens from src/styles/tokens.css
+ * Zero hex/rgba literals — tokens only.
  */
 
 /* ── Search input ─────────────────────────────────────────────────── */
@@ -9,9 +10,10 @@
   width: 100%;
   min-height: 44px; /* iOS tap target */
   padding: var(--meshblog-space-3) var(--meshblog-space-4);
+  font-family: var(--meshblog-font-sans);
   font-size: var(--meshblog-font-size-base);
   border: 1px solid var(--meshblog-color-border);
-  border-radius: var(--meshblog-radius-md);
+  border-radius: var(--meshblog-radius-sm);
   background: var(--meshblog-color-surface);
   color: var(--meshblog-color-text-primary);
   outline: none;
@@ -23,7 +25,7 @@
 
 .searchInput:focus {
   border-color: var(--meshblog-color-focus-ring);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: var(--meshblog-shadow-focus);
 }
 
 @media (min-width: 768px) {
@@ -50,11 +52,8 @@
 .card {
   padding: var(--meshblog-space-4) var(--meshblog-space-5);
   border: 1px solid var(--meshblog-color-border);
-  border-radius: var(--meshblog-radius-md);
-  background: var(--meshblog-color-surface);
-  transition:
-    border-color var(--meshblog-dur-fast) var(--meshblog-ease),
-    background var(--meshblog-dur-fast) var(--meshblog-ease);
+  border-radius: var(--meshblog-radius-sm);
+  transition: border-color var(--meshblog-dur-fast) var(--meshblog-ease);
 }
 
 .card:hover {
@@ -77,6 +76,11 @@
   line-height: 1.5;
 }
 
+.questionBtn:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .questionBtn:focus-visible {
   outline: 2px solid var(--meshblog-color-focus-ring);
   outline-offset: 2px;
@@ -86,15 +90,14 @@
 /* ── Tier badge (<small>) ─────────────────────────────────────────── */
 
 .tierBadge {
-  display: inline-block;
+  display: inline;
   margin-left: var(--meshblog-space-2);
-  padding: var(--meshblog-space-1) var(--meshblog-space-2);
-  border-radius: var(--meshblog-radius-full);
-  background: var(--meshblog-color-bg);
   color: var(--meshblog-color-muted);
+  font-family: var(--meshblog-font-sans);
   font-size: var(--meshblog-font-size-xs);
-  font-family: monospace;
   font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
   vertical-align: middle;
 }
 
@@ -103,7 +106,7 @@
 .answerRegion {
   margin-top: var(--meshblog-space-3);
   color: var(--meshblog-color-text-secondary);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .answerText {
@@ -127,13 +130,14 @@
   border: none;
   cursor: pointer;
   font-size: var(--meshblog-font-size-sm);
-  color: var(--meshblog-color-accent);
+  color: var(--meshblog-color-text-secondary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.expandBtn:hover {
-  color: var(--meshblog-color-accent-hover);
+.expandBtn:hover,
+.expandBtn:focus-visible {
+  color: var(--meshblog-color-accent);
 }
 
 .expandBtn:focus-visible {
@@ -148,6 +152,8 @@
   padding: var(--meshblog-space-6);
   text-align: center;
   color: var(--meshblog-color-muted);
+  font-family: var(--meshblog-font-serif);
+  font-size: var(--meshblog-font-size-sm);
   font-style: italic;
 }
 
@@ -155,10 +161,8 @@
 
 .fallback {
   margin-top: var(--meshblog-space-3);
-  padding: var(--meshblog-space-4) var(--meshblog-space-5);
-  border: 1px solid var(--meshblog-color-border);
-  border-radius: var(--meshblog-radius-md);
-  background: var(--meshblog-color-surface);
+  padding-top: var(--meshblog-space-4);
+  border-top: 1px solid var(--meshblog-color-rule);
 }
 
 .fallbackLabel {
@@ -168,12 +172,17 @@
 }
 
 .relatedList {
-  list-style: disc;
-  padding-left: var(--meshblog-space-5);
+  list-style: none;
+  padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
   gap: var(--meshblog-space-2);
+}
+
+.relatedList li::before {
+  content: '→ ';
+  color: var(--meshblog-color-muted);
 }
 
 .relatedList a {

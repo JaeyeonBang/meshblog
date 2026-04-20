@@ -11,12 +11,7 @@ import { withBase } from '../lib/url'
 >
   <div class="graph-page">
     <h1>Graph</h1>
-    <p>
-      An interactive force-directed graph of notes and concepts. Switch between
-      <strong>Notes</strong> and <strong>Concepts</strong> mode, and adjust the
-      level to control how many connections are shown. Click a note node to open
-      that post.
-    </p>
+    <p><em>Click any note node to open that post.</em></p>
 
     <div class="graph-container">
       <GraphView client:only="react" />
@@ -47,17 +42,22 @@ import { withBase } from '../lib/url'
   }
 
   .graph-page h1 {
+    font-family: var(--meshblog-font-serif);
     font-size: var(--meshblog-font-size-3xl);
-    font-weight: 700;
-    margin: 0 0 var(--meshblog-space-4) 0;
+    font-weight: 500;
+    color: var(--meshblog-color-text-primary);
+    margin: 0 0 var(--meshblog-space-3) 0;
+    text-align: left;
   }
 
   .graph-page > p {
-    color: var(--meshblog-color-text-secondary);
+    font-family: var(--meshblog-font-serif);
+    font-style: italic;
+    color: var(--meshblog-color-muted);
     font-size: var(--meshblog-font-size-base);
-    line-height: 1.6;
+    line-height: 1.5;
     margin: 0 0 var(--meshblog-space-6) 0;
-    max-width: 65ch;
+    text-align: left;
   }
 
   /* ── Graph canvas container — prevents SVG overflow on narrow viewports ── */

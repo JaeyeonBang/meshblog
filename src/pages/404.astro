@@ -15,48 +15,52 @@ import { withBase } from '../lib/url'
       or never published.
     </p>
 
-    <div class="actions">
-      <a href={withBase('/')} class="cta-primary">Back to home</a>
-      <a href={withBase('/#ask-heading')} class="search-cta" aria-label="Search the knowledge graph">
-        <span class="search-icon" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
-            <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </span>
-        Search knowledge graph
-      </a>
-    </div>
+    <nav class="actions" aria-label="Recovery options">
+      <a href={withBase('/')} class="action-link">→ Back to home</a>
+      <a href={withBase('/#ask-heading')} class="action-link">→ Search the knowledge graph</a>
+    </nav>
   </section>
 </Base>
 
 <style>
   .not-found {
-    max-width: 480px;
+    max-width: 38ch;
     margin-inline: auto;
-    padding: var(--meshblog-space-24) var(--meshblog-space-4) var(--meshblog-space-16);
+    padding-block-start: var(--meshblog-space-32);
+    padding-block-end: var(--meshblog-space-16);
+    padding-inline: var(--meshblog-space-4);
     text-align: center;
   }
 
+  @media (max-width: 640px) {
+    .not-found {
+      padding-block-start: var(--meshblog-space-16);
+    }
+  }
+
   .error-code {
+    font-family: var(--meshblog-font-serif);
     font-size: var(--meshblog-font-size-5xl);
-    font-weight: 800;
+    font-weight: 400;
     line-height: 1;
-    letter-spacing: -0.04em;
-    color: var(--meshblog-color-border);
-    margin: 0 0 var(--meshblog-space-2) 0;
+    letter-spacing: -0.02em;
+    color: var(--meshblog-color-muted);
+    margin: 0 0 var(--meshblog-space-4) 0;
     user-select: none;
   }
 
   .not-found h1 {
-    font-size: var(--meshblog-font-size-3xl);
-    font-weight: 700;
-    line-height: 1.15;
+    font-family: var(--meshblog-font-serif);
+    font-size: var(--meshblog-font-size-2xl);
+    font-weight: 500;
+    line-height: 1.2;
     margin: 0 0 var(--meshblog-space-4) 0;
     color: var(--meshblog-color-text-primary);
   }
 
   .message {
+    font-family: var(--meshblog-font-serif);
+    font-style: italic;
     font-size: var(--meshblog-font-size-base);
     color: var(--meshblog-color-text-secondary);
     line-height: 1.6;
@@ -72,60 +76,23 @@ import { withBase } from '../lib/url'
     gap: var(--meshblog-space-3);
   }
 
-  .cta-primary {
-    display: inline-block;
-    background: var(--meshblog-color-accent);
-    color: var(--meshblog-color-on-accent);
-    padding: var(--meshblog-space-3) var(--meshblog-space-6);
-    border-radius: var(--meshblog-radius-md);
-    font-weight: 600;
+  .action-link {
+    font-family: var(--meshblog-font-serif);
     font-size: var(--meshblog-font-size-base);
-    text-decoration: none;
-    transition:
-      background var(--meshblog-dur-fast) var(--meshblog-ease),
-      box-shadow var(--meshblog-dur-fast) var(--meshblog-ease);
-  }
-
-  .cta-primary:hover {
-    background: var(--meshblog-color-accent-hover);
-  }
-
-  .cta-primary:focus-visible {
-    outline: 3px solid var(--meshblog-color-focus-ring);
-    outline-offset: 3px;
-    border-radius: var(--meshblog-radius-md);
-  }
-
-  .search-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--meshblog-space-2);
-    color: var(--meshblog-color-text-secondary);
-    font-size: var(--meshblog-font-size-sm);
-    text-decoration: none;
-    padding: var(--meshblog-space-2) var(--meshblog-space-4);
-    border-radius: var(--meshblog-radius-md);
-    border: 1px solid var(--meshblog-color-border);
-    background: var(--meshblog-color-surface);
-    transition:
-      border-color var(--meshblog-dur-fast) var(--meshblog-ease),
-      color var(--meshblog-dur-fast) var(--meshblog-ease);
-  }
-
-  .search-cta:hover {
-    border-color: var(--meshblog-color-accent);
     color: var(--meshblog-color-text-primary);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    transition: color var(--meshblog-dur-fast) var(--meshblog-ease);
   }
 
-  .search-cta:focus-visible {
+  .action-link:hover,
+  .action-link:focus-visible {
+    color: var(--meshblog-color-accent);
+  }
+
+  .action-link:focus-visible {
     outline: 2px solid var(--meshblog-color-focus-ring);
-    outline-offset: 2px;
-    border-radius: var(--meshblog-radius-md);
-  }
-
-  .search-icon {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
+    outline-offset: 3px;
+    border-radius: 2px;
   }
 </style>

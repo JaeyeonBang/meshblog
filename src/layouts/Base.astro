@@ -119,54 +119,73 @@ const navAbout = `${BASE}/about`
         margin: 0;
         background: var(--meshblog-color-bg);
         color: var(--meshblog-color-text-primary);
+        font-family: var(--meshblog-font-sans);
+        font-size: var(--meshblog-font-size-md);
+        line-height: 1.6;
       }
 
       /* ── Header / nav ─────────────────────────────────────────────── */
 
       body > header {
-        border-bottom: 1px solid var(--meshblog-color-border);
         background: var(--meshblog-color-bg);
       }
 
       body > header nav {
         display: flex;
         align-items: center;
-        gap: var(--meshblog-space-6);
         max-width: 1120px;
         margin-inline: auto;
-        padding: var(--meshblog-space-3) var(--meshblog-space-4);
+        padding: var(--meshblog-space-4) var(--meshblog-space-4);
       }
 
       @media (min-width: 768px) {
         body > header nav {
-          padding: var(--meshblog-space-4) var(--meshblog-space-6);
+          padding: var(--meshblog-space-5) var(--meshblog-space-6);
         }
       }
 
-      body > header nav a {
+      /* Wordmark — serif, left side */
+      body > header nav .nav-wordmark {
+        font-family: var(--meshblog-font-serif);
+        font-size: var(--meshblog-font-size-xl);
+        font-weight: 500;
+        letter-spacing: -0.015em;
+        color: var(--meshblog-color-text-primary);
         text-decoration: none;
-        transition: color var(--meshblog-dur-fast) var(--meshblog-ease);
-        /* Tap target: 44px minimum height per iOS/WCAG guidance */
         display: inline-flex;
         align-items: center;
         min-height: 44px;
+        line-height: 1;
       }
 
-      /* Brand link — first anchor in nav */
-      body > header nav a:first-child {
-        font-weight: 700;
-        font-size: var(--meshblog-font-size-lg);
+      body > header nav .nav-wordmark:hover {
         color: var(--meshblog-color-text-primary);
       }
 
-      /* Secondary nav links */
-      body > header nav a:not(:first-child) {
-        font-size: var(--meshblog-font-size-base);
+      /* Nav links group — pushed to the right */
+      body > header nav .nav-links {
+        display: flex;
+        align-items: center;
+        gap: var(--meshblog-space-6);
+        margin-left: auto;
+      }
+
+      body > header nav .nav-links a {
+        font-family: var(--meshblog-font-sans);
+        font-size: var(--meshblog-font-size-sm);
         color: var(--meshblog-color-text-secondary);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        transition: color var(--meshblog-dur-fast) var(--meshblog-ease);
       }
 
-      body > header nav a:hover {
+      body > header nav .nav-links a:hover {
         color: var(--meshblog-color-text-primary);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        text-decoration-color: var(--meshblog-color-accent);
       }
 
       body > header nav a:focus-visible {
@@ -175,26 +194,77 @@ const navAbout = `${BASE}/about`
         border-radius: var(--meshblog-radius-sm);
       }
 
+      /* Hair rule below header — let whitespace do most of the work */
+      body > header::after {
+        content: '';
+        display: block;
+        height: 1px;
+        background: var(--meshblog-color-rule);
+        max-width: 1120px;
+        margin-inline: auto;
+        margin-inline-start: var(--meshblog-space-4);
+        margin-inline-end: var(--meshblog-space-4);
+      }
+
+      @media (min-width: 768px) {
+        body > header::after {
+          margin-inline-start: var(--meshblog-space-6);
+          margin-inline-end: var(--meshblog-space-6);
+        }
+      }
+
       /* ── Footer ───────────────────────────────────────────────────── */
 
       body > footer {
-        border-top: 1px solid var(--meshblog-color-border);
+        margin-top: var(--meshblog-space-24);
         padding: var(--meshblog-space-8) var(--meshblog-space-6);
         text-align: center;
         color: var(--meshblog-color-muted);
-        font-size: var(--meshblog-font-size-sm);
-        max-width: 1120px;
+      }
+
+      body > footer::before {
+        content: '';
+        display: block;
+        height: 1px;
+        background: var(--meshblog-color-rule);
+        max-width: 320px;
         margin-inline: auto;
+        margin-bottom: var(--meshblog-space-8);
+      }
+
+      body > footer .footer-mark {
+        font-family: var(--meshblog-font-serif);
+        font-size: var(--meshblog-font-size-sm);
+        font-style: italic;
+        letter-spacing: 0.01em;
+        color: var(--meshblog-color-muted);
+        display: block;
+        margin-bottom: var(--meshblog-space-3);
+      }
+
+      body > footer .footer-links {
+        font-family: var(--meshblog-font-sans);
+        font-size: var(--meshblog-font-size-xs);
+        color: var(--meshblog-color-muted);
+        letter-spacing: 0.03em;
       }
 
       body > footer a {
         color: var(--meshblog-color-muted);
         text-decoration: underline;
         text-underline-offset: 2px;
+        transition: color var(--meshblog-dur-fast) var(--meshblog-ease);
       }
 
       body > footer a:hover {
-        color: var(--meshblog-color-text-secondary);
+        color: var(--meshblog-color-accent);
+        text-decoration-color: var(--meshblog-color-accent);
+      }
+
+      body > footer a:focus-visible {
+        outline: 2px solid var(--meshblog-color-focus-ring);
+        outline-offset: 2px;
+        border-radius: var(--meshblog-radius-sm);
       }
     </style>
   </head>
@@ -204,9 +274,11 @@ const navAbout = `${BASE}/about`
 
     <header>
       <nav aria-label="primary">
-        <a href={navHome}>meshblog</a>
-        <a href={navGraph}>graph</a>
-        <a href={navAbout}>about</a>
+        <a href={navHome} class="nav-wordmark">meshblog</a>
+        <div class="nav-links">
+          <a href={navGraph}>graph</a>
+          <a href={navAbout}>about</a>
+        </div>
       </nav>
     </header>
 
@@ -215,11 +287,10 @@ const navAbout = `${BASE}/about`
     </main>
 
     <footer>
-      <small>
-        &copy; meshblog
-        &middot;
+      <span class="footer-mark">meshblog &middot; est. 2026</span>
+      <span class="footer-links">
         <a href={atomHref}>Atom feed</a>
-      </small>
+      </span>
     </footer>
   </body>
 </html>
