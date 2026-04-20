@@ -130,13 +130,13 @@ function darkPaperShade(lightValue: string): string {
   return map[lightValue.toLowerCase()] ?? lightValue;
 }
 
-const darkInk      = darkPaperShade(colors.paper);          // paper → dark ink
-const darkInk2     = darkPaperShade(colors['paper-2'] ?? '#f6f6f4');
+const darkInk      = darkInkShade(colors.ink);
+const darkInk2     = darkInkShade(colors['ink-2'] ?? '#1a1a1a');
 const darkInk3     = darkInkShade(colors['ink-3'] ?? '#555');
 const darkInk4     = darkInkShade(colors['ink-4'] ?? '#888');
 const darkInk5     = darkInkShade(colors['ink-5'] ?? '#bbb');
-const darkPaper    = darkInkShade(colors.ink);              // ink → dark paper
-const darkPaper2   = darkInkShade(colors['ink-2'] ?? '#1a1a1a');
+const darkPaper    = darkPaperShade(colors.paper);
+const darkPaper2   = darkPaperShade(colors['paper-2'] ?? '#f6f6f4');
 
 // ── assemble CSS ──────────────────────────────────────────────────────────────
 
