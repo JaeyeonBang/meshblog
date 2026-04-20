@@ -106,37 +106,98 @@ const radiusTokens = [
   `  --r-pill: ${r.pill}px;`,
 ].join('\n');
 
+// ── OKLab / OKLAB lightness inversion ────────────────────────────────────────
+// Formulas from Björn Ottosson's 2020 post: https://bottosson.github.io/posts/oklab/
+// L_dark = 1 - L_light; preserve a and b channels to retain hue/warmth.
+
+/** Parse a 3- or 6-digit hex color (no alpha) → [r,g,b] in [0,1]. */
+function hexToLinear(hex: string): [number, number, number] | null {
+  const h = hex.replace('#', '');
+  let r: number, g: number, b: number;
+  if (h.length === 3) {
+    r = parseInt(h[0] + h[0], 16) / 255;
+    g = parseInt(h[1] + h[1], 16) / 255;
+    b = parseInt(h[2] + h[2], 16) / 255;
+  } else if (h.length === 6) {
+    r = parseInt(h.slice(0, 2), 16) / 255;
+    g = parseInt(h.slice(2, 4), 16) / 255;
+    b = parseInt(h.slice(4, 6), 16) / 255;
+  } else {
+    return null;
+  }
+  // sRGB → linear
+  const toLinear = (c: number) => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return [toLinear(r), toLinear(g), toLinear(b)];
+}
+
+/** Linear sRGB → OKLAB [L, a, b]. */
+function linearToOklab(r: number, g: number, b: number): [number, number, number] {
+  const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
+  const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
+  const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+  const l_ = Math.cbrt(l), m_ = Math.cbrt(m), s_ = Math.cbrt(s);
+  return [
+    0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+    1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+    0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
+  ];
+}
+
+/** OKLAB [L, a, b] → linear sRGB. */
+function oklabToLinear(L: number, a: number, b: number): [number, number, number] {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+  const l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_;
+  return [
+    +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+  ];
+}
+
+/** Clamp and convert linear [0,1] → sRGB byte [0,255]. */
+function linearToByte(c: number): number {
+  const clamped = Math.max(0, Math.min(1, c));
+  const srgb = clamped <= 0.0031308 ? clamped * 12.92 : 1.055 * Math.pow(clamped, 1 / 2.4) - 0.055;
+  return Math.round(Math.max(0, Math.min(255, srgb * 255)));
+}
+
+/**
+ * Invert the OKLab lightness of a hex color (L_dark = 1 - L_light).
+ * Preserves a/b channels so warmth/hue character is retained.
+ * Falls through unchanged for non-hex values (e.g. CSS vars, oklch()).
+ */
+function invertLightness(hex: string): string {
+  const rgb = hexToLinear(hex);
+  if (!rgb) return hex; // not a hex color, return as-is
+  const [L, a, b] = linearToOklab(...rgb);
+  const darkL = 1 - L;
+  const [dr, dg, db] = oklabToLinear(darkL, a, b);
+  const rB = linearToByte(dr), gB = linearToByte(dg), bB = linearToByte(db);
+  return `#${rB.toString(16).padStart(2, '0')}${gB.toString(16).padStart(2, '0')}${bB.toString(16).padStart(2, '0')}`;
+}
+
 // ── dark-mode derived colors ──────────────────────────────────────────────────
-// Strategy: swap ink ↔ paper; rescale ink-N/paper-N symmetrically; rule-soft → #2a2a2a
+// Strategy: if design.md has a `darkColors:` block, use it directly.
+// Otherwise fall back to OKLab lightness inversion (L_dark = 1 - L_light,
+// preserving a/b channels to keep hue/warmth character).
 
-function darkInkShade(lightValue: string): string {
-  // light ink shades (#000, #1a1a1a, #555, #888, #bbb) → light paper shades
-  const map: Record<string, string> = {
-    '#000':    '#fff',
-    '#1a1a1a': '#e8e8e6',
-    '#555':    '#aaa',
-    '#888':    '#777',
-    '#bbb':    '#444',
-  };
-  return map[lightValue.toLowerCase()] ?? lightValue;
+const darkColorsOverride = d.darkColors as Record<string, string> | undefined;
+
+function getDark(key: string, lightFallback: string): string {
+  if (darkColorsOverride && darkColorsOverride[key]) return darkColorsOverride[key];
+  return invertLightness(lightFallback);
 }
 
-function darkPaperShade(lightValue: string): string {
-  // light paper shades (#fff, #f6f6f4) → dark ink shades
-  const map: Record<string, string> = {
-    '#fff':     '#000',
-    '#f6f6f4':  '#1a1a1a',
-  };
-  return map[lightValue.toLowerCase()] ?? lightValue;
-}
-
-const darkInk      = darkInkShade(colors.ink);
-const darkInk2     = darkInkShade(colors['ink-2'] ?? '#1a1a1a');
-const darkInk3     = darkInkShade(colors['ink-3'] ?? '#555');
-const darkInk4     = darkInkShade(colors['ink-4'] ?? '#888');
-const darkInk5     = darkInkShade(colors['ink-5'] ?? '#bbb');
-const darkPaper    = darkPaperShade(colors.paper);
-const darkPaper2   = darkPaperShade(colors['paper-2'] ?? '#f6f6f4');
+const darkInk      = getDark('ink',       colors.ink);
+const darkInk2     = getDark('ink-2',     colors['ink-2'] ?? '#1a1a1a');
+const darkInk3     = getDark('ink-3',     colors['ink-3'] ?? '#555');
+const darkInk4     = getDark('ink-4',     colors['ink-4'] ?? '#888');
+const darkInk5     = getDark('ink-5',     colors['ink-5'] ?? '#bbb');
+const darkPaper    = getDark('paper',     colors.paper);
+const darkPaper2   = getDark('paper-2',   colors['paper-2'] ?? '#f6f6f4');
+const darkRuleSoft = getDark('rule-soft', colors['rule-soft'] ?? '#d9d9d6');
 
 // ── assemble CSS ──────────────────────────────────────────────────────────────
 
@@ -200,7 +261,7 @@ const darkColorVars = `\
     --paper:     ${darkPaper};
     --paper-2:   ${darkPaper2};
     --rule:      ${darkInk};
-    --rule-soft: #2a2a2a;
+    --rule-soft: ${darkRuleSoft};
     --accent:    var(--ink);`;
 
 const lightColorVars = `\

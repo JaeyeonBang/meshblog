@@ -13,6 +13,15 @@ colors:
   rule-soft:  "#ddd8cf"
   accent:     "oklch(0.52 0.11 35)"
   focus-ring: "#0066ff"
+darkColors:
+  ink:       "#f4f1ea"
+  ink-2:     "#ddd8cf"
+  ink-3:     "#9e9284"
+  ink-4:     "#6b5f50"
+  ink-5:     "#2e2820"
+  paper:     "#1a1611"
+  paper-2:   "#231d16"
+  rule-soft: "#2e2820"
 fonts:
   display: "Fraunces"
   serif:   "Fraunces"
