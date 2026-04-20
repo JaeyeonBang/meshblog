@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
 import GraphControls from '../components/ui/organisms/GraphControls.astro'
+import GraphLegend from '../components/ui/molecules/GraphLegend.astro'
 import Button from '../components/ui/atoms/Button.astro'
 import GraphView from '../components/GraphView'
 import { withBase } from '../lib/url'
@@ -13,19 +14,30 @@ import { withBase } from '../lib/url'
   topBarActive="graph"
 >
   <div class="graph-layout">
+    <!-- ── Header ──────────────────────────────────────── -->
     <div class="graph-header">
       <h1>Knowledge mesh</h1>
-      <span class="meta" id="graphMeta">nodes · links · mode: notes · L2</span>
+      <span class="header-meta" id="graphMeta">mode: notes · L2</span>
     </div>
 
+    <!-- ── Controls ───────────────────────────────────── -->
     <GraphControls mode="notes" level={2} />
 
+    <!-- ── Main: canvas + sidebar ─────────────────────── -->
     <div class="graph-main">
-      <div class="graph-canvas">
+      <!-- canvas with subtle radial gradient -->
+      <div class="graph-canvas" id="graphCanvas">
+        <!-- empty-state shown before JS loads; hidden once GraphView reports nodes -->
+        <div class="empty-state" id="graphEmptyState" aria-hidden="false">
+          <p class="empty-eyebrow">no nodes</p>
+          <p class="empty-body">Add notes to see the graph.</p>
+        </div>
+
         <GraphView client:only="react" />
       </div>
 
-      <aside class="graph-aside">
+      <!-- sidebar: selected info + legend + neighbors -->
+      <aside class="graph-aside" aria-label="Graph sidebar">
         <div class="block">
           <div class="block-label">selected · post</div>
           <h4 id="graphSelectedTitle">—</h4>
@@ -35,30 +47,14 @@ import { withBase } from '../lib/url'
         </div>
 
         <div class="block">
-          <div class="block-label">neighbors · 0</div>
+          <div class="block-label">neighbors · <span id="neighborCount">0</span></div>
           <div id="graphNeighbors" class="neighbors-list">
             <!-- populated by GraphView via window.updateGraphAside -->
           </div>
         </div>
 
         <div class="block">
-          <div class="block-label">legend</div>
-          <div class="legend-row">
-            <span class="mesh-node-demo">note</span>
-            <span>일반 메모</span>
-          </div>
-          <div class="legend-row">
-            <span class="mesh-node-demo hub">hub</span>
-            <span>high PageRank</span>
-          </div>
-          <div class="legend-row">
-            <span class="mesh-node-demo concept">concept</span>
-            <span>개념 (L2+)</span>
-          </div>
-          <div class="legend-row">
-            <span class="mesh-node-demo selected">selected</span>
-            <span>현재 선택</span>
-          </div>
+          <GraphLegend noteCount={0} conceptCount={0} />
         </div>
       </aside>
     </div>
@@ -72,14 +68,14 @@ import { withBase } from '../lib/url'
 </Base>
 
 <style>
-  /* ── Graph layout ──────────────────────────────────────────── */
+  /* ── Layout ────────────────────────────────────────────── */
   .graph-layout {
     max-width: var(--w-page-graph);
     margin: 0 auto;
     padding: 0 var(--space-8) var(--space-24);
   }
 
-  /* ── Graph header ──────────────────────────────────────────── */
+  /* ── Header ────────────────────────────────────────────── */
   .graph-header {
     padding: var(--space-6) 0 var(--space-5);
     border-bottom: 1px solid var(--ink);
@@ -95,24 +91,26 @@ import { withBase } from '../lib/url'
     font-weight: 500;
     font-size: var(--fs-5xl);
     margin: 0;
-    letter-spacing: -.02em;
+    letter-spacing: -0.02em;
     font-variation-settings: "opsz" 144;
   }
 
-  .graph-header .meta {
+  .header-meta {
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
     color: var(--ink-3);
     margin-left: auto;
-    letter-spacing: .04em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
-  /* ── Graph main canvas + aside ─────────────────────────────── */
+  /* ── Main: canvas + aside grid ────────────────────────── */
   .graph-main {
     display: grid;
     grid-template-columns: 1fr var(--w-graph-side);
     gap: 0;
-    height: 640px;
+    /* Taller canvas than before */
+    height: 720px;
     border: 1px solid var(--ink);
     overflow: hidden;
   }
@@ -124,20 +122,59 @@ import { withBase } from '../lib/url'
     }
   }
 
-  /* ── Graph canvas ──────────────────────────────────────────── */
+  /* ── Canvas ────────────────────────────────────────────── */
   .graph-canvas {
     position: relative;
-    background: var(--paper);
     overflow: hidden;
-    background-image:
-      linear-gradient(to right, var(--rule-soft) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--rule-soft) 1px, transparent 1px);
-    background-size: 40px 40px;
     width: 100%;
     height: 100%;
+    /*
+      Subtle radial gradient: centre is --paper (bright), edges fade to
+      --paper-2 (slightly sunk). Tokens handle light/dark inversion.
+      No hex literals.
+    */
+    background:
+      radial-gradient(
+        ellipse 70% 70% at 50% 50%,
+        var(--paper) 30%,
+        var(--paper-2) 100%
+      );
   }
 
-  /* ── Graph aside ───────────────────────────────────────────── */
+  /* ── Empty state ───────────────────────────────────────── */
+  .empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    pointer-events: none;
+    /* hidden via JS once graph has nodes */
+  }
+
+  .empty-state[aria-hidden="true"] {
+    display: none;
+  }
+
+  .empty-eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+  }
+
+  .empty-body {
+    font-family: var(--f-serif);
+    font-size: var(--fs-base);
+    color: var(--ink-4);
+    margin: 0;
+  }
+
+  /* ── Aside ─────────────────────────────────────────────── */
   .graph-aside {
     border-left: 1px solid var(--ink);
     overflow-y: auto;
@@ -156,7 +193,7 @@ import { withBase } from '../lib/url'
   .block-label {
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
-    letter-spacing: .2em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--ink-3);
     margin-bottom: var(--space-3);
@@ -167,7 +204,7 @@ import { withBase } from '../lib/url'
     font-weight: 600;
     font-size: 19px;
     margin: 0 0 var(--space-1);
-    letter-spacing: -.01em;
+    letter-spacing: -0.01em;
   }
 
   .block-meta {
@@ -175,7 +212,7 @@ import { withBase } from '../lib/url'
     font-size: var(--fs-xs);
     color: var(--ink-3);
     margin: 2px 0 var(--space-4);
-    letter-spacing: .04em;
+    letter-spacing: 0.04em;
   }
 
   .block-excerpt {
@@ -186,55 +223,13 @@ import { withBase } from '../lib/url'
     margin: 0 0 var(--space-4);
   }
 
-  /* ── Neighbors list ────────────────────────────────────────── */
+  /* ── Neighbors list ────────────────────────────────────── */
   .neighbors-list {
     display: flex;
     flex-direction: column;
   }
 
-  /* ── Legend ────────────────────────────────────────────────── */
-  .legend-row {
-    display: grid;
-    grid-template-columns: 100px 1fr;
-    gap: var(--space-3);
-    align-items: center;
-    padding: 6px 0;
-    font-size: 11.5px;
-    color: var(--ink-3);
-    font-family: var(--f-sans);
-  }
-
-  .mesh-node-demo {
-    font-family: var(--f-sans);
-    font-size: var(--fs-xs);
-    font-weight: 500;
-    color: var(--ink);
-    background: var(--paper);
-    border: 1px solid var(--ink);
-    padding: 3px 8px;
-    display: inline-block;
-    text-align: center;
-    white-space: nowrap;
-  }
-
-  .mesh-node-demo.hub {
-    font-weight: 700;
-    font-size: 12px;
-  }
-
-  .mesh-node-demo.concept {
-    font-family: var(--f-disp);
-    font-style: italic;
-    font-weight: 600;
-    border-width: 2px;
-  }
-
-  .mesh-node-demo.selected {
-    background: var(--ink);
-    color: var(--paper);
-  }
-
-  /* ── Noscript ──────────────────────────────────────────────── */
+  /* ── Noscript ──────────────────────────────────────────── */
   .noscript-notice {
     font-family: var(--f-serif);
     font-size: var(--fs-base);

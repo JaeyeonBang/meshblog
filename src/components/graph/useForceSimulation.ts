@@ -9,13 +9,17 @@ import type { GraphNode, GraphLink, GraphJson } from './types'
 type SimNode = GraphNode & d3Force.SimulationNodeDatum
 type SimLink = { source: SimNode; target: SimNode; weight: number }
 
-function nodeRadius(pagerank: number): number {
-  return Math.max(4, Math.sqrt(pagerank * 1000))
+/** Base radius per node kind */
+function nodeRadius(node: SimNode): number {
+  const base = node.type === 'concept' ? 7 : 5
+  return Math.max(base, Math.sqrt(node.pagerank * 1000))
 }
 
-// Node colour is painted entirely via CSS tokens in GraphView.module.css
-// (.svg .nodes circle { fill: var(--meshblog-graph-node) })
-// so no JS colour function is needed.
+// Node colour is painted entirely via CSS tokens in GraphView.module.css.
+
+/** Cap animation delay so stagger doesn't exceed 600ms */
+const MAX_STAGGER_MS = 600
+const STAGGER_STEP_MS = 40
 
 export function useForceSimulation(
   svgRef: RefObject<SVGSVGElement | null>,
@@ -84,22 +88,33 @@ export function useForceSimulation(
       .attr('x2', d => d.target.x ?? 0)
       .attr('y2', d => d.target.y ?? 0)
 
-    // Nodes
+    // Nodes — with data-kind, <title>, and stagger delay
     const nodeSel = g
       .append('g')
       .attr('class', 'nodes')
       .selectAll<SVGCircleElement, SimNode>('circle')
       .data(nodes)
-      .join('circle')
-      .attr('r', d => nodeRadius(d.pagerank))
-      // fill + stroke painted by CSS tokens via GraphView.module.css
+      .join(enter => {
+        const c = enter.append('circle')
+        // Accessible tooltip via <title>
+        c.append('title').text(d => d.label)
+        return c
+      })
+      .attr('r', d => nodeRadius(d))
+      .attr('data-kind', d => d.type)
       .attr('cx', d => d.x ?? 0)
       .attr('cy', d => d.y ?? 0)
       .attr('tabindex', 0)
+      .attr('role', 'button')
       .attr('aria-label', d => d.label)
       .style('cursor', 'pointer')
+      // Stagger entrance animation; cap at MAX_STAGGER_MS
+      .style('animation-delay', (_d, i) => {
+        const delay = Math.min(i * STAGGER_STEP_MS, MAX_STAGGER_MS)
+        return `${delay}ms`
+      })
 
-    // Labels
+    // Labels — rendered; visibility toggled via CSS class on hover
     const labelSel = g
       .append('g')
       .attr('class', 'labels')
@@ -107,13 +122,42 @@ export function useForceSimulation(
       .data(nodes)
       .join('text')
       .attr('font-size', 10)
-      // fill painted by CSS tokens via GraphView.module.css
       .attr('text-anchor', 'middle')
-      .attr('dy', d => nodeRadius(d.pagerank) + 12)
+      .attr('dy', d => nodeRadius(d) + 12)
       .attr('x', d => d.x ?? 0)
       .attr('y', d => d.y ?? 0)
       .style('pointer-events', 'none')
       .text(d => d.label)
+
+    // Map nodeId → label text element for hover
+    const labelByIndex = labelSel.nodes()
+
+    // Hover: show label when circle is hovered
+    nodeSel
+      .on('mouseenter', (_event, _d) => {
+        const idx = nodeSel.nodes().indexOf(_event.currentTarget as SVGCircleElement)
+        if (idx !== -1 && labelByIndex[idx]) {
+          d3Selection.select(labelByIndex[idx]).classed('label--visible', true)
+        }
+      })
+      .on('mouseleave', (_event, _d) => {
+        const idx = nodeSel.nodes().indexOf(_event.currentTarget as SVGCircleElement)
+        if (idx !== -1 && labelByIndex[idx]) {
+          d3Selection.select(labelByIndex[idx]).classed('label--visible', false)
+        }
+      })
+      .on('focus', (_event, _d) => {
+        const idx = nodeSel.nodes().indexOf(_event.currentTarget as SVGCircleElement)
+        if (idx !== -1 && labelByIndex[idx]) {
+          d3Selection.select(labelByIndex[idx]).classed('label--visible', true)
+        }
+      })
+      .on('blur', (_event, _d) => {
+        const idx = nodeSel.nodes().indexOf(_event.currentTarget as SVGCircleElement)
+        if (idx !== -1 && labelByIndex[idx]) {
+          d3Selection.select(labelByIndex[idx]).classed('label--visible', false)
+        }
+      })
 
     // --- Zoom ---
     const zoomBehavior = d3Zoom
