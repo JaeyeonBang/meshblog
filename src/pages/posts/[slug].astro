@@ -22,6 +22,7 @@ import type { QaCard } from '../../lib/pages/index'
 import { estimateReadingMinutes } from '../../lib/reading-time'
 import { getReadingStats } from '../../lib/word-count'
 import { withBase } from '../../lib/url'
+import { injectLedeClass } from '../../lib/lede'
 import '../../styles/article.css'
 
 export async function getStaticPaths() {
@@ -102,8 +103,7 @@ const formattedDate = createdDate.toLocaleDateString('ko-KR', {
 const excerpt = post.content.replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
 const contentHtml = await renderMarkdownToHtml(post.content)
 
-// Inject lede class on first <p> in the rendered HTML
-const ledeHtml = contentHtml.replace(/^(\s*)<p>/, '$1<p class="lede">')
+const ledeHtml = injectLedeClass(contentHtml)
 
 // All posts list for pager
 const allPosts = listPosts()
@@ -154,9 +154,10 @@ const meshEdges = [
       />
 
       <header class="article-header">
+        <p class="eyebrow">post · {formattedDate}</p>
         <div class="kind-row">
           <KindBadge kind="post" number={`P / ${String(currentIndex + 1).padStart(2, '0')}`} />
-          <span class="meta">{formattedDate} · {readingMinutes} min read · updated {updatedYYYYMM} · {wordCount} words</span>
+          <span class="meta reader-meta">{formattedDate} · {readingMinutes} min read · updated {updatedYYYYMM} · {wordCount} words</span>
         </div>
         <h1>{post.title}</h1>
         {post.tags && post.tags.length > 0 && (
@@ -345,6 +346,15 @@ const meshEdges = [
     padding: var(--space-5) 0 var(--space-8);
     border-bottom: 1px solid var(--ink);
     margin-bottom: var(--space-8);
+  }
+
+  .article-header .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 var(--space-3);
   }
 
   .article-header .kind-row {
