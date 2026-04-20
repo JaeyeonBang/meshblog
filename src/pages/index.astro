@@ -16,6 +16,26 @@ const posts = listPosts().slice(0, 5)
 const notes = listNotes().slice(0, 6)
 const qa = getHomepageQa(10)
 
+const now = Date.now()
+const ONE_WEEK = 7 * 24 * 60 * 60 * 1000
+const ONE_MONTH = 30 * 24 * 60 * 60 * 1000
+
+function getPostBadge(post: { created_at: string; updated_at: string }): 'new' | 'updated' | null {
+  const created = new Date(post.created_at).getTime()
+  const updated = new Date(post.updated_at).getTime()
+  if (now - created <= ONE_WEEK) return 'new'
+  if (now - updated <= ONE_MONTH) return 'updated'
+  return null
+}
+
+function getNoteBadge(note: { created_at: string; updated_at: string }): 'new' | 'updated' | null {
+  const created = new Date(note.created_at).getTime()
+  const updated = new Date(note.updated_at).getTime()
+  if (now - created <= ONE_WEEK) return 'new'
+  if (now - updated <= ONE_MONTH) return 'updated'
+  return null
+}
+
 // Static concept mesh nodes for home sidebar
 const meshNodes = [
   { label: 'knowledge', x: 36, y: 30, kind: 'hub' as const },
@@ -43,13 +63,13 @@ const meshEdges = [
   <div class="home-layout">
     <div class="home-main">
       <!-- Home hero — site-specific content, stays inline -->
-      <div class="home-hero">
+      <div class="home-hero fade-up">
         <div class="eyebrow">issue nº 012 · 2026 · q2</div>
         <h1>두 번째 뇌를, 남들이 읽을 수 있게 <em>내보내기</em>.</h1>
         <p class="sub">Obsidian vault에서 키우고 정적 사이트로 내보내는 개인 블로그. 글은 서로 참조하고, 개념은 그물처럼 얽힌다.</p>
       </div>
 
-      <div class="feed">
+      <div class="feed stagger">
         {posts.map((post, i) => (
           <PostCard
             kind="post"
@@ -59,6 +79,9 @@ const meshEdges = [
             excerpt={post.content.replace(/[#*`_~\[\]]/g, '').slice(0, 120).trimEnd()}
             date={new Date(post.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
             tags={post.tags ?? []}
+            featured={i === 0}
+            badge={getPostBadge(post)}
+            style={`--i: ${i}`}
           />
         ))}
 
@@ -70,6 +93,7 @@ const meshEdges = [
             title={note.title}
             meta="2 min"
             href={withBase(`/notes/${note.slug}`)}
+            badge={getNoteBadge(note)}
           />
         ))}
 
@@ -107,6 +131,10 @@ const meshEdges = [
     </aside>
   </div>
 </Base>
+
+<style is:global>
+  @import '../styles/motion.css';
+</style>
 
 <style>
   /* ── Home layout ───────────────────────────────────────────── */

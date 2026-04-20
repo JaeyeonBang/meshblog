@@ -21,6 +21,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { estimateReadingMinutes } from '../../lib/reading-time'
+import { getReadingStats } from '../../lib/word-count'
 import { withBase } from '../../lib/url'
 import '../../styles/article.css'
 
@@ -72,7 +73,6 @@ if (db) {
 const allQa: QaCard[] = [...noteQa, ...conceptQa]
 
 // Fetch related notes
-// TODO(Phase 6): distinguish backlinks (inbound refs) from related (topic similarity).
 const related: RelatedNote[] = getRelatedNotes(note.id, 4)
 
 // Read manifest for resolving hrefs
@@ -96,13 +96,14 @@ function resolveHref(id: string, slug: string): string {
 
 // --- Metadata ---
 const readingMinutes = estimateReadingMinutes(note.content)
-const formattedDate = new Date(note.updated_at).toLocaleDateString('ko-KR', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-})
+const { words: wordCount } = getReadingStats(note.content)
+const updatedDate = new Date(note.updated_at)
+const updatedYYYYMM = `${updatedDate.getFullYear()}-${String(updatedDate.getMonth() + 1).padStart(2, '0')}`
 const excerpt = note.content.replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
 const contentHtml = await renderMarkdownToHtml(note.content)
+
+// Inject lede class on first <p> in the rendered HTML
+const ledeHtml = contentHtml.replace(/^(\s*)<p>/, '$1<p class="lede">')
 
 // All notes for pager
 const allNotes = listNotes()
@@ -138,7 +139,7 @@ const meshEdges = [
   topBarActive="notes"
 >
   <div class="reader-layout">
-    <article class="reader-article">
+    <article class="reader-article fade-up">
       <Breadcrumbs
         items={[
           { label: 'home', href: withBase('/') },
@@ -150,7 +151,7 @@ const meshEdges = [
       <header class="article-header">
         <div class="kind-row">
           <KindBadge kind="note" number={`N / ${String(currentIndex + 1).padStart(2, '0')}`} />
-          <span class="meta">{readingMinutes} min read · atomic · last edit {formattedDate}</span>
+          <span class="meta">{readingMinutes} min · updated {updatedYYYYMM} · {wordCount} words</span>
         </div>
         <h1>{note.title}</h1>
         {note.tags && note.tags.length > 0 && (
@@ -164,7 +165,7 @@ const meshEdges = [
 
       <!-- Note variant: no HeroFigure, prose width 52ch -->
       <div class="prose note-prose">
-        <div set:html={contentHtml} />
+        <div set:html={ledeHtml} />
       </div>
 
       {allQa.length > 0 && (
@@ -208,6 +209,112 @@ const meshEdges = [
     </aside>
   </div>
 </Base>
+
+<!-- TOC scroll-spy: watches headings in .prose, toggles .active on TOC links -->
+<script>
+  (function () {
+    const tocLinks = document.querySelectorAll<HTMLAnchorElement>('.reader-aside a[href^="#"]')
+    if (!tocLinks.length) return
+
+    const headingIds = Array.from(tocLinks)
+      .map((a) => {
+        const id = a.getAttribute('href')?.slice(1)
+        return id ? document.getElementById(id) : null
+      })
+      .filter((el): el is HTMLElement => el !== null)
+
+    if (!headingIds.length) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.id
+          const link = document.querySelector<HTMLAnchorElement>(`.reader-aside a[href="#${id}"]`)
+          if (link) {
+            if (entry.isIntersecting) {
+              link.classList.add('active')
+            } else {
+              link.classList.remove('active')
+            }
+          }
+        })
+      },
+      { rootMargin: '0px 0px -60% 0px', threshold: 0 }
+    )
+
+    headingIds.forEach((el) => observer.observe(el))
+  })()
+</script>
+
+<!-- Scroll reveal for sections below the fold -->
+<script>
+  (function () {
+    const reveals = document.querySelectorAll<HTMLElement>('.reveal')
+    if (!reveals.length) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-in-view')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.1 }
+    )
+    reveals.forEach((el) => observer.observe(el))
+  })()
+</script>
+
+<style is:global>
+  @import '../../styles/motion.css';
+
+  /* ── Lede paragraph ──────────────────────────────────────── */
+  .prose p.lede,
+  .prose > p:first-of-type {
+    font-size: var(--fs-xl);
+    line-height: 1.6;
+    color: var(--ink-2);
+    margin-bottom: 1.6em;
+    font-weight: 400;
+  }
+
+  /* ── Footnotes section ───────────────────────────────────── */
+  .prose .footnotes,
+  .prose section.footnotes {
+    margin-top: var(--space-12);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--rule-soft);
+  }
+
+  .prose .footnotes ol {
+    padding-left: 1.4em;
+    list-style: decimal;
+  }
+
+  .prose .footnotes li {
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink-3);
+    line-height: 1.5;
+    margin: 0.4em 0;
+  }
+
+  .prose .footnotes li::before {
+    content: none;
+  }
+
+  .prose .footnotes p {
+    margin: 0;
+    display: inline;
+  }
+
+  /* ── TOC scroll-spy active state ─────────────────────────── */
+  .reader-aside a.active {
+    color: var(--ink);
+    font-weight: 500;
+  }
+</style>
 
 <style>
   /* ── Reader layout ─────────────────────────────────────────── */
