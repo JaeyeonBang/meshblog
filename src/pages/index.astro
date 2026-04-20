@@ -7,7 +7,6 @@ import TOC from '../components/ui/molecules/TOC.astro'
 import QaCard from '../components/ui/molecules/QaCard.astro'
 import MiniMesh from '../components/ui/molecules/MiniMesh.astro'
 import Button from '../components/ui/atoms/Button.astro'
-import Input from '../components/ui/atoms/Input.astro'
 import QAChips from '../components/QAChips.tsx'
 import { listPosts, listNotes, getHomepageQa } from '../lib/pages/index.ts'
 import { withBase } from '../lib/url'
@@ -17,13 +16,13 @@ const notes = listNotes().slice(0, 6)
 const qa = getHomepageQa(10)
 
 const now = Date.now()
-const ONE_WEEK = 7 * 24 * 60 * 60 * 1000
+const NEW_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000
 const ONE_MONTH = 30 * 24 * 60 * 60 * 1000
 
 function getPostBadge(post: { created_at: string; updated_at: string }): 'new' | 'updated' | null {
   const created = new Date(post.created_at).getTime()
   const updated = new Date(post.updated_at).getTime()
-  if (now - created <= ONE_WEEK) return 'new'
+  if (now - created <= NEW_THRESHOLD_MS) return 'new'
   if (now - updated <= ONE_MONTH) return 'updated'
   return null
 }
@@ -31,7 +30,7 @@ function getPostBadge(post: { created_at: string; updated_at: string }): 'new' |
 function getNoteBadge(note: { created_at: string; updated_at: string }): 'new' | 'updated' | null {
   const created = new Date(note.created_at).getTime()
   const updated = new Date(note.updated_at).getTime()
-  if (now - created <= ONE_WEEK) return 'new'
+  if (now - created <= NEW_THRESHOLD_MS) return 'new'
   if (now - updated <= ONE_MONTH) return 'updated'
   return null
 }
@@ -64,9 +63,9 @@ const meshEdges = [
     <div class="home-main">
       <!-- Home hero — site-specific content, stays inline -->
       <div class="home-hero fade-up">
-        <div class="eyebrow">issue nº 012 · 2026 · q2</div>
+        <div class="eyebrow">vault · public · 2026</div>
         <h1>두 번째 뇌를, 남들이 읽을 수 있게 <em>내보내기</em>.</h1>
-        <p class="sub">Obsidian vault에서 키우고 정적 사이트로 내보내는 개인 블로그. 글은 서로 참조하고, 개념은 그물처럼 얽힌다.</p>
+        <p class="sub">메모를 모으고, 개념을 잇고, 혼자 읽기 아까운 생각을 공개합니다. Think of it as an Obsidian vault you can read over my shoulder.</p>
       </div>
 
       <div class="feed stagger">
@@ -105,7 +104,6 @@ const meshEdges = [
 
     <aside class="home-side">
       <TOC label="ask the vault">
-        <Input placeholder="e.g. RAG란?" />
         {qa.length > 0 ? (
           <QAChips qas={qa} scope="global" client:idle />
         ) : (

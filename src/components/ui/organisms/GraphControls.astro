@@ -6,6 +6,12 @@ interface Props {
   edgeCount?: number;
 }
 const { mode, level, nodeCount = 0, edgeCount = 0 } = Astro.props;
+
+const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
+  1: { label: 'L1 · 직접', title: 'direct links only' },
+  2: { label: 'L2 · 근처', title: '2-hop neighborhood' },
+  3: { label: 'L3 · 클러스터', title: 'full cluster' },
+}
 ---
 <div class="graph-controls">
   <div class="controls-row">
@@ -17,18 +23,20 @@ const { mode, level, nodeCount = 0, edgeCount = 0 } = Astro.props;
           data-mode="notes"
           role="radio"
           aria-checked={mode === 'notes'}
+          title="notes = articles · concepts = extracted ideas"
         >notes</button>
         <button
           class:list={['seg', mode === 'concepts' && 'seg--active']}
           data-mode="concepts"
           role="radio"
           aria-checked={mode === 'concepts'}
+          title="notes = articles · concepts = extracted ideas"
         >concepts</button>
       </div>
     </div>
 
     <div class="group">
-      <span class="lab" id="level-label">level</span>
+      <span class="lab" id="level-label">depth</span>
       <div class="btn-group" role="radiogroup" aria-labelledby="level-label">
         {([1, 2, 3] as const).map((l) => (
           <button
@@ -36,7 +44,8 @@ const { mode, level, nodeCount = 0, edgeCount = 0 } = Astro.props;
             data-level={l}
             role="radio"
             aria-checked={level === l}
-          >L{l}</button>
+            title={levelLabels[l].title}
+          >{levelLabels[l].label}</button>
         ))}
       </div>
     </div>
@@ -50,6 +59,7 @@ const { mode, level, nodeCount = 0, edgeCount = 0 } = Astro.props;
     <button class="action-btn" id="gcShareBtn" aria-label="Share graph link">share link</button>
     <button class="action-btn" id="gcListBtn" aria-label="Switch to list view">list view</button>
   </div>
+  <p class="depth-caption">Depth · 선택한 노드에서 몇 걸음까지 볼지</p>
 </div>
 
 <style>
@@ -172,5 +182,16 @@ const { mode, level, nodeCount = 0, edgeCount = 0 } = Astro.props;
   .action-btn:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+  }
+
+  /* depth caption — mono eyebrow style, below controls row */
+  .depth-caption {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 var(--space-3);
+    padding-bottom: var(--space-2);
   }
 </style>
