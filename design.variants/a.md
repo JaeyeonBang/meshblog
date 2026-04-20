@@ -13,6 +13,15 @@ colors:
   rule-soft:  "#d9d9d6"
   accent:     "var(--ink)"
   focus-ring: "#0066ff"
+darkColors:
+  ink:       "#fff"
+  ink-2:     "#e8e8e6"
+  ink-3:     "#aaa"
+  ink-4:     "#777"
+  ink-5:     "#444"
+  paper:     "#000"
+  paper-2:   "#1a1a1a"
+  rule-soft: "#2a2a2a"
 fonts:
   display: "Fraunces"
   serif:   "Fraunces"
