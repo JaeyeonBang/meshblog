@@ -2,72 +2,94 @@
 interface Props {
   mode: 'notes' | 'concepts';
   level: 1 | 2 | 3;
+  nodeCount?: number;
+  edgeCount?: number;
 }
-const { mode, level } = Astro.props;
+const { mode, level, nodeCount = 0, edgeCount = 0 } = Astro.props;
 ---
 <div class="graph-controls">
-  <div class="group">
-    <span class="lab">mode</span>
-    <div class="btn-group" role="radiogroup" aria-label="View mode">
-      <button
-        class:list={[mode === 'notes' && 'active']}
-        data-mode="notes"
-        role="radio"
-        aria-checked={mode === 'notes'}
-      >notes</button>
-      <button
-        class:list={[mode === 'concepts' && 'active']}
-        data-mode="concepts"
-        role="radio"
-        aria-checked={mode === 'concepts'}
-      >concepts</button>
-    </div>
-  </div>
-  <div class="group">
-    <span class="lab">level</span>
-    <div class="btn-group" role="radiogroup" aria-label="Depth level">
-      {([1, 2, 3] as const).map((l) => (
+  <div class="controls-row">
+    <div class="group">
+      <span class="lab" id="mode-label">mode</span>
+      <div class="btn-group" role="radiogroup" aria-labelledby="mode-label">
         <button
-          class:list={[level === l && 'active']}
-          data-level={l}
+          class:list={['seg', mode === 'notes' && 'seg--active']}
+          data-mode="notes"
           role="radio"
-          aria-checked={level === l}
-        >L{l}</button>
-      ))}
+          aria-checked={mode === 'notes'}
+        >notes</button>
+        <button
+          class:list={['seg', mode === 'concepts' && 'seg--active']}
+          data-mode="concepts"
+          role="radio"
+          aria-checked={mode === 'concepts'}
+        >concepts</button>
+      </div>
     </div>
+
+    <div class="group">
+      <span class="lab" id="level-label">level</span>
+      <div class="btn-group" role="radiogroup" aria-labelledby="level-label">
+        {([1, 2, 3] as const).map((l) => (
+          <button
+            class:list={['seg', level === l && 'seg--active']}
+            data-level={l}
+            role="radio"
+            aria-checked={level === l}
+          >L{l}</button>
+        ))}
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <span class="stats" id="gcStats" aria-live="polite">
+      {nodeCount} nodes · {edgeCount} edges
+    </span>
+
+    <button class="action-btn" id="gcShareBtn" aria-label="Share graph link">share link</button>
+    <button class="action-btn" id="gcListBtn" aria-label="Switch to list view">list view</button>
   </div>
-  <div class="spacer"></div>
-  <button class="btn btn-sm">share link</button>
-  <button class="btn btn-sm">list view</button>
 </div>
 
 <style>
   .graph-controls {
+    border-bottom: 1px solid var(--ink);
+    padding: 0;
+    margin-bottom: var(--space-6);
+  }
+
+  .controls-row {
     display: flex;
     gap: var(--space-6);
     flex-wrap: wrap;
     align-items: center;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--ink);
-    margin-bottom: var(--space-6);
+    padding: var(--space-3) 0;
   }
+
   .group {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--space-3);
   }
+
+  /* mono eyebrow label */
   .lab {
     font-family: var(--f-mono);
-    font-size: 10px;
-    letter-spacing: 0.16em;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--ink-3);
+    user-select: none;
   }
+
+  /* segment button group — borderless cluster with outer 1px frame */
   .btn-group {
     display: flex;
     border: 1px solid var(--ink);
   }
-  .btn-group button {
+
+  .seg {
     border: 0;
     background: transparent;
     font-family: var(--f-mono);
@@ -76,55 +98,79 @@ const { mode, level } = Astro.props;
     padding: 6px 14px;
     color: var(--ink-3);
     cursor: pointer;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     border-right: 1px solid var(--ink);
-    transition: all var(--dur-fast) var(--ease);
+    /* bottom border reserved for active emphasis */
+    border-bottom: 3px solid transparent;
+    transition:
+      background var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease),
+      border-bottom-color var(--dur-fast) var(--ease);
+    line-height: 1;
   }
-  .btn-group button:last-child {
+
+  .seg:last-child {
     border-right: 0;
   }
-  .btn-group button.active {
+
+  /* Active: invert + 3px bottom emphasis */
+  .seg--active {
+    background: var(--ink);
+    color: var(--paper);
+    border-bottom-color: var(--ink);
+  }
+
+  /* Hover: full invert (not subtle opacity) */
+  .seg:hover:not(.seg--active) {
     background: var(--ink);
     color: var(--paper);
   }
-  .btn-group button:hover:not(.active) {
-    background: var(--paper-2);
-    color: var(--ink);
-  }
-  .btn-group button:focus-visible {
+
+  .seg:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: -2px;
   }
+
+  /* spacer pushes stats + action buttons to right */
   .spacer {
     flex: 1;
   }
-  .btn {
-    font-family: var(--f-sans);
-    font-size: var(--fs-sm);
+
+  /* inline stats — mono eyebrow style */
+  .stats {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+
+  /* action buttons */
+  .action-btn {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     font-weight: 500;
-    padding: 8px 16px;
+    padding: 6px 12px;
     border: 1px solid var(--ink);
     cursor: pointer;
     background: var(--paper);
     color: var(--ink);
     border-radius: var(--r-xs);
-    transition: all var(--dur-fast) var(--ease);
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    letter-spacing: 0.01em;
+    transition:
+      background var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
   }
-  .btn:hover {
+
+  .action-btn:hover {
     background: var(--ink);
     color: var(--paper);
   }
-  .btn:focus-visible {
+
+  .action-btn:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-  }
-  .btn-sm {
-    padding: 6px 12px;
-    font-size: 12px;
   }
 </style>
