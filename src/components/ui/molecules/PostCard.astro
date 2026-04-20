@@ -1,4 +1,6 @@
 ---
+import Badge from '../atoms/Badge.astro'
+
 interface Props {
   kind: 'post' | 'note';
   number: string;
@@ -9,11 +11,27 @@ interface Props {
   readingTime?: string;
   tags?: string[];
   thumb?: boolean;
+  featured?: boolean;
+  badge?: 'new' | 'updated' | null;
+  style?: string;
 }
-const { kind, number, href, title, excerpt, date, readingTime, tags = [], thumb = false } = Astro.props;
+const {
+  kind,
+  number,
+  href,
+  title,
+  excerpt,
+  date,
+  readingTime,
+  tags = [],
+  thumb = false,
+  featured = false,
+  badge = null,
+  style,
+} = Astro.props;
 const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boolean).join('  ·  ');
 ---
-<a class:list={['post-card', thumb && 'with-thumb']} href={href}>
+<a class:list={['post-card', thumb && 'with-thumb', featured && 'featured']} href={href} style={style}>
   {thumb && (
     <div class="thumb">
       <span>og · {number}</span>
@@ -22,6 +40,12 @@ const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boole
   <div>
     <div class="head">
       <span class:list={['kind-badge', kind]}>{kind} / {number}</span>
+      {badge && (
+        <Badge variant={badge}>{badge === 'new' ? 'NEW' : 'UPDATED'}</Badge>
+      )}
+      {featured && !badge && (
+        <Badge variant="featured">FEATURED</Badge>
+      )}
       {meta && <span class="meta">{meta}</span>}
     </div>
     <h2 class:list={[thumb && 'sm']}>{title}</h2>
@@ -63,11 +87,33 @@ const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boole
     gap: 28px;
     align-items: start;
   }
+
+  /* ── Featured variant ─────────────────────────────────── */
+  .post-card.featured {
+    padding-top: var(--space-10);
+    padding-bottom: var(--space-10);
+    border-bottom: 1px solid var(--ink);
+  }
+  .post-card.featured h2 {
+    font-size: clamp(36px, 5vw, 48px);
+    font-variation-settings: "opsz" 96;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin-bottom: var(--space-4);
+    max-width: 22ch;
+  }
+  .post-card.featured .excerpt {
+    font-size: var(--fs-lg);
+    max-width: 52ch;
+    line-height: 1.6;
+  }
+
   .head {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 12px;
+    flex-wrap: wrap;
   }
   .kind-badge {
     font-family: var(--f-mono);

@@ -1,15 +1,23 @@
 ---
+import Badge from '../atoms/Badge.astro'
+
 interface Props {
   number: string;
   title: string;
   meta: string;
   href: string;
+  badge?: 'new' | 'updated' | null;
 }
-const { number, title, meta, href } = Astro.props;
+const { number, title, meta, href, badge = null } = Astro.props;
 ---
 <a class="note-row" href={href}>
   <span class="num">{number}</span>
-  <h4>{title}</h4>
+  <span class="title-wrap">
+    <h4>{title}</h4>
+    {badge && (
+      <Badge variant={badge}>{badge === 'new' ? 'NEW' : 'UPDATED'}</Badge>
+    )}
+  </span>
   <span class="nmeta">{meta}</span>
 </a>
 
@@ -42,6 +50,12 @@ const { number, title, meta, href } = Astro.props;
     font-size: var(--fs-xs);
     color: var(--ink-3);
     letter-spacing: 0.04em;
+  }
+  .title-wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
   }
   h4 {
     font-family: var(--f-disp);
