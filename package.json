@@ -23,7 +23,10 @@
     "build-rss": "tsx scripts/build-rss.ts",
     "build-all": "bun run build-index && bun run generate-qa && bun run export-graph && bun run build-manifest && bun run build-tokens && bun run build",
     "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run export-graph && bun run build",
-    "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'"
+    "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'",
+    "new-post": "tsx scripts/new-post.ts",
+    "build-backlinks-if-exists": "[ -f scripts/build-backlinks.ts ] && tsx scripts/build-backlinks.ts || echo '[refresh] build-backlinks.ts not present yet, skipping'",
+    "refresh": "bun run build-tokens && bun run build-index && bun run build-backlinks-if-exists && bun run preview"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",
