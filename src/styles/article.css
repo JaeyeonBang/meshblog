@@ -1,301 +1,205 @@
-/* article.css — prose layout + article-page components
- *
- * Imported by src/pages/posts/[slug].astro and src/pages/notes/[slug].astro.
- *
- * Division of responsibility:
- *   fonts.css  → .prose base (font, size, line-height, feature settings)
- *                .prose h1/h2/h3, p, code, pre — DO NOT duplicate here
- *   tokens.css → all --meshblog-* custom properties (colours, spacing, radii)
- *   article.css → column layout, article-header, metadata, kind-badges,
- *                 blockquote, hr, tag-list, related/backlinks aside
- *
- * Design direction: editorial · paper · ink
- * See .impeccable.md for full non-negotiable rules.
+/* article.css — prose styles for .prose class (markdown-rendered article bodies)
+ * Implements SPEC §5. No hex literals. No --meshblog-* tokens. Use --ink, --paper, etc.
  */
 
 /* ── Prose container ──────────────────────────────────────────────────────── */
 
 .prose {
-  /* Tighten from 65ch → 64ch for slightly more intimate measure */
-  max-width: 64ch;
-  margin-inline: auto;
-  padding-inline: var(--meshblog-space-4);
-  /* 8rem top/bottom breathing room */
-  padding-block: var(--meshblog-space-32);
-  overflow-wrap: break-word;
+  max-width: 60ch;
+  max-width: var(--w-prose);
+  font-family: var(--f-serif);
+  font-size: var(--fs-lg);
+  line-height: 1.7;
+  color: var(--ink);
 }
 
-@media (min-width: 640px) {
-  .prose {
-    padding-inline: var(--meshblog-space-6);
-  }
+.prose p {
+  margin: 0 0 1.2em;
 }
-
-@media (min-width: 768px) {
-  .prose {
-    padding-inline: var(--meshblog-space-8);
-  }
-}
-
-/* ── Heading overflow protection (Korean word-break) ─────────────────────── */
-
-.prose h1,
-.prose h2,
-.prose h3 {
-  word-break: keep-all;
-  overflow-wrap: break-word;
-}
-
-/* ── Images — editorial square treatment ──────────────────────────────────── */
-/* No border-radius; editorial images sit flush like a print plate. */
 
 .prose img {
   max-width: 100%;
   height: auto;
-  /* No border-radius — intentional. */
   display: block;
-  /* Optional: single-pixel shadow so image doesn't bleed into paper bg */
-  box-shadow: 0 0 0 1px var(--meshblog-color-border);
+}
+
+.prose pre {
+  overflow-x: auto;
+}
+
+/* ── Drop cap ─────────────────────────────────────────────────────────────── */
+
+.prose p.drop:first-letter {
+  font-family: var(--f-disp);
+  font-weight: 600;
+  font-size: 5em;
+  line-height: 0.85;
+  float: left;
+  margin: 0.08em 0.08em 0 0;
+  font-variation-settings: "opsz" 144;
+}
+
+/* ── Headings ─────────────────────────────────────────────────────────────── */
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.prose h2 {
+  font-family: var(--f-disp);
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.1;
+  margin: 1.8em 0 0.5em;
+  letter-spacing: -0.015em;
+  padding-top: 0.8em;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.prose h2::before {
+  content: "§ ";
+  font-family: var(--f-mono);
+  font-size: 14px;
+  color: var(--ink-3);
+  vertical-align: 0.4em;
+  font-weight: 400;
+}
+
+.prose h3 {
+  font-family: var(--f-disp);
+  font-weight: 600;
+  font-size: var(--fs-2xl);
+  margin: 1.6em 0 0.4em;
+  letter-spacing: -0.01em;
+}
+
+/* ── Links ────────────────────────────────────────────────────────────────── */
+
+.prose a {
+  color: var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 1px;
+  text-decoration: none;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.prose a:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.prose a:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── Inline code ──────────────────────────────────────────────────────────── */
+
+.prose code {
+  font-family: var(--f-mono);
+  font-size: 0.86em;
+  padding: 1px 5px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule-soft);
 }
 
 /* ── Blockquote ───────────────────────────────────────────────────────────── */
-/*
- * The 1px border-left here is a conventional typographic mark — the classic
- * editorial "pull-quote rule". It is EXPLICITLY ALLOWED by .impeccable.md,
- * which bans only decorative left-stripe borders >1px or accent-coloured
- * left-stripe accents. A 1px hair rule on a blockquote is standard print
- * typesetting.
- */
 
 .prose blockquote {
-  margin-block: var(--meshblog-space-8);
-  margin-inline-start: var(--meshblog-space-6);
-  margin-inline-end: 0;
-  padding-inline-start: var(--meshblog-space-5);
-  border-left: 1px solid var(--meshblog-color-rule);
+  margin: 1.6em 0;
+  padding: 6px 0 6px 24px;
+  border-left: 3px solid var(--ink);
+  font-family: var(--f-disp);
   font-style: italic;
-  color: var(--meshblog-color-text-secondary);
+  font-weight: 400;
+  color: var(--ink);
+  font-size: var(--fs-2xl);
+  line-height: 1.4;
 }
 
-/* ── Horizontal rule — typographic asterism ───────────────────────────────── */
-/* Replace browser default with a centred ✦ glyph as section break. */
-
-.prose hr {
-  border: none;
-  height: 1.5rem;
-  /* height provides vertical spacing; content via ::before */
-  margin-block: var(--meshblog-space-10);
-  overflow: visible;
-}
-
-.prose hr::before {
-  content: "✦";
-  display: block;
-  text-align: center;
-  color: var(--meshblog-color-muted);
-  font-size: var(--meshblog-font-size-base);
-  line-height: 1.5rem;
-  /* Prevent serif font from inheriting — cleaner as a neutral glyph mark */
-  font-family: var(--meshblog-font-sans);
-  letter-spacing: 0.15em;
-}
-
-/* ── Article header ───────────────────────────────────────────────────────── */
-
-.article-header {
-  margin-bottom: var(--meshblog-space-12);
-  padding-bottom: var(--meshblog-space-8);
-  border-bottom: 1px solid var(--meshblog-color-rule);
-}
-
-/*
- * .prose h1 font/size/weight/line-height already set in fonts.css.
- * Override only spacing and letter-spacing for the article title context.
- */
-.article-header h1 {
-  margin-top: var(--meshblog-space-6);
-  margin-bottom: 0;
-  /* Slightly tighter tracking than fonts.css default for display impact */
-  letter-spacing: -0.02em;
-}
-
-/* ── Metadata row ─────────────────────────────────────────────────────────── */
-/*
- * Layout: inline, with hairline middots (·) as separators.
- * Uses letter-spacing and small sans to evoke a print caption line.
- */
-
-.metadata-row {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  /* No gap — spacing comes from the separator spans */
-  font-family: var(--meshblog-font-sans);
-  font-size: var(--meshblog-font-size-sm);
-  letter-spacing: 0.05em;
-  color: var(--meshblog-color-muted);
-}
-
-/* Middot separators — hair-width space each side */
-.metadata-sep {
-  margin-inline: 0.4em;
-  color: var(--meshblog-color-rule);
-  user-select: none;
-}
-
-/* ── Kind badges — text-only typographic label ────────────────────────────── */
-/*
- * NOT a pill. NOT a coloured background. NOT border-radius-full.
- * Just small-caps tracked-out sans text. Reads like a column label
- * in a print magazine contents page.
- */
-
-.kind-badge {
-  font-family: var(--meshblog-font-sans);
-  font-size: var(--meshblog-font-size-xs);
-  font-variant: small-caps;
-  font-weight: 500;
-  letter-spacing: 0.15em;
-  text-transform: lowercase; /* small-caps+lowercase = true small caps */
-  color: var(--meshblog-color-muted);
-  /* No background. No border-radius. No padding. Pure text label. */
-}
-
-/* Post badge: slightly more prominent than note */
-.kind-badge--post {
-  color: var(--meshblog-color-text-secondary);
-}
-
-/* Note badge: a touch dimmer + italic — notes are more ephemeral */
-.kind-badge--note {
-  color: var(--meshblog-color-muted);
-  font-style: italic;
-}
-
-/* ── Reading time ─────────────────────────────────────────────────────────── */
-
-.reading-time {
-  font-family: var(--meshblog-font-sans);
-  color: var(--meshblog-color-muted);
-}
-
-/* ── Tag list — tracked-out sans with # prefix ────────────────────────────── */
-
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--meshblog-space-4);
-  list-style: none;
-  padding: 0;
-  margin: var(--meshblog-space-5) 0 0;
-}
-
-.tag-list a {
-  font-family: var(--meshblog-font-sans);
-  font-size: var(--meshblog-font-size-xs);
-  letter-spacing: 0.06em;
-  color: var(--meshblog-color-text-secondary);
-  text-decoration: none;
-  transition: color var(--meshblog-dur-fast) var(--meshblog-ease);
-}
-
-/* # prefix rendered as a muted pseudo-element */
-.tag-list a::before {
-  content: "#";
-  color: var(--meshblog-color-muted);
-  margin-right: 0.1em;
-}
-
-.tag-list a:hover {
-  color: var(--meshblog-color-accent);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-
-.tag-list a:focus-visible {
-  outline: none;
-  box-shadow: var(--meshblog-shadow-focus);
-  border-radius: var(--meshblog-radius-sm);
-}
-
-/* ── Related / Backlinks aside — FLATTENED ────────────────────────────────── */
-/*
- * No background fill. No border. No border-radius. No padding card.
- * Separated from body by a single top hair rule + whitespace only.
- * This is "rules, not boxes" from .impeccable.md §4.
- */
-
-.related-aside,
-.backlinks-aside {
-  margin-top: var(--meshblog-space-16);
-  padding-top: var(--meshblog-space-8);
-  border-top: 1px solid var(--meshblog-color-rule);
-}
-
-/* Section heading: small-caps sans, tracked, muted — NOT a bold serif header */
-.related-aside h2,
-.backlinks-aside h2 {
-  font-family: var(--meshblog-font-sans);
-  font-size: var(--meshblog-font-size-xs);
-  font-variant: small-caps;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: lowercase;
-  color: var(--meshblog-color-muted);
-  margin-top: 0;
-  margin-bottom: var(--meshblog-space-5);
-}
-
-.related-aside ul,
-.backlinks-aside ul {
-  list-style: none;
-  padding: 0;
+.prose blockquote p {
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--meshblog-space-3);
 }
 
-/* Links: primary text colour at rest — accent is reserved for hover only */
-.related-aside a,
-.backlinks-aside a {
-  font-family: var(--meshblog-font-serif);
-  color: var(--meshblog-color-text-primary);
-  text-decoration: none;
-  transition: color var(--meshblog-dur-fast) var(--meshblog-ease);
+.prose blockquote cite {
+  display: block;
+  font-family: var(--f-mono);
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+  margin-top: 10px;
+  font-style: normal;
+  letter-spacing: 0.04em;
 }
 
-/* → arrow appears on hover via ::after — adds direction without visual clutter */
-.related-aside a::after,
-.backlinks-aside a::after {
-  content: "";
-  display: inline-block;
-  width: 0;
-  overflow: hidden;
-  opacity: 0;
-  margin-left: 0.3em;
-  transition:
-    width var(--meshblog-dur-fast) var(--meshblog-ease),
-    opacity var(--meshblog-dur-fast) var(--meshblog-ease);
-  vertical-align: baseline;
-  font-family: var(--meshblog-font-sans);
+.prose blockquote cite::before {
+  content: "— ";
 }
 
-.related-aside a:hover,
-.backlinks-aside a:hover {
-  color: var(--meshblog-color-accent);
+/* ── Lists — em-dash bullets ──────────────────────────────────────────────── */
+
+.prose ul {
+  padding-left: 1.4em;
+  list-style: none;
 }
 
-.related-aside a:hover::after,
-.backlinks-aside a:hover::after {
-  content: "→";
-  width: 1.1em;
-  opacity: 1;
+.prose li {
+  margin: 0.4em 0;
+  position: relative;
 }
 
-.related-aside a:focus-visible,
-.backlinks-aside a:focus-visible {
-  outline: none;
-  box-shadow: var(--meshblog-shadow-focus);
-  border-radius: var(--meshblog-radius-sm);
+.prose ul > li::before {
+  content: "—";
+  font-family: var(--f-mono);
+  font-weight: 500;
+  position: absolute;
+  left: -1.4em;
+  color: var(--ink);
+}
+
+/* ── Codeblock (inverted) ─────────────────────────────────────────────────── */
+
+.codeblock {
+  font-family: var(--f-mono);
+  font-size: 13.5px;
+  line-height: 1.65;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 20px 24px;
+  overflow-x: auto;
+  margin: 1.6em 0;
+  border: 1px solid var(--ink);
+}
+
+.codeblock .c {
+  color: var(--ink-5);
+  font-style: italic;
+}
+
+.codeblock .k {
+  color: var(--paper);
+  font-weight: 600;
+}
+
+.codeblock .s {
+  color: var(--ink-5);
+}
+
+/* ── Pull quote ───────────────────────────────────────────────────────────── */
+
+.pull-quote {
+  font-family: var(--f-disp);
+  font-weight: 500;
+  font-size: var(--fs-3xl);
+  line-height: 1.2;
+  color: var(--ink);
+  font-style: italic;
+  padding: 28px 0;
+  margin: 2em 0;
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  max-width: 48ch;
+  letter-spacing: -0.01em;
 }

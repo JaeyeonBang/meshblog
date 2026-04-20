@@ -1,42 +1,38 @@
-/* QAChips.module.css — scoped styles for the Q&A chips component
- * All values reference --meshblog-* tokens from src/styles/tokens.css
- * Zero hex/rgba literals — tokens only.
+/* QAChips.module.css — blog-bw qa-card aesthetics
+ * Maps TSX classNames to SPEC §3 tokens. No hex literals. No --meshblog-*.
  */
 
-/* ── Search input ─────────────────────────────────────────────────── */
+/* ── Search input ─────────────────────────────────────────────────────────── */
 
 .searchInput {
   display: block;
   width: 100%;
-  min-height: 44px; /* iOS tap target */
-  padding: var(--meshblog-space-3) var(--meshblog-space-4);
-  font-family: var(--meshblog-font-sans);
-  font-size: var(--meshblog-font-size-base);
-  border: 1px solid var(--meshblog-color-border);
-  border-radius: var(--meshblog-radius-sm);
-  background: var(--meshblog-color-surface);
-  color: var(--meshblog-color-text-primary);
+  padding: 10px 16px;
+  font-family: var(--f-sans);
+  font-size: 14px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--r-xs);
   outline: none;
-  transition:
-    border-color var(--meshblog-dur-fast) var(--meshblog-ease),
-    box-shadow var(--meshblog-dur-fast) var(--meshblog-ease);
-  margin-bottom: var(--meshblog-space-4);
+  transition: background var(--dur-fast) var(--ease);
+  margin-bottom: 18px;
+}
+
+.searchInput::placeholder {
+  color: var(--ink-4);
 }
 
 .searchInput:focus {
-  border-color: var(--meshblog-color-focus-ring);
-  box-shadow: var(--meshblog-shadow-focus);
+  background: var(--paper-2);
 }
 
-@media (min-width: 768px) {
-  .searchInput {
-    width: auto;
-    min-width: 320px;
-    max-width: 480px;
-  }
+.searchInput:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
-/* ── Card list ────────────────────────────────────────────────────── */
+/* ── Card list ────────────────────────────────────────────────────────────── */
 
 .list {
   list-style: none;
@@ -44,72 +40,92 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--meshblog-space-3);
 }
 
-/* ── Individual card (li) ─────────────────────────────────────────── */
+/* ── Individual card (li) ─────────────────────────────────────────────────── */
 
 .card {
-  padding: var(--meshblog-space-4) var(--meshblog-space-5);
-  border: 1px solid var(--meshblog-color-border);
-  border-radius: var(--meshblog-radius-sm);
-  transition: border-color var(--meshblog-dur-fast) var(--meshblog-ease);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  cursor: pointer;
 }
 
-.card:hover {
-  border-color: var(--meshblog-color-accent);
+.card:last-child {
+  border-bottom: 0;
 }
 
-/* ── Question button ──────────────────────────────────────────────── */
+/* ── Question button ──────────────────────────────────────────────────────── */
 
 .questionBtn {
-  display: block;
+  display: flex;
   width: 100%;
   text-align: left;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
   padding: 0;
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: var(--meshblog-font-size-base);
+  font-family: var(--f-serif);
+  font-size: 14px;
   font-weight: 500;
-  color: var(--meshblog-color-text-primary);
-  line-height: 1.5;
+  color: var(--ink);
+  line-height: 1.4;
 }
 
-.questionBtn:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.questionBtn::after {
+  content: "+";
+  font-family: var(--f-mono);
+  font-size: 16px;
+  color: var(--ink-3);
+  line-height: 1;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+/* When card is open, questionBtn shows minus — handled by .cardOpen in TSX
+   but TSX uses aria-expanded; we style the ::after via :has or the open class */
+
+.cardOpen .questionBtn::after {
+  content: "−";
 }
 
 .questionBtn:focus-visible {
-  outline: 2px solid var(--meshblog-color-focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: var(--meshblog-radius-sm);
 }
 
-/* ── Tier badge (<small>) ─────────────────────────────────────────── */
+/* ── Tier badge (<small>) ─────────────────────────────────────────────────── */
 
 .tierBadge {
-  display: inline;
-  margin-left: var(--meshblog-space-2);
-  color: var(--meshblog-color-muted);
-  font-family: var(--meshblog-font-sans);
-  font-size: var(--meshblog-font-size-xs);
-  font-weight: 400;
-  letter-spacing: 0.15em;
+  font-family: var(--f-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  vertical-align: middle;
+  padding: 1px 6px;
+  display: inline-block;
+  line-height: 1.6;
+  border: 1px solid var(--ink-5);
+  color: var(--ink-3);
+  margin-left: var(--space-2);
+  flex-shrink: 0;
 }
 
-/* ── Answer region ────────────────────────────────────────────────── */
+/* ── Answer region ────────────────────────────────────────────────────────── */
 
 .answerRegion {
-  margin-top: var(--meshblog-space-3);
-  color: var(--meshblog-color-text-secondary);
-  line-height: 1.65;
+  margin-top: 10px;
+  padding-left: 14px;
+  border-left: 2px solid var(--ink);
 }
 
 .answerText {
+  font-family: var(--f-serif);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
   margin: 0;
 }
 
@@ -120,55 +136,56 @@
   overflow: hidden;
 }
 
-/* ── Expand toggle button ─────────────────────────────────────────── */
+/* ── Expand toggle button ─────────────────────────────────────────────────── */
 
 .expandBtn {
   display: inline-block;
-  margin-top: var(--meshblog-space-2);
+  margin-top: var(--space-2);
   padding: 0;
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: var(--meshblog-font-size-sm);
-  color: var(--meshblog-color-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
   text-decoration: underline;
   text-underline-offset: 2px;
+  letter-spacing: 0.04em;
 }
 
-.expandBtn:hover,
-.expandBtn:focus-visible {
-  color: var(--meshblog-color-accent);
+.expandBtn:hover {
+  color: var(--ink);
 }
 
 .expandBtn:focus-visible {
-  outline: 2px solid var(--meshblog-color-focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: var(--meshblog-radius-sm);
 }
 
-/* ── Empty state / no-results ─────────────────────────────────────── */
+/* ── Empty / no-results ───────────────────────────────────────────────────── */
 
 .noResults {
-  padding: var(--meshblog-space-6);
+  padding: var(--space-6);
   text-align: center;
-  color: var(--meshblog-color-muted);
-  font-family: var(--meshblog-font-serif);
-  font-size: var(--meshblog-font-size-sm);
+  color: var(--ink-3);
+  font-family: var(--f-serif);
+  font-size: var(--fs-sm);
   font-style: italic;
 }
 
-/* ── Fallback (related links) ─────────────────────────────────────── */
+/* ── Fallback (related links) ─────────────────────────────────────────────── */
 
 .fallback {
-  margin-top: var(--meshblog-space-3);
-  padding-top: var(--meshblog-space-4);
-  border-top: 1px solid var(--meshblog-color-rule);
+  margin-top: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
 }
 
 .fallbackLabel {
-  margin: 0 0 var(--meshblog-space-3) 0;
-  color: var(--meshblog-color-muted);
-  font-size: var(--meshblog-font-size-sm);
+  margin: 0 0 var(--space-3) 0;
+  color: var(--ink-3);
+  font-size: var(--fs-sm);
+  font-family: var(--f-serif);
 }
 
 .relatedList {
@@ -177,21 +194,24 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--meshblog-space-2);
+  gap: var(--space-2);
 }
 
 .relatedList li::before {
-  content: '→ ';
-  color: var(--meshblog-color-muted);
+  content: "→ ";
+  color: var(--ink-3);
+  font-family: var(--f-mono);
 }
 
 .relatedList a {
-  color: var(--meshblog-color-accent);
+  color: var(--ink);
   text-decoration: none;
-  transition: color var(--meshblog-dur-fast) var(--meshblog-ease);
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 1px;
+  transition: all var(--dur-fast) var(--ease);
 }
 
 .relatedList a:hover {
-  color: var(--meshblog-color-accent-hover);
-  text-decoration: underline;
+  background: var(--ink);
+  color: var(--paper);
 }

@@ -1,0 +1,23 @@
+---
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+<span class:list={['badge', className]}>
+  <slot />
+</span>
+
+<style>
+  .badge {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border: 1px solid var(--ink);
+    display: inline-block;
+    line-height: 1.6;
+  }
+</style>

@@ -1,0 +1,159 @@
+---
+import { withBase } from '../../../lib/url';
+interface Props {
+  active?: 'posts' | 'notes' | 'graph' | 'about';
+  showSearch?: boolean;
+}
+const { active, showSearch = true } = Astro.props;
+const links = [
+  { key: 'posts', label: 'posts', href: withBase('/posts') },
+  { key: 'notes', label: 'notes', href: withBase('/notes') },
+  { key: 'graph', label: 'graph', href: withBase('/graph') },
+  { key: 'about', label: 'about', href: withBase('/about') },
+] as const;
+---
+<header class="topbar">
+  <a href={withBase('/')} class="logo-link" aria-label="meshblog home">
+    <span class="logo">meshblog<span class="sub">est. 2026</span></span>
+  </a>
+  <div class="spacer"></div>
+  <nav class="nav-links" aria-label="Main navigation">
+    {links.map(link => (
+      <a
+        class:list={['nav-link', active === link.key && 'active']}
+        href={link.href}
+        aria-current={active === link.key ? 'page' : undefined}
+      >{link.label}</a>
+    ))}
+  </nav>
+  {showSearch && (
+    <button
+      class="btn btn-sm"
+      aria-label="Open search (⌘K)"
+      onclick="window.dispatchEvent(new Event('cmdk:open'))"
+    >
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.5"/>
+        <path d="M10.3 10.3L13.5 13.5"/>
+      </svg>
+      search <span class="kbd">⌘K</span>
+    </button>
+  )}
+</header>
+
+<style>
+  .topbar {
+    max-width: var(--w-page);
+    margin: 0 auto;
+    padding: 18px var(--space-8) 16px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    border-bottom: 1px solid var(--ink);
+  }
+  .logo-link {
+    text-decoration: none;
+    color: inherit;
+  }
+  .logo-link:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  .logo {
+    font-family: var(--f-disp);
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .sub {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-3);
+    letter-spacing: 0.1em;
+    margin-left: 2px;
+    text-transform: uppercase;
+  }
+  .spacer {
+    flex: 1;
+  }
+  .nav-links {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+  }
+  .nav-link {
+    font-family: var(--f-sans);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    padding: 8px 16px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    color: var(--ink-3);
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -17px;
+    transition: all var(--dur-fast) var(--ease);
+    text-decoration: none;
+  }
+  .nav-link:hover {
+    color: var(--ink);
+  }
+  .nav-link.active {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-link:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  .btn {
+    font-family: var(--f-sans);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    padding: 8px 16px;
+    border: 1px solid var(--ink);
+    cursor: pointer;
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: var(--r-xs);
+    transition: all var(--dur-fast) var(--ease);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    letter-spacing: 0.01em;
+  }
+  .btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  .btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .kbd {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--ink-5);
+    letter-spacing: 0.04em;
+  }
+  .btn:hover .kbd {
+    color: var(--paper);
+    background: var(--ink);
+    border-color: var(--ink-5);
+  }
+</style>
