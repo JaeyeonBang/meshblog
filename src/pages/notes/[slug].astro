@@ -10,8 +10,10 @@ import Pager from '../../components/ui/molecules/Pager.astro'
 import TOC from '../../components/ui/molecules/TOC.astro'
 import MiniMesh from '../../components/ui/molecules/MiniMesh.astro'
 import { renderMarkdownToHtml } from '../../lib/markdown/render'
+import { buildNoteResolver } from '../../lib/markdown/wikilink-resolver'
 import {
   listNotes,
+  listAllLinkable,
   getQaForNote,
   getRelatedNotes,
   openReadonlyDb,
@@ -102,7 +104,11 @@ const formattedDate = new Date(note.updated_at).toLocaleDateString('ko-KR', {
   day: '2-digit',
 })
 const excerpt = note.content.replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
-const contentHtml = await renderMarkdownToHtml(note.content)
+const wikilinkResolver = buildNoteResolver(listAllLinkable())
+const contentHtml = await renderMarkdownToHtml(note.content, {
+  resolver: wikilinkResolver,
+  hrefFor: (slug) => withBase(`/notes/${slug}`),
+})
 
 // All notes for pager
 const allNotes = listNotes()
