@@ -65,7 +65,8 @@ import { withBase } from '../../../lib/url';
   .cmdk-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.35);
+    /* Token-aware scrim: uses ink at low opacity so it reads on both light and dark backgrounds */
+    background: color-mix(in srgb, var(--ink) 35%, transparent);
     z-index: 90;
     display: none;
     align-items: flex-start;
