@@ -24,8 +24,8 @@ test.describe('Backlinks graph mode', () => {
     await expect(controls).toBeVisible()
 
     // All three mode radios must be visible buttons
-    await expect(controls.locator('button[data-mode="notes"]')).toBeVisible()
-    await expect(controls.locator('button[data-mode="concepts"]')).toBeVisible()
+    await expect(controls.locator('button[data-mode="note"]')).toBeVisible()
+    await expect(controls.locator('button[data-mode="concept"]')).toBeVisible()
     await expect(controls.locator('button[data-mode="backlinks"]')).toBeVisible()
   })
 

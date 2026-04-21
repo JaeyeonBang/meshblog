@@ -56,11 +56,45 @@ export default function GraphView() {
   const [retry, setRetry] = useState(0)
   const svgRef = useRef<SVGSVGElement>(null)
 
+  // Listen for toolbar CustomEvents from GraphControls.astro
+  useEffect(() => {
+    const onSetMode = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail
+      if (detail === 'note' || detail === 'concept' || detail === 'backlinks') setMode(detail as Mode)
+    }
+    const onSetLevel = (e: Event) => {
+      const detail = (e as CustomEvent<number>).detail
+      const n = Number(detail)
+      if (n === 1 || n === 2 || n === 3) setLevel(n as Level)
+    }
+    window.addEventListener('graph:setMode', onSetMode)
+    window.addEventListener('graph:setLevel', onSetLevel)
+    return () => {
+      window.removeEventListener('graph:setMode', onSetMode)
+      window.removeEventListener('graph:setLevel', onSetLevel)
+    }
+  }, [])
+
   // Fetch graph + manifest whenever mode/level/retry changes
   useEffect(() => {
     let cancelled = false
     setStatus('loading')
     setGraph(null)
+
+    // Update aria-busy on canvas while loading
+    const canvasEl = document.getElementById('graphCanvas')
+    if (canvasEl) canvasEl.setAttribute('aria-busy', 'true')
+
+    // Show loading overlay, hide others
+    const loadingEl = document.getElementById('graphLoadingState')
+    const emptyEl = document.getElementById('graphEmptyState')
+    const errorEl = document.getElementById('graphErrorState')
+    if (loadingEl) loadingEl.setAttribute('aria-hidden', 'false')
+    if (emptyEl) emptyEl.setAttribute('aria-hidden', 'true')
+    if (errorEl) {
+      errorEl.hidden = true
+      errorEl.setAttribute('aria-hidden', 'true')
+    }
 
     const graphUrl =
       mode === 'backlinks'
@@ -88,26 +122,41 @@ export default function GraphView() {
         if (cancelled) return
         setGraph(g)
         setManifest(m)
-        setStatus(g.nodes.length === 0 ? 'empty' : 'ready')
-        // Hide/show the Astro empty-state overlay
-        const emptyEl = document.getElementById('graphEmptyState')
-        if (emptyEl) {
-          emptyEl.setAttribute('aria-hidden', g.nodes.length === 0 ? 'false' : 'true')
+        const nextStatus: Status = g.nodes.length === 0 ? 'empty' : 'ready'
+        setStatus(nextStatus)
+
+        // Remove aria-busy on canvas
+        if (canvasEl) canvasEl.removeAttribute('aria-busy')
+
+        // Hide loading overlay
+        if (loadingEl) loadingEl.setAttribute('aria-hidden', 'true')
+
+        if (nextStatus === 'empty') {
+          if (emptyEl) emptyEl.setAttribute('aria-hidden', 'false')
+        } else {
+          if (emptyEl) emptyEl.setAttribute('aria-hidden', 'true')
         }
         // Ensure error-state overlay is hidden on success
-        const errorEl = document.getElementById('graphErrorState')
         if (errorEl) {
           errorEl.hidden = true
           errorEl.setAttribute('aria-hidden', 'true')
         }
+
+        // Dispatch graph:state for toolbar sync
+        window.dispatchEvent(new CustomEvent('graph:state', {
+          detail: { mode, level, nodes: g.nodes }
+        }))
       })
       .catch(() => {
         if (cancelled) return
         setStatus('error')
-        // Show Astro error-state overlay and hide empty-state
-        const emptyEl = document.getElementById('graphEmptyState')
+
+        // Remove aria-busy on canvas
+        if (canvasEl) canvasEl.removeAttribute('aria-busy')
+
+        // Hide loading + empty overlays, show error
+        if (loadingEl) loadingEl.setAttribute('aria-hidden', 'true')
         if (emptyEl) emptyEl.setAttribute('aria-hidden', 'true')
-        const errorEl = document.getElementById('graphErrorState')
         if (errorEl) {
           errorEl.hidden = false
           errorEl.setAttribute('aria-hidden', 'false')
@@ -120,25 +169,22 @@ export default function GraphView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, level, retry])
 
-  // Sync URL without triggering navigation
+  // Sync URL without triggering navigation + dispatch graph:state on mode/level change
   useEffect(() => {
     if (typeof window === 'undefined') return
     const q = new URLSearchParams({ mode, level: String(level) })
     history.replaceState(null, '', `?${q.toString()}`)
+    // Dispatch state even if graph not yet loaded (nodes: [] fallback)
+    window.dispatchEvent(new CustomEvent('graph:state', {
+      detail: { mode, level, nodes: graph?.nodes ?? [] }
+    }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, level])
 
-  // Listen for clicks on the visible SSR toolbar (GraphControls.astro)
+  // Wire Astro overlay retry button to React retry mechanism
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const onMode = (e: Event) => {
-      const m = (e as CustomEvent<{ mode: Mode }>).detail?.mode
-      if (m === 'note' || m === 'concept' || m === 'backlinks') setMode(m)
-    }
-    const onLevel = (e: Event) => {
-      const l = (e as CustomEvent<{ level: Level }>).detail?.level
-      if (l === 1 || l === 2 || l === 3) setLevel(l)
-    }
-    const onRetry = () => {
+    const handler = () => {
+      // Hide error overlay before re-fetching
       const errorEl = document.getElementById('graphErrorState')
       if (errorEl) {
         errorEl.hidden = true
@@ -146,14 +192,8 @@ export default function GraphView() {
       }
       setRetry(r => r + 1)
     }
-    document.addEventListener('graph:mode', onMode)
-    document.addEventListener('graph:level', onLevel)
-    window.addEventListener('graph:retry', onRetry)
-    return () => {
-      document.removeEventListener('graph:mode', onMode)
-      document.removeEventListener('graph:level', onLevel)
-      window.removeEventListener('graph:retry', onRetry)
-    }
+    window.addEventListener('graph:retry', handler)
+    return () => window.removeEventListener('graph:retry', handler)
   }, [])
 
   useForceSimulation(svgRef, graph, {
@@ -183,57 +223,6 @@ export default function GraphView() {
           )
         })}
       </ul>
-
-      {/* Internal controls (hidden — GraphControls.astro is the visible toolbar) */}
-      <div role="toolbar" aria-label="graph controls" className={styles.toolbar}>
-        <div role="radiogroup" aria-label="View mode" className={styles.segmentGroup}>
-          <span className={styles.segmentGroupLabel}>Mode</span>
-          {(['note', 'concept', 'backlinks'] as Mode[]).map(m => (
-            <button
-              key={m}
-              role="radio"
-              aria-checked={mode === m}
-              className={`${styles.segment}${mode === m ? ` ${styles.segmentActive}` : ''}`}
-              onClick={() => setMode(m)}
-            >
-              {m === 'note' ? 'Notes' : m === 'concept' ? 'Concepts' : 'Backlinks'}
-            </button>
-          ))}
-        </div>
-
-        <div role="radiogroup" aria-label="Depth level" className={styles.segmentGroup}>
-          <span className={styles.segmentGroupLabel}>Level</span>
-          {([1, 2, 3] as Level[]).map(l => (
-            <button
-              key={l}
-              role="radio"
-              aria-checked={level === l}
-              className={`${styles.segment}${level === l ? ` ${styles.segmentActive}` : ''}`}
-              onClick={() => setLevel(l)}
-            >
-              L{l}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 3-state loading / error / empty */}
-      {status === 'loading' && (
-        <p className={styles.status}>그래프를 불러오는 중…</p>
-      )}
-
-      {status === 'error' && (
-        <div className={styles.status}>
-          <p role="alert">그래프를 불러올 수 없습니다.</p>
-          <button className={styles.retryBtn} onClick={() => setRetry(r => r + 1)}>
-            다시 시도
-          </button>
-        </div>
-      )}
-
-      {status === 'empty' && (
-        <p className={styles.status}>아직 표시할 노드가 없습니다.</p>
-      )}
 
       {/* SVG — always rendered so svgRef is stable.
            Arrowhead <defs> for backlinks mode are injected by useForceSimulation. */}

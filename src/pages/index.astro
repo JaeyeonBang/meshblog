@@ -37,12 +37,12 @@ function getNoteBadge(note: { created_at: string; updated_at: string }): 'new' |
 
 // Static concept mesh nodes for home sidebar
 const meshNodes = [
-  { label: 'knowledge', x: 36, y: 30, kind: 'hub' as const },
-  { label: 'llm',       x: 70, y: 58, kind: 'hub' as const },
-  { label: 'rag',       x: 70, y: 22 },
-  { label: 'astro',     x: 22, y: 62 },
-  { label: 'sqlite',    x: 48, y: 82 },
-  { label: 'faq',       x: 14, y: 24 },
+  { label: 'knowledge', x: 36, y: 30, kind: 'hub' as const, href: withBase('/graph') },
+  { label: 'llm',       x: 70, y: 58, kind: 'hub' as const, href: withBase('/graph') },
+  { label: 'rag',       x: 70, y: 22, href: withBase('/graph?mode=concept') },
+  { label: 'astro',     x: 22, y: 62, href: withBase('/graph?mode=concept') },
+  { label: 'sqlite',    x: 48, y: 82, href: withBase('/graph?mode=concept') },
+  { label: 'faq',       x: 14, y: 24, href: withBase('/graph?mode=concept') },
 ]
 const meshEdges = [
   { from: 0, to: 2 },
@@ -120,7 +120,7 @@ const meshEdges = [
 
       <TOC label="concept mesh">
         <MiniMesh nodes={meshNodes} edges={meshEdges} size="md" />
-        <p class="mesh-caption">Concept mesh · 자주 등장하는 개념들이 서로를 끌어당긴다</p>
+        <p class="mesh-caption"><span class="mesh-caption__tag">Concept mesh</span> <span class="mesh-caption__body">· 자주 등장하는 개념들이 서로를 끌어당긴다</span></p>
         <div class="mesh-cta">
           <Button href={withBase('/graph')}>전체 그래프 →</Button>
         </div>
@@ -278,10 +278,18 @@ const meshEdges = [
   .mesh-caption {
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
     color: var(--ink-3);
     margin: var(--space-3) 0 0;
+  }
+  .mesh-caption__tag {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+  }
+  .mesh-caption__body {
+    letter-spacing: 0.02em;
+    text-transform: none;
+    font-family: var(--f-serif);
+    color: var(--ink-2);
   }
 
   /* ── Hero footnote ─────────────────────────────────────────── */

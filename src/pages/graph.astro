@@ -17,18 +17,24 @@ import { withBase } from '../lib/url'
     <!-- ── Header ──────────────────────────────────────── -->
     <div class="graph-header">
       <h1>Knowledge mesh</h1>
-      <span class="header-meta" id="graphMeta">mode: notes · L2</span>
+      <span class="header-meta" id="graphMeta">mode: note · L1</span>
     </div>
 
     <!-- ── Controls ───────────────────────────────────── -->
-    <GraphControls mode="notes" level={2} />
+    <GraphControls mode="note" level={1} />
 
-    <!-- ── Main: canvas + sidebar ─────────────────────── -->
+    <!-- ── Main: canvas + list + sidebar ─────────────── -->
     <div class="graph-main">
       <!-- canvas with subtle radial gradient -->
-      <div class="graph-canvas" id="graphCanvas">
-        <!-- empty-state shown before JS loads; hidden once GraphView reports nodes -->
-        <div class="empty-state" id="graphEmptyState" aria-hidden="false">
+      <div class="graph-canvas" id="graphCanvas" aria-busy="true">
+        <!-- loading-state shown on initial paint -->
+        <div class="loading-state" id="graphLoadingState" aria-hidden="false">
+          <p class="empty-eyebrow">loading</p>
+          <p class="empty-body">그래프 불러오는 중 · fetching mesh…</p>
+        </div>
+
+        <!-- empty-state shown when graph has no nodes -->
+        <div class="empty-state" id="graphEmptyState" aria-hidden="true">
           <p class="empty-eyebrow">no nodes</p>
           <p class="empty-body">Add notes to see the graph.</p>
         </div>
@@ -42,6 +48,9 @@ import { withBase } from '../lib/url'
 
         <GraphView client:only="react" />
       </div>
+
+      <!-- flat list view — toggled by list button; sibling to canvas -->
+      <section class="graph-list" id="graphList" tabindex="-1" hidden aria-label="graph as list"></section>
 
       <!-- sidebar: selected info + legend + neighbors -->
       <aside class="graph-aside" aria-label="Graph sidebar">
@@ -75,7 +84,140 @@ import { withBase } from '../lib/url'
 </Base>
 
 <script>
-  // Wire the Astro retry overlay button to GraphView React island
+  // ── State cache ──────────────────────────────────────────────────
+  let _graphState: { mode: string; level: number; nodes: unknown[] } | null = null
+
+  // Read state from cache or fall back to URL params
+  function readState() {
+    if (_graphState) return _graphState
+    const params = new URLSearchParams(window.location.search)
+    const mode = params.get('mode') === 'concept' ? 'concept' : 'note'
+    const rawLevel = Number(params.get('level') ?? '1')
+    const level = (rawLevel === 2 || rawLevel === 3) ? rawLevel : 1
+    return { mode, level, nodes: [] as unknown[] }
+  }
+
+  // ── graph:state listener ─────────────────────────────────────────
+  window.addEventListener('graph:state', (e: Event) => {
+    const detail = (e as CustomEvent<{ mode: string; level: number; nodes: unknown[] }>).detail
+    _graphState = detail
+
+    // Update #graphMeta
+    const metaEl = document.getElementById('graphMeta')
+    if (metaEl) metaEl.textContent = `mode: ${detail.mode} · L${detail.level}`
+
+    // Toggle seg--active on mode buttons
+    document.querySelectorAll<HTMLElement>('.graph-controls [data-mode]').forEach(btn => {
+      const isActive = btn.dataset.mode === detail.mode
+      btn.classList.toggle('seg--active', isActive)
+      btn.setAttribute('aria-checked', String(isActive))
+    })
+
+    // Toggle seg--active on level buttons
+    document.querySelectorAll<HTMLElement>('.graph-controls [data-level]').forEach(btn => {
+      const isActive = Number(btn.dataset.level) === detail.level
+      btn.classList.toggle('seg--active', isActive)
+      btn.setAttribute('aria-checked', String(isActive))
+    })
+
+    // If list is currently visible, re-render it with latest nodes
+    const listEl = document.getElementById('graphList')
+    if (listEl && !listEl.hidden) {
+      renderList(detail.nodes as Array<{ id: string; label: string; type: string }>)
+    }
+  })
+
+  // ── Mode button clicks ───────────────────────────────────────────
+  document.addEventListener('click', (e: MouseEvent) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('.graph-controls [data-mode]')
+    if (target) {
+      window.dispatchEvent(new CustomEvent('graph:setMode', { detail: target.dataset.mode }))
+    }
+  })
+
+  // ── Level button clicks ──────────────────────────────────────────
+  document.addEventListener('click', (e: MouseEvent) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('.graph-controls [data-level]')
+    if (target) {
+      window.dispatchEvent(new CustomEvent('graph:setLevel', { detail: Number(target.dataset.level) }))
+    }
+  })
+
+  // ── Share button ─────────────────────────────────────────────────
+  document.getElementById('gcShareBtn')?.addEventListener('click', async () => {
+    const { mode, level } = readState()
+    const url = `${location.origin}${location.pathname}?mode=${mode}&level=${level}`
+    const shareBtn = document.getElementById('gcShareBtn') as HTMLButtonElement | null
+    const shareStatus = document.getElementById('gcShareStatus')
+    const originalLabel = shareBtn?.textContent ?? 'share link'
+
+    let usedFallback = false
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      window.prompt('Copy this link:', url)
+      usedFallback = true
+    }
+
+    if (shareStatus) {
+      shareStatus.textContent = usedFallback ? 'copy ready' : 'copied ✓ · 복사 완료'
+    }
+    if (shareBtn && !usedFallback) {
+      shareBtn.textContent = 'copied ✓'
+      setTimeout(() => {
+        shareBtn.textContent = originalLabel
+        if (shareStatus) shareStatus.textContent = ''
+      }, 1500)
+    }
+  })
+
+  // ── List button ──────────────────────────────────────────────────
+  function renderList(nodes: Array<{ id: string; label: string; type: string }>) {
+    const listEl = document.getElementById('graphList')
+    if (!listEl) return
+    if (nodes.length === 0) {
+      listEl.innerHTML = '<p class="gl-empty">no nodes loaded yet</p>'
+      return
+    }
+    listEl.innerHTML = nodes.map(n =>
+      `<div class="gl-row gl-row--${n.type}">` +
+        `<span class="gl-kind">${n.type}</span>` +
+        `<span class="gl-title">${escapeHtml(n.label)}</span>` +
+      `</div>`
+    ).join('')
+  }
+
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  document.getElementById('gcListBtn')?.addEventListener('click', () => {
+    const listBtn = document.getElementById('gcListBtn') as HTMLButtonElement | null
+    const canvasEl = document.getElementById('graphCanvas')
+    const listEl = document.getElementById('graphList')
+    if (!listBtn || !canvasEl || !listEl) return
+
+    const isPressed = listBtn.getAttribute('aria-pressed') === 'true'
+
+    if (!isPressed) {
+      // Activate list view
+      listBtn.setAttribute('aria-pressed', 'true')
+      canvasEl.hidden = true
+      listEl.hidden = false
+      // Render current nodes
+      const state = readState()
+      renderList((state.nodes as Array<{ id: string; label: string; type: string }>))
+      listEl.focus()
+    } else {
+      // Deactivate list view
+      listBtn.setAttribute('aria-pressed', 'false')
+      listEl.hidden = true
+      canvasEl.hidden = false
+      listBtn.focus()
+    }
+  })
+
+  // ── Retry overlay button ─────────────────────────────────────────
   document.getElementById('graphRetryBtn')?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('graph:retry'))
   })
@@ -118,7 +260,7 @@ import { withBase } from '../lib/url'
     text-transform: uppercase;
   }
 
-  /* ── Main: canvas + aside grid ────────────────────────── */
+  /* ── Main: canvas + list + aside grid ─────────────────── */
   .graph-main {
     display: grid;
     grid-template-columns: 1fr var(--w-graph-side);
@@ -155,6 +297,22 @@ import { withBase } from '../lib/url'
       );
   }
 
+  /* ── Loading state ─────────────────────────────────────── */
+  .loading-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    pointer-events: none;
+  }
+
+  .loading-state[aria-hidden="true"] {
+    display: none;
+  }
+
   /* ── Empty state ───────────────────────────────────────── */
   .empty-state {
     position: absolute;
@@ -165,7 +323,6 @@ import { withBase } from '../lib/url'
     justify-content: center;
     gap: var(--space-2);
     pointer-events: none;
-    /* hidden via JS once graph has nodes */
   }
 
   .empty-state[aria-hidden="true"] {
@@ -229,6 +386,66 @@ import { withBase } from '../lib/url'
     outline-offset: 2px;
   }
 
+  /* ── Graph list (toggle view) ──────────────────────────── */
+  .graph-list {
+    grid-column: 1;
+    overflow-y: auto;
+    padding: var(--space-5) var(--space-6);
+    outline: none;
+  }
+
+  .graph-list[hidden] { display: none; }
+
+  .gl-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--ink-5);
+    cursor: default;
+  }
+
+  .gl-row a {
+    display: contents;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .gl-row a:hover .gl-title,
+  .gl-row a:hover .gl-kind {
+    color: var(--paper);
+  }
+
+  .gl-row a:hover {
+    background: var(--ink);
+  }
+
+  .gl-kind {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    min-width: 5em;
+    flex-shrink: 0;
+  }
+
+  .gl-title {
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+  }
+
+  .gl-empty {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: var(--space-4) 0;
+    text-align: center;
+  }
+
   /* ── Aside ─────────────────────────────────────────────── */
   .graph-aside {
     border-left: 1px solid var(--ink);
@@ -257,7 +474,7 @@ import { withBase } from '../lib/url'
   .graph-aside h4 {
     font-family: var(--f-disp);
     font-weight: 600;
-    font-size: 19px;
+    font-size: var(--fs-lg);
     margin: 0 0 var(--space-1);
     letter-spacing: -0.01em;
   }
@@ -272,7 +489,7 @@ import { withBase } from '../lib/url'
 
   .block-excerpt {
     font-family: var(--f-serif);
-    font-size: 14px;
+    font-size: var(--fs-sm);
     color: var(--ink-2);
     line-height: 1.55;
     margin: 0 0 var(--space-4);

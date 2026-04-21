@@ -29,46 +29,17 @@
   }
 }
 
-/* ── Toolbar (now hidden — controls live in GraphControls.astro) ─── */
-
-.toolbar {
-  display: none;
-}
-
-/* Keep these classes in CSS module for TS compatibility — used in GraphView.tsx */
-.segmentGroup {}
-.segmentGroupLabel {}
-.segment {}
-.segmentActive {}
-
-/* Directed graph (backlinks mode): arrowhead colour via currentColor */
-.svgDirected {
-  color: var(--ink);
-}
-
-/* ── Status messages ─────────────────────────────────────────────── */
-
-.status {
-  font-family: var(--f-mono);
-  font-size: var(--fs-xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  margin: 0;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  pointer-events: none;
-}
-
 /* ── SVG canvas ──────────────────────────────────────────────────── */
 
 .svg {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Directed graph (backlinks mode): arrowhead colour via currentColor */
+.svgDirected {
+  color: var(--ink);
 }
 
 /* ── Node kinds ──────────────────────────────────────────────────── */

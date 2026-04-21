@@ -134,7 +134,7 @@ const relatedItems = related.map((r, i) => ({
 const meshNodes = [
   { label: 'this note', x: 50, y: 50, kind: 'selected' as const },
   { label: 'related',   x: 28, y: 28 },
-  { label: 'graph',     x: 78, y: 35, kind: 'hub' as const },
+  { label: 'graph',     x: 78, y: 35, kind: 'hub' as const, href: withBase('/graph') },
 ]
 const meshEdges = [
   { from: 0, to: 1 },
@@ -217,7 +217,6 @@ const meshEdges = [
           </ul>
         </section>
       )}
-      <TOC label="appears in · 0" items={[]} />
       <TOC label="concepts">
         {note.tags && note.tags.map((tag: string) => (
           <Tag>{tag}</Tag>
