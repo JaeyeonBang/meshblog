@@ -8,7 +8,7 @@ const { items } = Astro.props;
   {items.map((item, i) => (
     <>
       {i > 0 && <span class="sep" aria-hidden="true">/</span>}
-      {item.current
+      {item.current || (!item.href && i === items.length - 1)
         ? <span class="current" aria-current="page">{item.label}</span>
         : item.href
           ? <a href={item.href}>{item.label}</a>
@@ -23,19 +23,21 @@ const { items } = Astro.props;
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
     color: var(--ink-3);
-    padding: 16px 0 20px;
-    margin: 0;
+    margin: 0 0 var(--space-4);
+    padding: 0;
     display: flex;
-    gap: 10px;
+    gap: var(--space-2);
     align-items: center;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
     list-style: none;
   }
   .sep {
-    color: var(--ink-5);
+    color: var(--ink-3);
+    letter-spacing: 0;
   }
   a {
-    color: inherit;
+    color: var(--ink-3);
     text-decoration: none;
     cursor: pointer;
     transition: color var(--dur-fast) var(--ease);
@@ -49,5 +51,14 @@ const { items } = Astro.props;
   }
   .current {
     color: var(--ink);
+    max-width: 60ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  @media (max-width: 480px) {
+    .current {
+      max-width: 30ch;
+    }
   }
 </style>
