@@ -54,9 +54,24 @@ export default function GraphView() {
         if (emptyEl) {
           emptyEl.setAttribute('aria-hidden', g.nodes.length === 0 ? 'false' : 'true')
         }
+        // Ensure error-state overlay is hidden on success
+        const errorEl = document.getElementById('graphErrorState')
+        if (errorEl) {
+          errorEl.hidden = true
+          errorEl.setAttribute('aria-hidden', 'true')
+        }
       })
       .catch(() => {
-        if (!cancelled) setStatus('error')
+        if (cancelled) return
+        setStatus('error')
+        // Show Astro error-state overlay and hide empty-state
+        const emptyEl = document.getElementById('graphEmptyState')
+        if (emptyEl) emptyEl.setAttribute('aria-hidden', 'true')
+        const errorEl = document.getElementById('graphErrorState')
+        if (errorEl) {
+          errorEl.hidden = false
+          errorEl.setAttribute('aria-hidden', 'false')
+        }
       })
 
     return () => {
@@ -71,6 +86,21 @@ export default function GraphView() {
     const q = new URLSearchParams({ mode, level: String(level) })
     history.replaceState(null, '', `?${q.toString()}`)
   }, [mode, level])
+
+  // Wire Astro overlay retry button to React retry mechanism
+  useEffect(() => {
+    const handler = () => {
+      // Hide error overlay before re-fetching
+      const errorEl = document.getElementById('graphErrorState')
+      if (errorEl) {
+        errorEl.hidden = true
+        errorEl.setAttribute('aria-hidden', 'true')
+      }
+      setRetry(r => r + 1)
+    }
+    window.addEventListener('graph:retry', handler)
+    return () => window.removeEventListener('graph:retry', handler)
+  }, [])
 
   useForceSimulation(svgRef, graph, {
     onNodeClick: (node: GraphNode) => {
