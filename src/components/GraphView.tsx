@@ -94,9 +94,24 @@ export default function GraphView() {
         if (emptyEl) {
           emptyEl.setAttribute('aria-hidden', g.nodes.length === 0 ? 'false' : 'true')
         }
+        // Ensure error-state overlay is hidden on success
+        const errorEl = document.getElementById('graphErrorState')
+        if (errorEl) {
+          errorEl.hidden = true
+          errorEl.setAttribute('aria-hidden', 'true')
+        }
       })
       .catch(() => {
-        if (!cancelled) setStatus('error')
+        if (cancelled) return
+        setStatus('error')
+        // Show Astro error-state overlay and hide empty-state
+        const emptyEl = document.getElementById('graphEmptyState')
+        if (emptyEl) emptyEl.setAttribute('aria-hidden', 'true')
+        const errorEl = document.getElementById('graphErrorState')
+        if (errorEl) {
+          errorEl.hidden = false
+          errorEl.setAttribute('aria-hidden', 'false')
+        }
       })
 
     return () => {
@@ -123,11 +138,21 @@ export default function GraphView() {
       const l = (e as CustomEvent<{ level: Level }>).detail?.level
       if (l === 1 || l === 2 || l === 3) setLevel(l)
     }
+    const onRetry = () => {
+      const errorEl = document.getElementById('graphErrorState')
+      if (errorEl) {
+        errorEl.hidden = true
+        errorEl.setAttribute('aria-hidden', 'true')
+      }
+      setRetry(r => r + 1)
+    }
     document.addEventListener('graph:mode', onMode)
     document.addEventListener('graph:level', onLevel)
+    window.addEventListener('graph:retry', onRetry)
     return () => {
       document.removeEventListener('graph:mode', onMode)
       document.removeEventListener('graph:level', onLevel)
+      window.removeEventListener('graph:retry', onRetry)
     }
   }, [])
 
