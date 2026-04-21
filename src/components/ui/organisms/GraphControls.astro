@@ -1,6 +1,6 @@
 ---
 interface Props {
-  mode: 'notes' | 'concepts';
+  mode: 'note' | 'concept';
   level: 1 | 2 | 3;
   nodeCount?: number;
   edgeCount?: number;
@@ -19,24 +19,24 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
       <span class="lab" id="mode-label">mode</span>
       <div class="btn-group" role="radiogroup" aria-labelledby="mode-label">
         <button
-          class:list={['seg', mode === 'notes' && 'seg--active']}
-          data-mode="notes"
+          class:list={['seg', mode === 'note' && 'seg--active']}
+          data-mode="note"
           role="radio"
-          aria-checked={mode === 'notes'}
+          aria-checked={mode === 'note'}
           title="notes = articles · concepts = extracted ideas"
         >notes</button>
         <button
-          class:list={['seg', mode === 'concepts' && 'seg--active']}
-          data-mode="concepts"
+          class:list={['seg', mode === 'concept' && 'seg--active']}
+          data-mode="concept"
           role="radio"
-          aria-checked={mode === 'concepts'}
+          aria-checked={mode === 'concept'}
           title="notes = articles · concepts = extracted ideas"
         >concepts</button>
       </div>
     </div>
 
     <div class="group">
-      <span class="lab" id="level-label">depth</span>
+      <span class="lab" id="level-label">level</span>
       <div class="btn-group" role="radiogroup" aria-labelledby="level-label">
         {([1, 2, 3] as const).map((l) => (
           <button
@@ -57,12 +57,26 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
     </span>
 
     <button class="action-btn" id="gcShareBtn" aria-label="Share graph link">share link</button>
-    <button class="action-btn" id="gcListBtn" aria-label="Switch to list view">list view</button>
+    <button class="action-btn" id="gcListBtn" aria-label="Switch to list view" aria-pressed="false">list view</button>
   </div>
-  <p class="depth-caption">Depth · 선택한 노드에서 몇 걸음까지 볼지</p>
+  <p class="level-caption">Level · 선택한 노드에서 몇 걸음까지 볼지</p>
+  <span id="gcShareStatus" role="status" aria-live="polite" class="sr-only"></span>
 </div>
 
 <style>
+  /* sr-only utility — visually hidden but accessible to screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
   .graph-controls {
     border-bottom: 1px solid var(--ink);
     padding: 0;
@@ -179,13 +193,18 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
     color: var(--paper);
   }
 
+  .action-btn[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
   .action-btn:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 
-  /* depth caption — mono eyebrow style, below controls row */
-  .depth-caption {
+  /* level caption — mono eyebrow style, below controls row */
+  .level-caption {
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
     letter-spacing: 0.2em;
@@ -209,7 +228,7 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
       order: 0;
     }
 
-    /* mode + depth groups stay on row 1 (order before spacer break) */
+    /* mode + level groups stay on row 1 (order before spacer break) */
     .controls-row .group {
       order: -1;
     }
@@ -226,7 +245,7 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
       order: 2;
     }
 
-    .depth-caption {
+    .level-caption {
       margin-top: var(--space-2);
     }
   }
