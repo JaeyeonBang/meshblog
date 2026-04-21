@@ -191,6 +191,6 @@ describe("build smoke", { timeout: 180_000 }, () => {
     expect(slugWithHtml).toBeDefined()
 
     const html = readFileSync(join(notesDir, slugWithHtml!, "index.html"), "utf-8")
-    expect(html).toMatch(/\d+ min read/)
+    expect(html).toMatch(/\d+ min ·/)
   })
 })
