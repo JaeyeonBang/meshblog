@@ -186,6 +186,28 @@
   pointer-events: none;
 }
 
+/* ── Mobile canvas tuning ────────────────────────────────────────── */
+
+/*
+ * On touch devices: allow native pan/zoom on the canvas container.
+ * The SVG force graph uses pointer events; touch-action: none blocks
+ * native scroll. Allow pan-x/pan-y so the graph uses pointer capture
+ * for drag without blocking page scrolling.
+ */
+@media (max-width: 780px) {
+  .root {
+    touch-action: pan-x pan-y;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Slightly heavier stroke-width for readability on small screens */
+  .svg :global(.nodes circle[data-kind="note"]),
+  .svg :global(.nodes circle:not([data-kind])) {
+    stroke-width: 1.8px;
+  }
+}
+
 /* ── Retry button ────────────────────────────────────────────────── */
 
 .retryBtn {

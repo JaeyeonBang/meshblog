@@ -23,6 +23,7 @@ import { join } from 'node:path'
 import { estimateReadingMinutes } from '../../lib/reading-time'
 import { getReadingStats } from '../../lib/word-count'
 import { withBase } from '../../lib/url'
+import { injectLedeClass } from '../../lib/lede'
 import '../../styles/article.css'
 
 export function getStaticPaths() {
@@ -102,8 +103,7 @@ const updatedYYYYMM = `${updatedDate.getFullYear()}-${String(updatedDate.getMont
 const excerpt = note.content.replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
 const contentHtml = await renderMarkdownToHtml(note.content)
 
-// Inject lede class on first <p> in the rendered HTML
-const ledeHtml = contentHtml.replace(/^(\s*)<p>/, '$1<p class="lede">')
+const ledeHtml = injectLedeClass(contentHtml)
 
 // All notes for pager
 const allNotes = listNotes()
@@ -149,9 +149,10 @@ const meshEdges = [
       />
 
       <header class="article-header">
+        <p class="eyebrow">note · {`N / ${String(currentIndex + 1).padStart(2, '0')}`}</p>
         <div class="kind-row">
           <KindBadge kind="note" number={`N / ${String(currentIndex + 1).padStart(2, '0')}`} />
-          <span class="meta">{readingMinutes} min · updated {updatedYYYYMM} · {wordCount} words</span>
+          <span class="meta reader-meta">{readingMinutes} min · updated {updatedYYYYMM} · {wordCount} words</span>
         </div>
         <h1>{note.title}</h1>
         {note.tags && note.tags.length > 0 && (
@@ -343,6 +344,15 @@ const meshEdges = [
     padding: var(--space-5) 0 var(--space-8);
     border-bottom: 1px solid var(--ink);
     margin-bottom: var(--space-8);
+  }
+
+  .article-header .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 var(--space-3);
   }
 
   .article-header .kind-row {

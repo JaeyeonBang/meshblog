@@ -53,7 +53,7 @@ const links = [
         <circle cx="7" cy="7" r="4.5"/>
         <path d="M10.3 10.3L13.5 13.5"/>
       </svg>
-      search <span class="kbd">⌘K</span>
+      <span class="btn-search-label">search <span class="kbd">⌘K</span></span>
     </button>
   )}
 </header>
@@ -228,5 +228,89 @@ const links = [
   @media (prefers-color-scheme: dark) {
     :global(:root:not([data-theme="light"])) .theme-toggle .icon-sun  { display: block; }
     :global(:root:not([data-theme="light"])) .theme-toggle .icon-moon { display: none; }
+  }
+
+  /* ── Mobile: 2-row compact layout (≤ 780px) ───────────────────────── */
+  /*
+   * Row 1: logo (left) · spacer · theme toggle · search icon
+   * Row 2: nav links — scrollable single row, full width
+   * No hamburger JS needed; all 4 links remain accessible.
+   */
+  @media (max-width: 780px) {
+    .topbar {
+      flex-wrap: wrap;
+      gap: 0;
+      padding: 14px var(--space-5) 0;
+    }
+    /* Row 1 items: logo + spacer + buttons stay on one line */
+    .logo-link {
+      flex: 0 0 auto;
+    }
+    .spacer {
+      flex: 1 1 auto;
+    }
+    /* Shrink search button to icon-only: hide text + kbd shortcut */
+    .btn-sm .btn-search-label {
+      display: none;
+    }
+    .kbd {
+      display: none;
+    }
+    /* Nav links drop to row 2, full width, scrollable */
+    .nav-links {
+      order: 10;
+      flex: 0 0 100%;
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      margin-top: var(--space-1);
+      border-top: 1px solid var(--rule-soft);
+      /* Prevent nav underline from overlapping the row border */
+      padding-bottom: 0;
+    }
+    .nav-links::-webkit-scrollbar {
+      display: none;
+    }
+    /* Ensure each link meets 44px tap target */
+    .nav-link {
+      min-height: 44px;
+      padding: 10px 14px;
+      /* Reset negative bottom margin used on desktop */
+      margin-bottom: 0;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .nav-link.active {
+      border-bottom-color: var(--ink);
+    }
+    /* Buttons: ensure 44px tap target */
+    .btn,
+    .btn-sm {
+      min-height: 44px;
+      min-width: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  /* ── Compact mobile (≤ 480px) ──────────────────────────────────────── */
+  @media (max-width: 480px) {
+    .topbar {
+      padding: 12px var(--space-4) 0;
+      gap: var(--space-2);
+    }
+    .logo {
+      font-size: 22px;
+    }
+    .sub {
+      display: none;
+    }
+    .nav-link {
+      padding: 10px 10px;
+      font-size: var(--fs-xs);
+    }
   }
 </style>
