@@ -1,6 +1,6 @@
 ---
 interface Props {
-  mode: 'notes' | 'concepts';
+  mode: 'notes' | 'concepts' | 'backlinks';
   level: 1 | 2 | 3;
   nodeCount?: number;
   edgeCount?: number;
@@ -32,6 +32,13 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
           aria-checked={mode === 'concepts'}
           title="notes = articles · concepts = extracted ideas"
         >concepts</button>
+        <button
+          class:list={['seg', mode === 'backlinks' && 'seg--active']}
+          data-mode="backlinks"
+          role="radio"
+          aria-checked={mode === 'backlinks'}
+          title="backlinks = inbound [[wikilink]] references, rendered as directed graph"
+        >backlinks</button>
       </div>
     </div>
 
@@ -195,3 +202,47 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
     padding-bottom: var(--space-2);
   }
 </style>
+
+<script>
+  // Bridge the visible Astro toolbar to the hidden React toolbar inside GraphView.
+  // Astro renders the SSR buttons for fast paint and a11y; React owns state.
+  // Clicks dispatch CustomEvents that GraphView subscribes to.
+  type GraphMode = 'note' | 'concept' | 'backlinks';
+
+  function astroModeToReact(m: string | null): GraphMode | null {
+    if (m === 'notes') return 'note';
+    if (m === 'concepts') return 'concept';
+    if (m === 'backlinks') return 'backlinks';
+    return null;
+  }
+
+  const controls = document.querySelector('.graph-controls');
+  if (controls) {
+    controls.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement)?.closest('button[data-mode]') as HTMLButtonElement | null;
+      if (btn) {
+        const mode = astroModeToReact(btn.dataset.mode ?? null);
+        if (mode) {
+          // Update visual state locally so SSR toolbar reflects click before React re-renders
+          controls.querySelectorAll('button[data-mode]').forEach((b) => {
+            const isActive = b === btn;
+            b.classList.toggle('seg--active', isActive);
+            b.setAttribute('aria-checked', String(isActive));
+          });
+          document.dispatchEvent(new CustomEvent('graph:mode', { detail: { mode } }));
+        }
+        return;
+      }
+      const levelBtn = (e.target as HTMLElement)?.closest('button[data-level]') as HTMLButtonElement | null;
+      if (levelBtn) {
+        const level = Number(levelBtn.dataset.level ?? '1') as 1 | 2 | 3;
+        controls.querySelectorAll('button[data-level]').forEach((b) => {
+          const isActive = b === levelBtn;
+          b.classList.toggle('seg--active', isActive);
+          b.setAttribute('aria-checked', String(isActive));
+        });
+        document.dispatchEvent(new CustomEvent('graph:level', { detail: { level } }));
+      }
+    });
+  }
+</script>

@@ -112,6 +112,25 @@ export default function GraphView() {
     history.replaceState(null, '', `?${q.toString()}`)
   }, [mode, level])
 
+  // Listen for clicks on the visible SSR toolbar (GraphControls.astro)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onMode = (e: Event) => {
+      const m = (e as CustomEvent<{ mode: Mode }>).detail?.mode
+      if (m === 'note' || m === 'concept' || m === 'backlinks') setMode(m)
+    }
+    const onLevel = (e: Event) => {
+      const l = (e as CustomEvent<{ level: Level }>).detail?.level
+      if (l === 1 || l === 2 || l === 3) setLevel(l)
+    }
+    document.addEventListener('graph:mode', onMode)
+    document.addEventListener('graph:level', onLevel)
+    return () => {
+      document.removeEventListener('graph:mode', onMode)
+      document.removeEventListener('graph:level', onLevel)
+    }
+  }, [])
+
   useForceSimulation(svgRef, graph, {
     onNodeClick: (node: GraphNode) => {
       if (node.type === 'note' && manifest[node.id]) {

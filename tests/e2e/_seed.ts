@@ -35,9 +35,11 @@
  */
 
 import Database from 'better-sqlite3'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const DB_PATH = process.env.MESHBLOG_DB ?? '.data/index.db'
+const BACKLINKS_JSON_PATH = join('public', 'graph', 'backlinks.json')
 
 if (!existsSync(DB_PATH)) {
   console.error(`[e2e/_seed] DB not found at ${DB_PATH}. Run pretest:e2e first.`)
@@ -109,5 +111,30 @@ insertAll(rows)
 
 const count = (db.prepare(`SELECT COUNT(*) AS n FROM wikilinks`).get() as { n: number }).n
 console.log(`[e2e/_seed] Seeded ${count} wikilinks into ${DB_PATH}`)
+
+// ── Mirror the fixture wikilinks into public/graph/backlinks.json ───────────
+// scripts/build-backlinks.ts would overwrite the seeded DB rows (it deletes by
+// source_id then re-parses note content), so the E2E pipeline skips it and this
+// helper emits the JSON directly. The shape must match BacklinksJson in
+// scripts/build-backlinks.ts so GraphView.tsx can consume it unchanged.
+const uniqueIds = [...new Set(rows.flatMap((r) => [r.source_id, r.target_id]))]
+const titleRows = db
+  .prepare(`SELECT id, title FROM notes WHERE id IN (${uniqueIds.map(() => '?').join(',')})`)
+  .all(...uniqueIds) as Array<{ id: string; title: string }>
+const titleMap = new Map(titleRows.map((r) => [r.id, r.title]))
+
+const backlinksJson = {
+  nodes: uniqueIds.map((id) => ({ id, title: titleMap.get(id) ?? id })),
+  edges: rows.map((r) => ({
+    source: r.source_id,
+    target: r.target_id,
+    ...(r.alias ? { alias: r.alias } : {}),
+  })),
+}
+mkdirSync(join('public', 'graph'), { recursive: true })
+writeFileSync(BACKLINKS_JSON_PATH, JSON.stringify(backlinksJson, null, 2))
+console.log(
+  `[e2e/_seed] Wrote ${BACKLINKS_JSON_PATH}: ${backlinksJson.nodes.length} nodes, ${backlinksJson.edges.length} edges`,
+)
 
 db.close()
