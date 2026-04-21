@@ -29,7 +29,9 @@
     "init": "bun run scripts/init.ts",
     "new-post": "tsx scripts/new-post.ts",
     "build-backlinks-if-exists": "[ -f scripts/build-backlinks.ts ] && tsx scripts/build-backlinks.ts || echo '[refresh] build-backlinks.ts not present yet, skipping'",
-    "refresh": "bun run build-tokens && bun run build-index && bun run build-backlinks-if-exists && bun run preview"
+    "refresh": "bun run build-tokens && bun run build-index && bun run build-backlinks-if-exists && bun run preview",
+    "pretest:e2e": "FIXTURE_ONLY=1 bun run build-index && bun run export-graph && bunx tsx tests/e2e/_seed.ts && bun run build",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",
@@ -56,6 +58,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/d3-drag": "^3.0.7",
     "@types/d3-force": "^3.0.10",
