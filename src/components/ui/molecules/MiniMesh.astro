@@ -4,6 +4,7 @@ interface Node {
   x: number;
   y: number;
   kind?: 'default' | 'hub' | 'concept' | 'selected';
+  href?: string;
 }
 interface Edge {
   from: number;
@@ -35,14 +36,22 @@ const { nodes, edges, size = 'md' } = Astro.props;
     })}
   </svg>
   {nodes.map((node) => (
-    <span
-      class:list={['mesh-node', node.kind && node.kind !== 'default' && node.kind]}
-      style={`left:${node.x}%; top:${node.y}%`}
-      role="button"
-      tabindex="0"
-    >
-      {node.label}
-    </span>
+    node.href ? (
+      <a
+        href={node.href}
+        class:list={['mesh-node', node.kind && node.kind !== 'default' && node.kind]}
+        style={`left:${node.x}%; top:${node.y}%`}
+      >
+        {node.label}
+      </a>
+    ) : (
+      <span
+        class:list={['mesh-node', node.kind && node.kind !== 'default' && node.kind]}
+        style={`left:${node.x}%; top:${node.y}%`}
+      >
+        {node.label}
+      </span>
+    )
   ))}
 </div>
 
@@ -72,8 +81,13 @@ const { nodes, edges, size = 'md' } = Astro.props;
     color: var(--ink);
     border: 1px solid var(--ink);
     white-space: nowrap;
-    cursor: pointer;
+    cursor: default;
     transition: all var(--dur-fast) var(--ease);
+  }
+  .mesh-node:where(a) {
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--ink);
   }
   .mesh-node:hover {
     background: var(--ink);

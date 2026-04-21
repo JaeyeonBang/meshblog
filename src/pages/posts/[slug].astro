@@ -129,7 +129,7 @@ const tocItems = [
 const meshNodes = [
   { label: 'this', x: 50, y: 52, kind: 'selected' as const },
   { label: 'llm',   x: 22, y: 28, kind: 'hub' as const },
-  { label: 'graph', x: 80, y: 32, kind: 'hub' as const },
+  { label: 'graph', x: 80, y: 32, kind: 'hub' as const, href: withBase('/graph') },
 ]
 const meshEdges = [
   { from: 0, to: 1 },
@@ -207,7 +207,7 @@ const meshEdges = [
       <TOC label="related mesh" mesh={true}>
         <MiniMesh nodes={meshNodes} edges={meshEdges} size="sm" />
       </TOC>
-      <TOC label="backlinks · 0" items={[]} />
+      {/* TODO: restore "backlinks" when backlinks are aggregated */}
     </aside>
   </div>
 </Base>

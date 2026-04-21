@@ -37,12 +37,12 @@ function getNoteBadge(note: { created_at: string; updated_at: string }): 'new' |
 
 // Static concept mesh nodes for home sidebar
 const meshNodes = [
-  { label: 'knowledge', x: 36, y: 30, kind: 'hub' as const },
-  { label: 'llm',       x: 70, y: 58, kind: 'hub' as const },
-  { label: 'rag',       x: 70, y: 22 },
-  { label: 'astro',     x: 22, y: 62 },
-  { label: 'sqlite',    x: 48, y: 82 },
-  { label: 'faq',       x: 14, y: 24 },
+  { label: 'knowledge', x: 36, y: 30, kind: 'hub' as const, href: withBase('/graph') },
+  { label: 'llm',       x: 70, y: 58, kind: 'hub' as const, href: withBase('/graph') },
+  { label: 'rag',       x: 70, y: 22, href: withBase('/graph?mode=concept') },
+  { label: 'astro',     x: 22, y: 62, href: withBase('/graph?mode=concept') },
+  { label: 'sqlite',    x: 48, y: 82, href: withBase('/graph?mode=concept') },
+  { label: 'faq',       x: 14, y: 24, href: withBase('/graph?mode=concept') },
 ]
 const meshEdges = [
   { from: 0, to: 2 },
