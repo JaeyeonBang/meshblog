@@ -204,3 +204,12 @@ Always return to the user:
 - Workflow: `.github/workflows/deploy.yml` (triggered on push to `main`)
 - Runner: Node 22 + Bun 1.x
 - Required secret: `OPENAI_API_KEY` (falls back to fixture mode if missing)
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/.
+
+Rules:
+- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
+- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)

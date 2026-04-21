@@ -47,3 +47,7 @@ public/graph/
 content/.obsidian/
 
 .gstack/
+
+# graphify: knowledge graph output (regenerable via `graphify update .`)
+graphify-out/
+CLAUDE.md.pre-graphify.bak
