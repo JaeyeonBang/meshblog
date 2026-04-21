@@ -9,7 +9,7 @@
  * Red-first criterion: remove the FK/logic being tested and the test must fail.
  */
 import { describe, it, expect, beforeEach } from "vitest"
-import { existsSync, mkdirSync } from "node:fs"
+import { mkdirSync } from "node:fs"
 import { join } from "node:path"
 import { createDb, execute, queryMany } from "../../src/lib/db/index.ts"
 import { runBuildBacklinks } from "../build-backlinks.ts"
