@@ -33,6 +33,13 @@ import { withBase } from '../lib/url'
           <p class="empty-body">Add notes to see the graph.</p>
         </div>
 
+        <!-- error-state: shown when data fetch fails -->
+        <div class="error-state" id="graphErrorState" aria-hidden="true" hidden>
+          <p class="empty-eyebrow">load failed</p>
+          <p class="empty-body">볼트를 불러오지 못했습니다 · couldn't load the vault.</p>
+          <button class="retry-btn" id="graphRetryBtn">retry</button>
+        </div>
+
         <GraphView client:only="react" />
       </div>
 
@@ -66,6 +73,13 @@ import { withBase } from '../lib/url'
     </noscript>
   </div>
 </Base>
+
+<script>
+  // Wire the Astro retry overlay button to GraphView React island
+  document.getElementById('graphRetryBtn')?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('graph:retry'))
+  })
+</script>
 
 <style>
   /* ── Layout ────────────────────────────────────────────── */
@@ -172,6 +186,47 @@ import { withBase } from '../lib/url'
     font-size: var(--fs-base);
     color: var(--ink-4);
     margin: 0;
+  }
+
+  /* ── Error state ──────────────────────────────────────────── */
+  .error-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    pointer-events: auto;
+  }
+
+  .error-state[hidden] { display: none; }
+
+  .retry-btn {
+    margin-top: var(--space-4);
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    border-radius: var(--r-xs);
+    transition:
+      background var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+
+  .retry-btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .retry-btn:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   /* ── Aside ─────────────────────────────────────────────── */
