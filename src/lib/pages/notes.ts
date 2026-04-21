@@ -50,6 +50,20 @@ export function listNotes(): NoteRow[] {
   }
 }
 
+// Minimal projection across every linkable entry (notes + posts, any folder).
+// Used by the wikilink resolver so [[X]] can target anything in the vault.
+export function listAllLinkable(): Array<{ slug: string; title: string }> {
+  const db = openReadonlyDb()
+  if (!db) return []
+  try {
+    return db
+      .prepare(`SELECT slug, title FROM notes`)
+      .all() as Array<{ slug: string; title: string }>
+  } finally {
+    db.close()
+  }
+}
+
 export function getNoteBySlug(slug: string): NoteRow | null {
   const db = openReadonlyDb()
   if (!db) return null

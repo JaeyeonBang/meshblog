@@ -4,6 +4,52 @@ Instructions for Claude Code when working in this repo.
 
 This repo is a **GitHub Pages–deployed personal blog harness** (https://jaeyeonbang.github.io/meshblog). Every push to `main` triggers a CI build + deploy. Treat `main` as production.
 
+## v1 build plan (office-hours audit · 2026-04-20)
+
+**Positioning**: meshblog is an **AI-native daily-repair harness** for Obsidian power users — a fork-and-use open-source template. Every competitor (Obsidian Publish, Quartz, Mataroa) sits on the "1-shot migration" axis; meshblog's wedge is Claude Code skills that repair the vault every day and tell the author what was fixed. Do not drift into "cheaper Obsidian Publish" framing.
+
+**Scope lock** — 4.5 weeks, 6 deliverables. Full rationale in `~/.gstack/projects/JaeyeonBang-meshblog/qkdwodus777-worktree-office-hours-audit-design-2026-04-20-215953.md`.
+
+| # | Deliverable | Effort | Key files |
+| :--- | :--- | :--- | :--- |
+| D1 | `init` skill: vault-path prompt → symlink `content/notes/` + `.env` + GH Pages workflow → opens localhost | 5d | `.claude/skills/init/`, `scripts/init.ts` |
+| D2 | Wikilink full-compat: `[[target\|alias]]` → `<a href>`, preserves `![[img.png]]`, slug fallback | 4d | replace `src/lib/markdown/strip-wikilinks.ts` with `resolve-wikilinks.ts` |
+| D3 | Draft safety net: `draft: true` excluded from build + `/audit` skill flags leaks on `main` | 1d | `scripts/build-index.ts`, `src/content/config.ts`, `.claude/skills/audit/` |
+| D4 | Backlink graph layer: incremental hash-keyed cache → `backlinks.json` → 3rd mode in `GraphView.tsx` | 7d | `scripts/build-backlinks.ts`, `src/components/GraphView.tsx` |
+| D5 | `new-post` + `refresh` skills: frontmatter template + orchestrator (`build-tokens → build-index → backlinks → preview`) | 3d | `.claude/skills/new-post/`, `.claude/skills/refresh/` |
+| D6 | Daily-repair GH Action: cron → headless audit → auto-PR with Markdown report artifact | 2d | `.github/workflows/daily-audit.yml`, `scripts/audit-report.ts` |
+
+**Order**: D2 + D3 (week 1) → D4 (week 2–3) → D1 (week 3–4) → D5 (week 4) → D6 + fork-from-zero rehearsal (week 4.5). Do **not** start D1 before D2+D3 are green — an init skill that ingests broken wikilinks is worse than no init skill.
+
+**Acceptance — 7 must-pass criteria for a fork user on a fresh machine with their own vault:**
+
+1. `npx degit JaeyeonBang/meshblog my-blog && cd my-blog && claude /init` asks exactly (a) vault absolute path, (b) GitHub repo name for Pages — then opens `http://localhost:4321/meshblog/`.
+2. Localhost renders **their real notes** (not `test/fixtures/seed.sql`) without `OPENAI_API_KEY`. Fixture is fallback only when vault is empty/unreadable; keyless users with a real vault get their content + wikilink-backed links + backlinks, entity/embedding features degrade gracefully.
+3. `[[Some Concept|see here]]` renders `<a href="/meshblog/notes/some-concept">see here</a>` — never plain text.
+4. `draft: true` notes are absent from build output; `claude /audit` flags any already pushed to `main`.
+5. `/graph` exposes a **Backlinks** mode toggle alongside Notes/Concepts; clicking a node reveals inbound references.
+6. `git push origin main` → GH Pages deploy → live 200 + their notes visible (post-push CI verification below still applies).
+7. The daily GH Action runs at least once and opens an auto-PR with an audit report artifact, even on empty-diff days.
+
+**Deliberately deferred to v2** — flagged so they do not silently re-enter scope:
+- `design.md` composer (conversational new-mode creation). v1 workaround: `design.variants/` + `theme-variant` skill for hand-authored modes.
+- `/wiki` route + real LLM synthesis (`synthesizeWikiArticle` Phase 4 in `src/lib/rag/wiki.ts`).
+- Auto-repair PR (D6 v2 writes fix-up branches; D6 v1 only reports).
+- Obsidian Properties + minimal Dataview.
+
+**Active risks with mitigations**:
+1. Wikilink resolution 80/20 trap — write `tests/fixtures/wikilinks.md` with 12 adversarial cases (trailing space, unicode, alias collision, missing target) red-first, before any D2 implementation.
+2. Windows symlink permissions on WSL → Windows vault paths. Detect + fall back to copy + `fs.watch`; rehearse on clean Windows 11 home in week 4.5.
+3. `draft:true` already on prod — `/audit` emits ready-to-paste `git revert` + follow-up commit template. No silent auto-revert.
+4. Test-fixture drift — add `tests/e2e/fixture-vault/` with 30+ real-shaped notes (wikilinks, aliases, images, drafts) to CI.
+5. Scope creep ("just also /wiki while I'm here") — v2 means v2.
+
+**Current gaps at session start (commit `44f37ce`)**:
+- `.claude/skills/{init,new-post,refresh}/SKILL.md` are spec-only (well-written TODO outlines, no wired scripts).
+- `src/lib/markdown/strip-wikilinks.ts` destroys wikilinks by converting them to plain text — replace in D2.
+- `src/lib/rag/wiki.ts` `synthesizeWikiArticle` is a Phase 4 placeholder; no `/wiki` route mounts it — deferred to v2.
+- `/graph` (Req 3) is fully shipped and is the template for how D4's backlink layer should feel.
+
 ## Core commands
 
 ```bash

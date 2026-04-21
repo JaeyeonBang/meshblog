@@ -1,33 +1,35 @@
 ---
 name: init
-description: meshblog 초기 setup — Obsidian vault 경로 연결, GitHub Pages 활성화, .env 템플릿 생성, 샘플 콘텐츠 추가
+description: One-time meshblog fork setup — link Obsidian vault, write .env template, verify Pages workflow, start localhost
 ---
 
 # /init
 
-meshblog을 처음 clone한 후 실행. 비개발자도 따라올 수 있도록 질문 순서대로 안내.
+One-time setup for a meshblog fork. Run this the first time you clone the repo onto a new machine.
 
-## TODO (구현 예정)
+## What it does
 
-1. **Vault 경로 결정**
-   - AskUserQuestion: "기존 Obsidian vault가 있나요? 있으면 절대경로, 없으면 새로 만들기"
-   - vault path를 `.env`의 `VAULT_PATH=`로 저장
-   - `content/posts/`, `content/notes/`를 vault의 해당 폴더로 symlink (또는 vault 안으로 repo를 둘지 선택)
+1. Asks for your Obsidian vault absolute path.
+2. Asks for your GitHub repo name (`owner/name`) — or auto-detects from `git remote get-url origin`.
+3. Symlinks `content/notes/` → vault (falls back to recursive copy + `fs.watch` on Windows/WSL when `fs.symlinkSync` throws `EPERM`/`EACCES`).
+4. Writes `.env.local` template (`OPENAI_API_KEY` commented — keyless mode works via `FIXTURE_ONLY=1`).
+5. Verifies `.github/workflows/deploy.yml` exists; generates it from the baseline if not.
+6. Runs `bun run build:fixture` and spawns `bun run dev`. Opens `http://localhost:4321/meshblog/`.
 
-2. **LLM 키 설정**
-   - AskUserQuestion: OpenAI / Anthropic / OpenRouter 중 선택
-   - `.env`에 `LLM_PROVIDER=`, `OPENAI_API_KEY=` 등 저장
-   - `.env.example`은 commit, `.env`는 gitignore
+## Run
 
-3. **GitHub Pages 활성화**
-   - `gh api repos/:owner/:repo/pages -X POST -f build_type=workflow` 호출
-   - 실패 시 Settings → Pages → "GitHub Actions" 수동 안내
+```bash
+bun run init
+```
 
-4. **샘플 콘텐츠 심기**
-   - `content/notes/welcome.md`, `content/posts/hello-meshblog.md` 생성
-   - 첫 `/publish`로 파이프라인 검증 가능하게
+## Notes
 
-5. **완료 체크**
-   - `bun install` 실행
-   - `bun run dev` 안내
-   - 다음 단계: `/new-post` 또는 `/refresh` 또는 `/publish`
+- Keyless users (no `OPENAI_API_KEY`) still get the fixture build and their real vault content — embeddings and Q&A degrade gracefully.
+- On Windows/WSL, symlinks across the WSL↔Windows boundary can `EPERM`. The copy+watch fallback handles this transparently; expect a log line `[init] symlink EPERM — falling back to copy + fs.watch`.
+- `astro.config.mjs` is left alone. The `/meshblog/` base path is already wired.
+
+## Next
+
+- `/new-post "My Note"` — scaffold a new `draft: true` note.
+- `/refresh` — full pipeline rebuild + preview.
+- `/audit` — check for draft leaks before pushing.
