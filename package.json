@@ -17,13 +17,21 @@
     "build-qa": "tsx scripts/generate-qa.ts",
     "build-qa:fresh": "tsx scripts/generate-qa.ts --clear",
     "export-graph": "tsx scripts/export-graph.ts",
+    "build-backlinks": "tsx scripts/build-backlinks.ts",
     "build-tokens": "tsx scripts/build-tokens.ts",
     "build-manifest": "tsx scripts/build-manifest.ts",
     "build-og": "tsx scripts/build-og.ts",
     "build-rss": "tsx scripts/build-rss.ts",
+    "audit-report": "tsx scripts/audit-report.ts",
     "build-all": "bun run build-index && bun run generate-qa && bun run export-graph && bun run build-manifest && bun run build-tokens && bun run build",
     "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run export-graph && bun run build",
-    "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'"
+    "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'",
+    "init": "bun run scripts/init.ts",
+    "new-post": "tsx scripts/new-post.ts",
+    "build-backlinks-if-exists": "[ -f scripts/build-backlinks.ts ] && tsx scripts/build-backlinks.ts || echo '[refresh] build-backlinks.ts not present yet, skipping'",
+    "refresh": "bun run build-tokens && bun run build-index && bun run build-backlinks-if-exists && bun run preview",
+    "pretest:e2e": "FIXTURE_ONLY=1 bun run build-index && bun run export-graph && bunx tsx tests/e2e/_seed.ts && bun run build",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",
@@ -50,6 +58,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/d3-drag": "^3.0.7",
     "@types/d3-force": "^3.0.10",

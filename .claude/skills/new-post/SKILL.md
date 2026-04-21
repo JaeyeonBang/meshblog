@@ -1,25 +1,16 @@
 ---
 name: new-post
-description: Obsidian vault에 새 블로그 포스트 MD 파일 생성 (frontmatter 포함)
+description: Scaffold a new note in content/notes/ with standard frontmatter (draft:true by default)
 ---
 
 # /new-post
 
-새 글을 시작할 때 사용. frontmatter 기본값 채워서 vault에 생성.
+Scaffold a new note in `content/notes/` with the standard frontmatter. Safe to run anytime — new notes are `draft: true` by default so they won't leak to production until you explicitly flip the flag.
 
-## TODO (구현 예정)
+## What it does
+1. Asks for the note title.
+2. Slugifies it to `content/notes/{slug}.md`.
+3. Writes the frontmatter template (draft: true, empty tags/aliases, no level_pin).
 
-1. AskUserQuestion: 제목, 카테고리, public 여부
-2. slug 생성 (kebab-case), 날짜 prefix
-3. `content/posts/YYYY-MM-DD-<slug>.md` 생성
-4. frontmatter 템플릿:
-   ```yaml
-   ---
-   title: "<제목>"
-   date: YYYY-MM-DD
-   public: true
-   tags: []
-   excerpt: ""
-   ---
-   ```
-5. 파일 경로 안내 + Obsidian에서 편집 시작 권유
+## Run
+`bun run scripts/new-post.ts "My Note Title"`

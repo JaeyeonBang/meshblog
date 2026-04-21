@@ -1,35 +1,20 @@
 import dotenv from "dotenv"
 dotenv.config({ path: ".env.local" })
 
-import { readdirSync, readFileSync } from "node:fs"
-import { join, basename, extname } from "node:path"
+import { readFileSync } from "node:fs"
+import { basename, extname } from "node:path"
 import { createHash, randomUUID } from "node:crypto"
 import matter from "gray-matter"
 import { createDb, queryOne, queryMany, execute, type Database } from "../src/lib/db/index.ts"
 import { extractEntities } from "../src/lib/rag/graph.ts"
 import { generateEmbedding, chunkText, embeddingToBlob } from "../src/lib/rag/embed.ts"
+import { discoverMarkdown } from "../src/lib/content/discover.ts"
+
+export type { DiscoveredFile } from "../src/lib/content/discover.ts"
+export { discoverMarkdown }
 
 const DB_PATH = process.env.MESHBLOG_DB ?? ".data/index.db"
 const CONTENT_DIRS = ["content/posts", "content/notes"]
-
-export type DiscoveredFile = { path: string; folder: string }
-
-export function discoverMarkdown(baseDirs: string[] = CONTENT_DIRS): DiscoveredFile[] {
-  const found: DiscoveredFile[] = []
-  for (const dir of baseDirs) {
-    let entries: string[]
-    try {
-      entries = readdirSync(dir)
-    } catch {
-      continue
-    }
-    for (const name of entries) {
-      if (name.startsWith("_") || !name.endsWith(".md")) continue
-      found.push({ path: join(dir, name), folder: dir })
-    }
-  }
-  return found
-}
 
 function sha256(s: string): string {
   return createHash("sha256").update(s).digest("hex")
@@ -136,14 +121,14 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
     const raw = readFileSync(path, "utf-8")
     const { data: fm, content } = matter(raw)
 
-    if (fm.public === false) {
-      // If note was previously public, delete stale data (Amendment F #14)
+    if (fm.public === false || fm.draft === true) {
+      const reason = fm.draft === true ? "draft:true" : "public:false"
       const prev = queryOne<{ id: string }>(db, "SELECT id FROM notes WHERE id = ?", [basename(path, extname(path))])
       if (prev) {
         execute(db, "DELETE FROM notes WHERE id = ?", [prev.id])
-        console.log(`[build-index] deleted stale data for private note: ${path}`)
+        console.log(`[build-index] deleted stale data for ${reason} note: ${path}`)
       }
-      console.log(`[build-index] skip (public:false): ${path}`)
+      console.log(`[build-index] skip (${reason}): ${path}`)
       continue
     }
 
@@ -258,6 +243,24 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
     }
   } else {
     console.log(`[build-index] --skip-concepts: concept stage skipped`)
+  }
+
+  // ── Stage 4: Backlinks (D4) ───────────────────────────────────────────────
+  try {
+    const { runBuildBacklinks } = await import("./build-backlinks.ts")
+    const allNotes = queryMany<{ id: string; title: string; content: string }>(
+      db,
+      "SELECT id, title, content FROM notes",
+      [],
+    )
+    runBuildBacklinks({ db, notes: allNotes })
+  } catch (err) {
+    const msg = (err as Error).message
+    if (msg.includes("Cannot find module") || msg.includes("ERR_MODULE_NOT_FOUND")) {
+      console.warn("[build-index] backlinks stage skipped: build-backlinks.ts not yet available.")
+    } else {
+      console.error("[build-index] backlinks stage failed:", msg)
+    }
   }
 
   // ── Final counts ──────────────────────────────────────────────────────────

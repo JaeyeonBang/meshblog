@@ -37,6 +37,11 @@
   height: 100%;
 }
 
+/* Directed graph (backlinks mode): arrowhead colour via currentColor */
+.svgDirected {
+  color: var(--ink);
+}
+
 /* ── Node kinds ──────────────────────────────────────────────────── */
 
 /*

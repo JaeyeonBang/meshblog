@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /** Current schema version. Increment when adding new tables or altering columns. */
-const SCHEMA_VERSION = 3
+const SCHEMA_VERSION = 4
 
 export function applyMigrations(db: Database.Database): void {
   // WAL + busy timeout (Amendment A / DX #3)
@@ -57,6 +57,13 @@ export function applyMigrations(db: Database.Database): void {
     if (!qaCols.has("content_hash")) {
       db.exec("ALTER TABLE qa_cards ADD COLUMN content_hash TEXT")
     }
+    db.prepare("UPDATE schema_version SET version = ?").run(SCHEMA_VERSION)
+  }
+
+  // Phase 3 → Phase 4: wikilinks table (D4 backlinks)
+  // CREATE TABLE IF NOT EXISTS in schema.sql handles the actual creation;
+  // this block just updates the version stamp on first upgrade.
+  if (currentVersion < 4) {
     db.prepare("UPDATE schema_version SET version = ?").run(SCHEMA_VERSION)
   }
 }

@@ -114,3 +114,18 @@ CREATE TABLE IF NOT EXISTS graph_levels (
   pinned     INTEGER NOT NULL DEFAULT 0, -- 1 = frontmatter level_pin override
   PRIMARY KEY (graph_type, node_id)
 );
+
+-- D4 backlinks: every [[wikilink]] occurrence, resolved or not
+CREATE TABLE IF NOT EXISTS wikilinks (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_id  TEXT NOT NULL,
+  target_raw TEXT NOT NULL,      -- lowercased [[target]] text for lookup
+  target_id  TEXT,               -- NULL when unresolved (broken link)
+  alias      TEXT,               -- alias after the pipe, if any
+  position   INTEGER NOT NULL,   -- character offset in source content (for dedup + ordering)
+  FOREIGN KEY (source_id) REFERENCES notes(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_id) REFERENCES notes(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_wikilinks_target ON wikilinks(target_id);
+CREATE INDEX IF NOT EXISTS idx_wikilinks_source ON wikilinks(source_id);

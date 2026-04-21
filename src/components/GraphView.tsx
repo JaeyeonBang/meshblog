@@ -4,14 +4,41 @@ import { useForceSimulation } from './graph/useForceSimulation'
 import { withBase } from '../lib/url'
 import styles from './GraphView.module.css'
 
-type Mode = 'note' | 'concept'
+/** Shape of public/graph/backlinks.json (mirrors BacklinksJson from build-backlinks.ts) */
+type BacklinksJson = {
+  nodes: Array<{ id: string; title: string }>
+  edges: Array<{ source: string; target: string; alias?: string }>
+}
+
+type Mode = 'note' | 'concept' | 'backlinks'
 type Level = 1 | 2 | 3
 type Status = 'loading' | 'ready' | 'error' | 'empty'
 
 function getInitialMode(): Mode {
   if (typeof window === 'undefined') return 'note'
   const p = new URLSearchParams(window.location.search).get('mode')
-  return p === 'concept' ? 'concept' : 'note'
+  if (p === 'concept') return 'concept'
+  if (p === 'backlinks') return 'backlinks'
+  return 'note'
+}
+
+/** Convert BacklinksJson into the GraphJson shape used by useForceSimulation */
+function backlinksToGraphJson(bl: BacklinksJson): GraphJson {
+  return {
+    nodes: bl.nodes.map(n => ({
+      id: n.id,
+      label: n.title,
+      type: 'note' as const,
+      level: 3 as const,
+      pagerank: 0,
+      pinned: false,
+    })),
+    links: bl.edges.map(e => ({
+      source: e.source,
+      target: e.target,
+      weight: 1,
+    })),
+  }
 }
 
 function getInitialLevel(): Level {
@@ -33,7 +60,7 @@ export default function GraphView() {
   useEffect(() => {
     const onSetMode = (e: Event) => {
       const detail = (e as CustomEvent<string>).detail
-      if (detail === 'note' || detail === 'concept') setMode(detail as Mode)
+      if (detail === 'note' || detail === 'concept' || detail === 'backlinks') setMode(detail as Mode)
     }
     const onSetLevel = (e: Event) => {
       const detail = (e as CustomEvent<number>).detail
@@ -69,11 +96,24 @@ export default function GraphView() {
       errorEl.setAttribute('aria-hidden', 'true')
     }
 
+    const graphUrl =
+      mode === 'backlinks'
+        ? withBase('/graph/backlinks.json')
+        : withBase(`/graph/${mode}-l${level}.json`)
+
+    const graphFetch =
+      mode === 'backlinks'
+        ? fetch(graphUrl).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`)
+            return r.json().then((bl: BacklinksJson) => backlinksToGraphJson(bl))
+          })
+        : fetch(graphUrl).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`)
+            return r.json() as Promise<GraphJson>
+          })
+
     Promise.all([
-      fetch(withBase(`/graph/${mode}-l${level}.json`)).then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json() as Promise<GraphJson>
-      }),
+      graphFetch,
       fetch(withBase('/notes-manifest.json'))
         .then(r => r.json() as Promise<Manifest>)
         .catch(() => ({} as Manifest)),
@@ -162,6 +202,7 @@ export default function GraphView() {
         window.location.href = withBase(manifest[node.id].href)
       }
     },
+    directed: mode === 'backlinks',
   })
 
   return (
@@ -183,10 +224,11 @@ export default function GraphView() {
         })}
       </ul>
 
-      {/* SVG — always rendered so svgRef is stable */}
+      {/* SVG — always rendered so svgRef is stable.
+           Arrowhead <defs> for backlinks mode are injected by useForceSimulation. */}
       <svg
         ref={svgRef}
-        className={styles.svg}
+        className={`${styles.svg}${mode === 'backlinks' ? ` ${styles.svgDirected}` : ''}`}
         style={{ display: status === 'ready' ? 'block' : 'none' }}
         aria-hidden="true"
       />

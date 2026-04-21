@@ -1,6 +1,6 @@
 ---
 interface Props {
-  mode: 'note' | 'concept';
+  mode: 'note' | 'concept' | 'backlinks';
   level: 1 | 2 | 3;
   nodeCount?: number;
   edgeCount?: number;
@@ -32,6 +32,13 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
           aria-checked={mode === 'concept'}
           title="notes = articles · concepts = extracted ideas"
         >concepts</button>
+        <button
+          class:list={['seg', mode === 'backlinks' && 'seg--active']}
+          data-mode="backlinks"
+          role="radio"
+          aria-checked={mode === 'backlinks'}
+          title="backlinks = inbound wikilink graph"
+        >backlinks</button>
       </div>
     </div>
 
