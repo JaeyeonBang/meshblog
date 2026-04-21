@@ -17,6 +17,7 @@
     "build-qa": "tsx scripts/generate-qa.ts",
     "build-qa:fresh": "tsx scripts/generate-qa.ts --clear",
     "export-graph": "tsx scripts/export-graph.ts",
+    "build-backlinks": "tsx scripts/build-backlinks.ts",
     "build-tokens": "tsx scripts/build-tokens.ts",
     "build-manifest": "tsx scripts/build-manifest.ts",
     "build-og": "tsx scripts/build-og.ts",

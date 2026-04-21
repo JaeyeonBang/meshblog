@@ -41,6 +41,11 @@
 .segment {}
 .segmentActive {}
 
+/* Directed graph (backlinks mode): arrowhead colour via currentColor */
+.svgDirected {
+  color: var(--ink);
+}
+
 /* ── Status messages ─────────────────────────────────────────────── */
 
 .status {

@@ -24,7 +24,7 @@ const STAGGER_STEP_MS = 40
 export function useForceSimulation(
   svgRef: RefObject<SVGSVGElement | null>,
   graph: GraphJson | null,
-  opts: { onNodeClick?: (n: GraphNode) => void },
+  opts: { onNodeClick?: (n: GraphNode) => void; directed?: boolean },
 ): void {
   useEffect(() => {
     const svgEl = svgRef.current
@@ -73,6 +73,24 @@ export function useForceSimulation(
     const svg = d3Selection.select(svgEl)
     svg.selectAll('*').remove()
 
+    // Arrowhead marker for directed (backlinks) mode
+    if (opts.directed) {
+      const defs = svg.append('defs')
+      const marker = defs
+        .append('marker')
+        .attr('id', 'arrowhead')
+        .attr('markerWidth', 8)
+        .attr('markerHeight', 6)
+        .attr('refX', 8)
+        .attr('refY', 3)
+        .attr('orient', 'auto')
+      marker
+        .append('polygon')
+        .attr('points', '0 0, 8 3, 0 6')
+        .attr('fill', 'currentColor')
+        .attr('opacity', 0.5)
+    }
+
     const g = svg.append('g').attr('class', 'graph-container')
 
     // Links
@@ -87,6 +105,7 @@ export function useForceSimulation(
       .attr('y1', d => d.source.y ?? 0)
       .attr('x2', d => d.target.x ?? 0)
       .attr('y2', d => d.target.y ?? 0)
+      .attr('marker-end', opts.directed ? 'url(#arrowhead)' : null)
 
     // Nodes — with data-kind, <title>, and stagger delay
     const nodeSel = g

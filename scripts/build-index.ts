@@ -245,6 +245,24 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
     console.log(`[build-index] --skip-concepts: concept stage skipped`)
   }
 
+  // ── Stage 4: Backlinks (D4) ───────────────────────────────────────────────
+  try {
+    const { runBuildBacklinks } = await import("./build-backlinks.ts")
+    const allNotes = queryMany<{ id: string; title: string; content: string }>(
+      db,
+      "SELECT id, title, content FROM notes",
+      [],
+    )
+    runBuildBacklinks({ db, notes: allNotes })
+  } catch (err) {
+    const msg = (err as Error).message
+    if (msg.includes("Cannot find module") || msg.includes("ERR_MODULE_NOT_FOUND")) {
+      console.warn("[build-index] backlinks stage skipped: build-backlinks.ts not yet available.")
+    } else {
+      console.error("[build-index] backlinks stage failed:", msg)
+    }
+  }
+
   // ── Final counts ──────────────────────────────────────────────────────────
   const counts = db
     .prepare(
