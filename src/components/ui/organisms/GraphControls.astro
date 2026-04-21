@@ -194,4 +194,40 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
     margin: 0 0 var(--space-3);
     padding-bottom: var(--space-2);
   }
+
+  /* ── Mobile 2-row split at ≤780px ───────────────────────────────── */
+  @media (max-width: 780px) {
+    .controls-row {
+      gap: var(--space-3) var(--space-4);
+    }
+
+    /* spacer becomes a full-width line break between groups and stats row */
+    .controls-row .spacer {
+      flex-basis: 100%;
+      flex: none;
+      height: 0;
+      order: 0;
+    }
+
+    /* mode + depth groups stay on row 1 (order before spacer break) */
+    .controls-row .group {
+      order: -1;
+    }
+
+    /* stats moves to row 2, left-aligned, grows to fill space */
+    .controls-row .stats {
+      order: 1;
+      flex: 1;
+      white-space: normal;
+    }
+
+    /* action buttons on row 2, right-aligned */
+    .controls-row .action-btn {
+      order: 2;
+    }
+
+    .depth-caption {
+      margin-top: var(--space-2);
+    }
+  }
 </style>
