@@ -114,7 +114,7 @@ On GitHub.com, go to Actions → "daily audit" → Run workflow (manual trigger)
 
 ## If something fails
 
-- **Prompt doesn't advance after first answer**: readline regression. Check `createAskFn` in `scripts/init.ts:105`.
+- **Prompt doesn't advance after first answer**: readline regression. Check `createAskFn` in `scripts/init.ts` (search the file for the symbol — line numbers drift).
 - **`content/notes/` is empty after init**: `linkVault` copy failed silently. Look for a `[init] Copied vault contents` log line.
 - **Live site shows fixture content, not your notes**: CI deployed in fixture-fallback mode. Your repo might be private; check the `build-index` step logs.
 - **`publish-verify` exits 3**: `gh` not authed — `gh auth login`.

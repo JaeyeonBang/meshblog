@@ -129,12 +129,16 @@ describe("init smoke — copy semantics + markdown count", () => {
     expect(countVaultMarkdown(target)).toBe(30)
   })
 
-  it("linkVault with skipWatch does not leave the event loop blocked", () => {
-    // If this test reaches the end, skipWatch successfully short-circuited
-    // the fs.watch() call. Vitest's afterEach cleanup will run immediately.
+  it("linkVault with skipWatch completes synchronously and copies before returning", () => {
+    // Proves (a) skipWatch short-circuits before the fs.watch call — otherwise
+    // this file would leave a live watcher handle that prevents vitest's
+    // afterEach cleanup from deleting the sandbox, and subsequent tests would
+    // observe stale state — and (b) the copy happens eagerly, so callers can
+    // read the target immediately after the synchronous return.
     const target = join(sandbox, "content-notes")
     linkVault(FIXTURE_VAULT, target, { skipWatch: true })
-    expect(true).toBe(true)
+    expect(countVaultMarkdown(target)).toBe(30)
+    expect(existsSync(join(target, "concepts", "한글-노트.md"))).toBe(true)
   })
 })
 

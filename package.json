@@ -24,6 +24,7 @@
     "build-rss": "tsx scripts/build-rss.ts",
     "audit": "tsx scripts/audit.ts",
     "audit-report": "tsx scripts/audit-report.ts",
+    "audit-drafts": "tsx scripts/audit-drafts.ts",
     "publish-verify": "tsx scripts/publish-verify.ts",
     "build-all": "bun run build-index && bun run generate-qa && bun run export-graph && bun run build-manifest && bun run build-tokens && bun run build",
     "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run build-backlinks && bun run export-graph && bun run build",
