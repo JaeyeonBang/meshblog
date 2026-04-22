@@ -1,5 +1,6 @@
 ---
 import { withBase } from '../../../lib/url';
+import KindBadge from '../atoms/KindBadge.astro';
 // No props — global, opened via window.dispatchEvent(new Event('cmdk:open'))
 ---
 <div class="cmdk-backdrop" id="cmdk-backdrop" role="dialog" aria-modal="true" aria-label="Search" aria-hidden="true">
@@ -27,12 +28,12 @@ import { withBase } from '../../../lib/url';
         <span class="c">4</span>
       </div>
       <a class="result" href={withBase('/posts/why-i-built-meshblog')} role="option">
-        <span class="kind-badge post">post</span>
+        <span class="badge-wrap"><KindBadge kind="post" /></span>
         <span class="t">왜 meshblog를 만들었나</span>
         <span class="m">7 min</span>
       </a>
       <a class="result" href={withBase('/posts/sqlite-is-all-you-need')} role="option">
-        <span class="kind-badge post">post</span>
+        <span class="badge-wrap"><KindBadge kind="post" /></span>
         <span class="t">SQLite is all you need</span>
         <span class="m">6 min</span>
       </a>
@@ -42,12 +43,12 @@ import { withBase } from '../../../lib/url';
         <span class="c">14</span>
       </div>
       <a class="result" href={withBase('/notes/knowledge-graphs')} role="option">
-        <span class="kind-badge note">note</span>
+        <span class="badge-wrap"><KindBadge kind="note" /></span>
         <span class="t">knowledge-graphs</span>
         <span class="m">N / 09</span>
       </a>
       <a class="result" href={withBase('/notes/rag')} role="option">
-        <span class="kind-badge note">note</span>
+        <span class="badge-wrap"><KindBadge kind="note" /></span>
         <span class="t">rag — retrieval-augmented-generation</span>
         <span class="m">N / 10</span>
       </a>
@@ -164,35 +165,13 @@ import { withBase } from '../../../lib/url';
   .result.active .m {
     color: var(--ink-5);
   }
-  .result:hover .kind-badge,
-  .result.active .kind-badge {
-    background: var(--paper);
-    color: var(--ink);
-    border-color: var(--paper);
-  }
   .result:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: -2px;
   }
-  .kind-badge {
-    font-family: var(--f-mono);
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    padding: 2px 8px;
-    border: 1px solid var(--ink);
-    display: inline-block;
-    line-height: 1.6;
+  .badge-wrap {
     flex-shrink: 0;
-  }
-  .kind-badge.post {
-    background: var(--ink);
-    color: var(--paper);
-  }
-  .kind-badge.note {
-    background: var(--paper);
-    color: var(--ink);
+    display: inline-flex;
   }
   .t {
     font-family: var(--f-disp);

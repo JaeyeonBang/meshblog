@@ -47,7 +47,6 @@
 .card {
   padding: 12px 0;
   border-bottom: 1px solid var(--rule-soft);
-  cursor: pointer;
 }
 
 .card:last-child {
@@ -123,7 +122,7 @@
 
 .answerText {
   font-family: var(--f-serif);
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
   color: var(--ink-2);
   margin: 0;

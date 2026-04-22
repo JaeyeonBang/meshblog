@@ -1,4 +1,6 @@
 ---
+import QaCard from './QaCard.astro';
+
 interface QaItem {
   question: string;
   answer?: string;
@@ -17,14 +19,7 @@ const heading = `QAChips — ${scope} scope`;
   <h3>{heading}</h3>
   <div class="qa-list">
     {items.map((item) => (
-      <div class:list={['qa-card', item.open && 'open']}>
-        <div class="q">
-          <span class="q-text">{item.question}</span>
-        </div>
-        {item.answer && (
-          <div class="a">{item.answer}</div>
-        )}
-      </div>
+      <QaCard question={item.question} answer={item.answer} open={item.open} />
     ))}
   </div>
   <slot />
@@ -55,51 +50,5 @@ const heading = `QAChips — ${scope} scope`;
   .qa-list {
     display: flex;
     flex-direction: column;
-  }
-  .qa-card {
-    padding: 12px 0;
-    border-bottom: 1px solid var(--rule-soft);
-    cursor: pointer;
-  }
-  .qa-card:last-child {
-    border-bottom: 0;
-  }
-  .q {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    justify-content: space-between;
-  }
-  .q-text {
-    font-family: var(--f-serif);
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--ink);
-    flex: 1;
-    line-height: 1.4;
-  }
-  .q::after {
-    content: "+";
-    font-family: var(--f-mono);
-    font-size: 16px;
-    color: var(--ink-3);
-    line-height: 1;
-    font-weight: 300;
-  }
-  .qa-card.open .q::after {
-    content: "−";
-  }
-  .a {
-    font-family: var(--f-serif);
-    font-size: 13.5px;
-    line-height: 1.6;
-    color: var(--ink-2);
-    margin-top: 10px;
-    display: none;
-    padding-left: 14px;
-    border-left: 3px solid var(--ink);
-  }
-  .qa-card.open .a {
-    display: block;
   }
 </style>

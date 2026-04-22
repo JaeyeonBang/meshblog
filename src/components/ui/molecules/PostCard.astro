@@ -1,5 +1,6 @@
 ---
 import Badge from '../atoms/Badge.astro'
+import KindBadge from '../atoms/KindBadge.astro'
 
 interface Props {
   kind: 'post' | 'note';
@@ -39,7 +40,7 @@ const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boole
   )}
   <div>
     <div class="head">
-      <span class:list={['kind-badge', kind]}>{kind} / {number}</span>
+      <KindBadge kind={kind} number={number} />
       {badge && (
         <Badge variant={badge}>{badge === 'new' ? 'NEW' : 'UPDATED'}</Badge>
       )}
@@ -83,12 +84,7 @@ const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boole
   }
   .post-card:hover .tag {
     color: var(--paper);
-    border-bottom-color: var(--paper-3);
-  }
-  .post-card:hover .kind-badge.post {
-    background: var(--paper);
-    color: var(--ink);
-    border-color: var(--paper);
+    border-bottom-color: var(--paper-2);
   }
   .post-card:focus-visible {
     outline: 2px solid var(--focus-ring);
@@ -130,25 +126,6 @@ const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boole
     gap: 12px;
     margin-bottom: 12px;
     flex-wrap: wrap;
-  }
-  .kind-badge {
-    font-family: var(--f-mono);
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    padding: 2px 8px;
-    border: 1px solid var(--ink);
-    display: inline-block;
-    line-height: 1.6;
-  }
-  .kind-badge.post {
-    background: var(--ink);
-    color: var(--paper);
-  }
-  .kind-badge.note {
-    background: var(--paper);
-    color: var(--ink);
   }
   .meta {
     font-family: var(--f-mono);
