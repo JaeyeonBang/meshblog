@@ -13,7 +13,7 @@ const { number, title, meta, href, badge = null } = Astro.props;
 <a class="note-row" href={href}>
   <span class="num">{number}</span>
   <span class="title-wrap">
-    <h4>{title}</h4>
+    <h3>{title}</h3>
     {badge && (
       <Badge variant={badge}>{badge === 'new' ? 'NEW' : 'UPDATED'}</Badge>
     )}
@@ -55,7 +55,7 @@ const { number, title, meta, href, badge = null } = Astro.props;
     gap: var(--space-3);
     flex-wrap: wrap;
   }
-  h4 {
+  h3 {
     font-family: var(--f-disp);
     font-size: var(--fs-lg);
     font-weight: 500;

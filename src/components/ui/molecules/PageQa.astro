@@ -16,7 +16,7 @@ const heading = `QAChips — ${scope} scope`;
 ---
 <div class="page-qa">
   <div class="qa-label">{label}</div>
-  <h3>{heading}</h3>
+  <h2>{heading}</h2>
   <div class="qa-list">
     {items.map((item) => (
       <QaCard question={item.question} answer={item.answer} open={item.open} />
@@ -40,7 +40,7 @@ const heading = `QAChips — ${scope} scope`;
     color: var(--ink-3);
     margin-bottom: 4px;
   }
-  h3 {
+  h2 {
     font-family: var(--f-disp);
     font-weight: 600;
     font-size: var(--fs-3xl);
