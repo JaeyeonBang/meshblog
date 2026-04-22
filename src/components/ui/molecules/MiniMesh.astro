@@ -1,8 +1,8 @@
 ---
 interface Node {
   label: string;
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   kind?: 'default' | 'hub' | 'concept' | 'selected';
   href?: string;
 }
@@ -12,16 +12,35 @@ interface Edge {
 }
 interface Props {
   nodes: Node[];
-  edges: Edge[];
+  edges?: Edge[];
   size?: 'sm' | 'md';
 }
-const { nodes, edges, size = 'md' } = Astro.props;
+const { nodes, edges: edgesProp, size = 'md' } = Astro.props;
+
+// Auto-layout: assign x/y when nodes lack coordinates.
+// First node → center (50, 50). Remaining nodes placed on a circle of radius 32.
+const layoutNodes = nodes.map((node, i) => {
+  if (node.x !== undefined && node.y !== undefined) {
+    return { ...node, x: node.x, y: node.y };
+  }
+  if (i === 0) {
+    return { ...node, x: 50, y: 50 };
+  }
+  const count = nodes.length - 1; // number of satellites
+  const angle = ((i - 1) / count) * 2 * Math.PI - Math.PI / 2; // start at top
+  const x = Math.cos(angle) * 32 + 50;
+  const y = Math.sin(angle) * 32 + 50;
+  return { ...node, x, y };
+});
+
+// Auto-edges: when no edges prop provided, draw spokes from center (index 0) to all others.
+const edges: Edge[] = edgesProp ?? layoutNodes.slice(1).map((_, i) => ({ from: 0, to: i + 1 }));
 ---
 <div class:list={['mini-mesh', size === 'sm' && 'mini-mesh--sm']}>
   <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
     {edges.map((edge) => {
-      const from = nodes[edge.from];
-      const to = nodes[edge.to];
+      const from = layoutNodes[edge.from];
+      const to = layoutNodes[edge.to];
       if (!from || !to) return null;
       return (
         <line
@@ -35,7 +54,7 @@ const { nodes, edges, size = 'md' } = Astro.props;
       );
     })}
   </svg>
-  {nodes.map((node) => (
+  {layoutNodes.map((node) => (
     node.href ? (
       <a
         href={node.href}
