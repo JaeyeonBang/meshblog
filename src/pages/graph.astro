@@ -56,7 +56,7 @@ import { withBase } from '../lib/url'
       <aside class="graph-aside" aria-label="Graph sidebar">
         <div class="block">
           <div class="block-label">selected · post</div>
-          <h4 id="graphSelectedTitle">—</h4>
+          <p class="selected-title" id="graphSelectedTitle">—</p>
           <p class="block-meta" id="graphSelectedMeta">노드를 클릭하세요 · click a node</p>
           <p class="block-excerpt" id="graphSelectedExcerpt"></p>
           <Button
@@ -538,7 +538,7 @@ import { withBase } from '../lib/url'
     margin-bottom: var(--space-3);
   }
 
-  .graph-aside h4 {
+  .graph-aside .selected-title {
     font-family: var(--f-disp);
     font-weight: 600;
     font-size: var(--fs-lg);

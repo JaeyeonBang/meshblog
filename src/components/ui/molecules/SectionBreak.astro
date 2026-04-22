@@ -6,7 +6,7 @@ interface Props {
 const { label, count } = Astro.props;
 ---
 <div class="section-break">
-  <h3>{label}</h3>
+  <h2>{label}</h2>
   {count && <span class="count">{count}</span>}
   <div class="rule" aria-hidden="true"></div>
 </div>
@@ -20,7 +20,7 @@ const { label, count } = Astro.props;
     padding-top: 28px;
     border-top: 1px solid var(--ink);
   }
-  h3 {
+  h2 {
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
     font-weight: 500;
