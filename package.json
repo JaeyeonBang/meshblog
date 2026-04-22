@@ -22,6 +22,7 @@
     "build-manifest": "tsx scripts/build-manifest.ts",
     "build-og": "tsx scripts/build-og.ts",
     "build-rss": "tsx scripts/build-rss.ts",
+    "audit": "tsx scripts/audit.ts",
     "audit-report": "tsx scripts/audit-report.ts",
     "build-all": "bun run build-index && bun run generate-qa && bun run export-graph && bun run build-manifest && bun run build-tokens && bun run build",
     "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run export-graph && bun run build",
