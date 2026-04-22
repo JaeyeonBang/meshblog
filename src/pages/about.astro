@@ -1,0 +1,367 @@
+---
+import Base from '../layouts/Base.astro'
+import { withBase } from '../lib/url'
+---
+
+<Base
+  title="about · meshblog"
+  description="Who built meshblog, what the coined terms mean, and why it is built this way."
+  topBarActive="about"
+>
+  <article class="about-layout" id="about">
+    <!-- ── Header ──────────────────────────────────────────────── -->
+    <header class="about-header">
+      <div class="eyebrow">about · 소개</div>
+      <h1>meshblog</h1>
+      <p class="sub">
+        Jaeyeon Bang의 이중언어 독서실 — 두 번째 뇌를 공개합니다.
+      </p>
+    </header>
+
+    <!-- ── Opening stanza ─────────────────────────────────────── -->
+    <section class="about-section">
+      <p class="about-body">
+        meshblog is Jaeyeon Bang's bilingual reading room — a second brain compiled into a public site.
+        Written in Korean and English, cross-linked in both.
+        meshblog는 재연 방의 이중언어 독서실입니다. 두 언어로 쓰고, 두 언어로 연결합니다.
+      </p>
+    </section>
+
+    <!-- ── Coined terms glossary ───────────────────────────────── -->
+    <section class="about-section" id="glossary" aria-labelledby="glossary-heading">
+      <h2 class="section-eyebrow" id="glossary-heading">Coined terms · 용어</h2>
+      <dl class="glossary">
+        <div class="gloss-entry">
+          <dt><strong>vault</strong> <span class="gloss-ko">볼트</span></dt>
+          <dd>
+            The full collection of notes. Obsidian's term; here it means everything under
+            <code>content/notes/</code>. Think of it as the raw filing cabinet — every note lives here
+            before it is published.
+          </dd>
+        </div>
+
+        <div class="gloss-entry">
+          <dt><strong>concept mesh</strong> <span class="gloss-ko">개념 메시</span></dt>
+          <dd>
+            The second-order graph — not the notes themselves, but the concepts extracted from them.
+            Shown on the home sidebar and accessible at <a href={withBase('/graph?mode=concept')}>graph · concept mode</a>.
+            Where the vault is a filing cabinet, the concept mesh is the index of ideas pinned to a corkboard.
+          </dd>
+        </div>
+
+        <div class="gloss-entry">
+          <dt><strong>backlinks</strong> <span class="gloss-ko">역링크</span></dt>
+          <dd>
+            Inbound wikilinks — who pointed here. If Note A links to Note B, then Note B's backlinks include A.
+            Visible in the reader aside on every note page, and as a dedicated graph mode at
+            <a href={withBase('/graph?mode=backlinks')}>graph · backlinks</a>.
+          </dd>
+        </div>
+
+        <div class="gloss-entry">
+          <dt>
+            <strong>L1 · 직접</strong> &nbsp;/&nbsp;
+            <strong>L2 · 근처</strong> &nbsp;/&nbsp;
+            <strong>L3 · 클러스터</strong>
+          </dt>
+          <dd>
+            Graph depth. L1 shows direct links only (immediate neighbors of the selected node).
+            L2 shows two-hop neighbors — neighbors of neighbors.
+            L3 shows the full community cluster the node belongs to.
+            Toggle depth with the seg buttons in the <a href={withBase('/graph')}>graph</a> controls bar.
+          </dd>
+        </div>
+
+        <div class="gloss-entry">
+          <dt><strong>knowledge mesh</strong> <span class="gloss-ko">지식 메시</span></dt>
+          <dd>
+            The full graph of notes + concepts + backlinks combined. Accessible at
+            <a href={withBase('/graph')}>graph</a>. It is the whole web — every node and every edge
+            in the vault — rendered as a navigable canvas.
+          </dd>
+        </div>
+
+        <div class="gloss-entry">
+          <dt><strong>ask the vault</strong> <span class="gloss-ko">볼트에 묻기</span></dt>
+          <dd>
+            The command-K search palette — type any phrase and it answers across notes and Q&amp;A cards.
+            Keyboard shortcut: <kbd>⌘K</kbd> on macOS or <kbd>Ctrl+K</kbd> on Windows/Linux.
+            Powered by SQLite full-text search and OpenAI embeddings when a key is present.
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- ── Why it's built this way ────────────────────────────── -->
+    <section class="about-section" aria-labelledby="why-heading">
+      <h2 class="section-eyebrow" id="why-heading">Why it's built this way · 이렇게 만든 이유</h2>
+      <p class="about-body">
+        meshblog is an AI-native daily-repair harness for Obsidian power users — a fork-and-use
+        open-source template. Every night a GitHub Action reviews the vault: broken wikilinks,
+        draft notes that leaked to <code>main</code>, stale backlink caches. It opens a pull request
+        with a Markdown report, so the vault repairs itself while you sleep.
+        This is what separates meshblog from Obsidian Publish or Quartz — those tools ship your notes
+        once. meshblog ships them and then watches them.
+      </p>
+    </section>
+
+    <!-- ── Colophon ────────────────────────────────────────────── -->
+    <section class="about-section" id="colophon" aria-labelledby="colophon-heading">
+      <h2 class="section-eyebrow" id="colophon-heading">Colophon · 콜로폰</h2>
+      <dl class="colophon-list">
+        <div class="coloph-entry">
+          <dt>Typefaces</dt>
+          <dd>
+            <a href="https://fraunces.undercase.xyz" target="_blank" rel="noopener">Fraunces</a>
+            (display &amp; body) ·
+            <a href="https://fonts.google.com/noto/specimen/Noto+Serif+KR" target="_blank" rel="noopener">Noto Serif KR</a>
+            (Korean) ·
+            Pretendard (UI sans) ·
+            <a href="https://www.jetbrains.com/lp/mono/" target="_blank" rel="noopener">JetBrains Mono</a>
+            (code &amp; labels)
+          </dd>
+        </div>
+
+        <div class="coloph-entry">
+          <dt>Stack</dt>
+          <dd>
+            <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> (static site) ·
+            SQLite (local embeddings store) ·
+            OpenAI embeddings (semantic search — degrades gracefully when key is absent) ·
+            <a href="https://graphology.github.io" target="_blank" rel="noopener">Graphology</a>
+            (graph data structure) · Deployed via GitHub Pages
+          </dd>
+        </div>
+
+        <div class="coloph-entry">
+          <dt>Source</dt>
+          <dd>
+            <a href="https://github.com/JaeyeonBang/meshblog" target="_blank" rel="noopener">
+              github.com/JaeyeonBang/meshblog
+            </a>
+            — MIT license. Fork it, point it at your own Obsidian vault, run <code>claude /init</code>.
+          </dd>
+        </div>
+      </dl>
+    </section>
+  </article>
+</Base>
+
+<style>
+  /* ── About layout ──────────────────────────────────────────── */
+  .about-layout {
+    max-width: 60ch;
+    margin: 0 auto;
+    padding: 0 var(--space-8) var(--space-24);
+  }
+
+  /* ── Header ────────────────────────────────────────────────── */
+  .about-header {
+    padding: var(--space-12) 0 var(--space-10);
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: var(--space-10);
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: var(--space-5);
+  }
+
+  .about-header h1 {
+    font-family: var(--f-disp);
+    font-weight: 600;
+    font-size: var(--fs-5xl);
+    margin: 0 0 var(--space-5);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variation-settings: "opsz" 144;
+  }
+
+  .about-header .sub {
+    font-family: var(--f-serif);
+    font-size: var(--fs-xl);
+    color: var(--ink-2);
+    line-height: 1.5;
+    margin: 0;
+    font-weight: 400;
+  }
+
+  /* ── Sections ──────────────────────────────────────────────── */
+  .about-section {
+    padding: var(--space-8) 0;
+    border-bottom: 1px solid var(--ink-5);
+  }
+
+  .about-section:last-child {
+    border-bottom: 0;
+  }
+
+  .section-eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 var(--space-6);
+    font-weight: 400;
+  }
+
+  .about-body {
+    font-family: var(--f-serif);
+    font-size: var(--fs-lg);
+    color: var(--ink-2);
+    line-height: 1.65;
+    margin: 0;
+  }
+
+  /* ── Glossary ──────────────────────────────────────────────── */
+  .glossary {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .gloss-entry {
+    padding: var(--space-5) 0;
+    border-bottom: 1px solid var(--ink-5);
+  }
+
+  .gloss-entry:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .glossary dt {
+    font-family: var(--f-disp);
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 var(--space-2);
+    letter-spacing: -0.01em;
+  }
+
+  .glossary dt strong {
+    font-weight: 600;
+  }
+
+  .gloss-ko {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    font-weight: 400;
+    margin-left: var(--space-2);
+  }
+
+  .glossary dd {
+    font-family: var(--f-serif);
+    font-size: var(--fs-base);
+    color: var(--ink-2);
+    line-height: 1.65;
+    margin: 0;
+  }
+
+  .glossary dd a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .glossary dd a:hover {
+    background: var(--ink);
+    color: var(--paper);
+    text-decoration: none;
+  }
+
+  /* ── Colophon ──────────────────────────────────────────────── */
+  .colophon-list {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .coloph-entry {
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--ink-5);
+    display: grid;
+    grid-template-columns: 8ch 1fr;
+    gap: var(--space-4);
+    align-items: baseline;
+  }
+
+  .coloph-entry:last-child {
+    border-bottom: 0;
+  }
+
+  .colophon-list dt {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+    padding-top: 2px;
+  }
+
+  .colophon-list dd {
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .colophon-list dd a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .colophon-list dd a:hover {
+    background: var(--ink);
+    color: var(--paper);
+    text-decoration: none;
+  }
+
+  /* ── Inline code ───────────────────────────────────────────── */
+  code {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+    background: var(--paper-2);
+    padding: 2px 5px;
+    border: 1px solid var(--ink-5);
+  }
+
+  /* ── Kbd ───────────────────────────────────────────────────── */
+  kbd {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    padding: 2px 6px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--ink-5);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Responsive ────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .about-layout {
+      padding: 0 var(--space-5) var(--space-16);
+    }
+
+    .coloph-entry {
+      grid-template-columns: 1fr;
+      gap: var(--space-2);
+    }
+  }
+</style>
