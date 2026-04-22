@@ -25,7 +25,7 @@
     "audit": "tsx scripts/audit.ts",
     "audit-report": "tsx scripts/audit-report.ts",
     "build-all": "bun run build-index && bun run generate-qa && bun run export-graph && bun run build-manifest && bun run build-tokens && bun run build",
-    "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run export-graph && bun run build",
+    "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run build-backlinks && bun run export-graph && bun run build",
     "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'",
     "init": "bun run scripts/init.ts",
     "new-post": "tsx scripts/new-post.ts",
