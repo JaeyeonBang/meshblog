@@ -7,12 +7,18 @@
  *  3. Symlink content/notes/ → vault path (fallback: cpSync + fs.watch on EPERM/EACCES)
  *  4. Write .env.local template if missing
  *  5. Verify .github/workflows/deploy.yml exists (generate minimal one if not)
- *  6. Run build:fixture synchronously, then spawn `bun run dev`
+ *  6. Build the site: real (keyless) pipeline when the vault has notes,
+ *     fixture fallback only when it's empty, then spawn `bun run dev`
+ *
+ * Note on readline: we use the base `node:readline` API and consume its
+ * async-iterator output. The promise-based `readline/promises` wrapper hangs
+ * on the second `rl.question` call under piped stdin in Bun — which made every
+ * scripted rehearsal silently no-op after the first prompt.
  */
 
 import * as fs from "node:fs"
 import * as path from "node:path"
-import * as readline from "node:readline/promises"
+import { createInterface, type Interface as ReadlineInterface } from "node:readline"
 import { execSync, spawn } from "node:child_process"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -25,54 +31,83 @@ const DEPLOY_YML = path.join(REPO_ROOT, ".github", "workflows", "deploy.yml")
 // ── Exported helper for unit tests ────────────────────────────────────────────
 
 /**
- * Link vaultPath → target.
- * Tries fs.symlinkSync first; if it throws EPERM or EACCES (WSL→Windows mount),
- * falls back to recursive copy + fs.watch for live sync.
+ * Materialize vaultPath into target as a real directory (not a symlink) and
+ * start a watcher that mirrors subsequent vault edits.
+ *
+ * Symlinks were the original design, but `git add .` serializes a symlink as
+ * its literal target path, so `git push` ships a dangling reference; CI's
+ * build-index then reads 0 markdown files from content/notes/ and the
+ * fork user sees only the baseline posts on live. Always copying makes the
+ * publish path work out of the box. The watcher preserves the "vault is the
+ * source of truth" mental model — Obsidian edits still flow through.
  */
 export function linkVault(vaultPath: string, target: string): void {
-  // Remove existing symlink or directory at target so we can re-link cleanly
+  // /init is documented as one-time setup (SKILL.md). Any existing state at
+  // `target` is either a stale symlink from a previous run, or the placeholder
+  // content/notes/ that ships with a fresh degit — both are safe to replace.
   if (fs.existsSync(target)) {
     const stat = fs.lstatSync(target)
     if (stat.isSymbolicLink()) {
       fs.unlinkSync(target)
+    } else if (stat.isDirectory()) {
+      fs.rmSync(target, { recursive: true, force: true })
     }
-    // If it's a real directory we leave it alone (user may have content there)
   }
 
-  try {
-    fs.symlinkSync(vaultPath, target, "dir")
-    console.log(`[init] Symlinked ${target} → ${vaultPath}`)
-  } catch (err: unknown) {
-    const code = (err as NodeJS.ErrnoException).code
-    if (code === "EPERM" || code === "EACCES") {
-      console.warn(
-        "[init] WARNING: symlink not permitted (WSL→Windows mount). " +
-          "Falling back to recursive copy + file watch.",
-      )
-      // Ensure target directory exists before copying into it
-      fs.mkdirSync(target, { recursive: true })
-      fs.cpSync(vaultPath, target, { recursive: true })
-      console.log(`[init] Copied vault contents into ${target}`)
+  fs.mkdirSync(target, { recursive: true })
+  fs.cpSync(vaultPath, target, { recursive: true })
+  console.log(`[init] Copied vault contents into ${target}`)
 
-      // Watch vault for changes and re-copy modified files
-      fs.watch(vaultPath, { recursive: true }, (event, filename) => {
-        if (!filename) return
-        const src = path.join(vaultPath, filename)
-        const dst = path.join(target, filename)
-        try {
-          if (fs.existsSync(src)) {
-            const dstDir = path.dirname(dst)
-            fs.mkdirSync(dstDir, { recursive: true })
-            fs.copyFileSync(src, dst)
-          }
-        } catch {
-          // Silently skip transient errors (file deleted mid-copy, etc.)
-        }
-      })
-      console.log(`[init] Watch-mode active: changes in ${vaultPath} will be mirrored to ${target}`)
-    } else {
-      throw err
+  fs.watch(vaultPath, { recursive: true }, (event, filename) => {
+    if (!filename) return
+    const src = path.join(vaultPath, filename)
+    const dst = path.join(target, filename)
+    try {
+      if (fs.existsSync(src)) {
+        const dstDir = path.dirname(dst)
+        fs.mkdirSync(dstDir, { recursive: true })
+        fs.copyFileSync(src, dst)
+      }
+    } catch {
+      // Silently skip transient errors (file deleted mid-copy, etc.)
     }
+  })
+  console.log(`[init] Watching ${vaultPath} — edits will mirror into ${target}`)
+}
+
+/**
+ * Count markdown files under a vault, recursively. Skips dot-directories
+ * (`.obsidian`, `.git`, `.trash`, …) so Obsidian metadata doesn't inflate the
+ * count. Returns 0 for a missing directory — used by main() to branch between
+ * the real-vault build and the fixture fallback.
+ */
+export function countVaultMarkdown(dir: string): number {
+  if (!fs.existsSync(dir)) return 0
+  let n = 0
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith(".")) continue
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      n += countVaultMarkdown(full)
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      n++
+    }
+  }
+  return n
+}
+
+/**
+ * Return a `ask(prompt)` function that reads one line per call from the
+ * readline interface's async iterator. Works under both TTY and piped stdin;
+ * the `readline/promises` variant hangs on the second call under piped stdin
+ * in Bun (empirically verified 2026-04-22).
+ */
+export function createAskFn(rl: ReadlineInterface): (prompt: string) => Promise<string> {
+  const iter = rl[Symbol.asyncIterator]()
+  return async (prompt: string): Promise<string> => {
+    process.stdout.write(prompt)
+    const { value, done } = await iter.next()
+    return done ? "" : String(value)
   }
 }
 
@@ -145,15 +180,25 @@ jobs:
       - name: Prepare runtime dirs
         run: mkdir -p .data public/graph public/og content/notes content/posts
 
-      - name: Build (fixture fallback when OPENAI_API_KEY is absent)
+      - name: Build index (skip embeddings when key missing)
         run: |
           if [ -n "\${OPENAI_API_KEY:-}" ]; then
-            bun run build-all
+            bun run build-index
           else
-            bun run build:fixture
+            echo "::warning::OPENAI_API_KEY missing — running build-index with --skip-embed --skip-concepts"
+            bun run build-index -- --skip-embed --skip-concepts
           fi
         env:
           OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+
+      - name: Export graph
+        run: bun run export-graph
+
+      - name: Astro build
+        run: bunx astro build
+        env:
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          NODE_ENV: production
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
@@ -186,9 +231,11 @@ function verifyDeployYml(repoName: string | null): void {
 
 // ── Prompt helpers ────────────────────────────────────────────────────────────
 
-async function promptVaultPath(rl: readline.Interface): Promise<string> {
+type Ask = (prompt: string) => Promise<string>
+
+async function promptVaultPath(ask: Ask): Promise<string> {
   while (true) {
-    const input = (await rl.question("Obsidian vault absolute path: ")).trim()
+    const input = (await ask("Obsidian vault absolute path: ")).trim()
     if (!input) {
       console.error("[init] Path cannot be empty. Please enter an absolute path.")
       continue
@@ -210,11 +257,11 @@ async function promptVaultPath(rl: readline.Interface): Promise<string> {
   }
 }
 
-async function promptRepoName(rl: readline.Interface): Promise<string | null> {
+async function promptRepoName(ask: Ask): Promise<string | null> {
   const detected = detectGitRemote()
   const hint = detected ? ` [${detected}]` : " [e.g. JaeyeonBang/meshblog]"
   const input = (
-    await rl.question(`GitHub repo name (owner/name)${hint} — Enter to ${detected ? "accept detected" : "skip"}: `)
+    await ask(`GitHub repo name (owner/name)${hint} — Enter to ${detected ? "accept detected" : "skip"}: `)
   ).trim()
 
   if (!input) return detected
@@ -229,17 +276,15 @@ async function promptRepoName(rl: readline.Interface): Promise<string | null> {
 async function main(): Promise<void> {
   console.log("\n=== meshblog /init ===\n")
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  })
+  const rl = createInterface({ input: process.stdin })
+  const ask = createAskFn(rl)
 
   try {
     // 1. Vault path
-    const vaultPath = await promptVaultPath(rl)
+    const vaultPath = await promptVaultPath(ask)
 
     // 2. GitHub repo name
-    const repoName = await promptRepoName(rl)
+    const repoName = await promptRepoName(ask)
 
     rl.close()
 
@@ -254,13 +299,42 @@ async function main(): Promise<void> {
     // 5. Verify deploy.yml
     verifyDeployYml(repoName)
 
-    // 6. Build fixture preview
-    console.log("\n[init] Running build:fixture …")
-    execSync("bun run build:fixture", {
-      cwd: REPO_ROOT,
-      stdio: "inherit",
-      env: { ...process.env },
-    })
+    // 6. Build the site. Keyless users still see their real vault — the
+    //    fixture seed is only used when the vault is genuinely empty.
+    //    Both paths need the runtime dirs that CI creates explicitly; on a
+    //    fresh degit these don't exist yet.
+    for (const dir of [".data", "public/graph", "public/og"]) {
+      fs.mkdirSync(path.join(REPO_ROOT, dir), { recursive: true })
+    }
+
+    const vaultNotes = countVaultMarkdown(vaultPath)
+    console.log(`\n[init] Vault contains ${vaultNotes} markdown file(s)`)
+
+    if (vaultNotes === 0) {
+      console.log("[init] Empty vault — falling back to fixture build")
+      execSync("bun run build:fixture", {
+        cwd: REPO_ROOT,
+        stdio: "inherit",
+        env: { ...process.env },
+      })
+    } else {
+      console.log("[init] Running keyless build pipeline …")
+      execSync("bun run build-index -- --skip-embed --skip-concepts", {
+        cwd: REPO_ROOT,
+        stdio: "inherit",
+        env: { ...process.env },
+      })
+      execSync("bun run export-graph", {
+        cwd: REPO_ROOT,
+        stdio: "inherit",
+        env: { ...process.env },
+      })
+      execSync("bunx astro build", {
+        cwd: REPO_ROOT,
+        stdio: "inherit",
+        env: { ...process.env, NODE_ENV: "production" },
+      })
+    }
 
     // 7. Spawn dev server (non-blocking)
     console.log("\n[init] Starting dev server …")
