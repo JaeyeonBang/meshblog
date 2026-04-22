@@ -64,6 +64,24 @@
   stroke: none;
 }
 
+/*
+  backlink-leaf — nodes with zero inbound references in backlinks mode.
+  Muted so the eye reads hubs (higher inDegree → larger ink-stroked circles)
+  as the active structure.
+*/
+.svg :global(.nodes circle[data-kind="backlink-leaf"]) {
+  fill: var(--paper);
+  stroke: var(--ink-4);
+  stroke-width: 1px;
+  opacity: 0.7;
+}
+
+.svg :global(.nodes circle[data-kind="backlink-leaf"]:hover) {
+  fill: var(--ink);
+  stroke: var(--ink);
+  opacity: 1;
+}
+
 /* ── Edge hairlines ──────────────────────────────────────────────── */
 
 .svg :global(.links line) {

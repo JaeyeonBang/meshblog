@@ -1,14 +1,14 @@
 // Obsidian wikilink → Markdown/HTML resolver.
 //
 // Handles four shapes, matched in one pass by a single regex:
-//   [[target]]            → <a href="/notes/slug">title</a>  (resolved)
-//   [[target|alias]]      → <a href="/notes/slug">alias</a>  (resolved)
-//   ![[src]]              → ![](src)                         (image embed)
-//   ![[src|caption]]      → ![caption](src)                  (image embed with alt)
+//   [[target]]            → <a href="/notes/slug" class="wikilink">title</a>
+//   [[target|alias]]      → <a href="/notes/slug" class="wikilink">alias</a>
+//   ![[src]]              → ![](src)                          (image embed)
+//   ![[src|caption]]      → ![caption](src)                   (image embed with alt)
 //
-// When a target does not resolve, emits the display text as plain text rather
-// than a broken anchor. Silent 404s on Pages deploys were the pain here, so we
-// prefer visibly-unlinked text the author can grep for.
+// When a target does not resolve, emits a <span class="wikilink wikilink--missing">.
+// Styled visibly as a dashed-underline stub so authors can grep them on the live
+// site — silent 404s on Pages deploys were the original pain.
 
 export type WikilinkTarget = { slug: string; title: string }
 export type WikilinkResolver = (target: string) => WikilinkTarget | null
@@ -36,17 +36,18 @@ export function resolveWikilinks(
 
     // Regular wikilink.
     if (!target) {
-      // [[|alias]] or [[]] — no lookup possible; fall back to alias text or empty.
-      return alias
+      // [[|alias]] or [[]] — no lookup possible; emit alias in missing-state span.
+      if (!alias) return ''
+      return `<span class="wikilink wikilink--missing">${alias}</span>`
     }
 
     const resolved = resolve(target)
     const display = alias || resolved?.title || target
 
     if (!resolved) {
-      return display
+      return `<span class="wikilink wikilink--missing">${display}</span>`
     }
 
-    return `<a href="${hrefFor(resolved.slug)}">${display}</a>`
+    return `<a href="${hrefFor(resolved.slug)}" class="wikilink">${display}</a>`
   })
 }

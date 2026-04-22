@@ -13,18 +13,21 @@ const resolver: WikilinkResolver = (target) => {
 }
 
 describe('renderMarkdownToHtml — wikilink pipeline integration', () => {
-  it('resolved wikilink survives through remark+rehype as a real anchor', async () => {
+  it('resolved wikilink survives through remark+rehype as a real anchor with .wikilink class', async () => {
     const html = await renderMarkdownToHtml('See [[Linked Note|details]] here.', {
       resolver,
       hrefFor: (slug) => `/meshblog/notes/${slug}`,
     })
-    expect(html).toContain('<a href="/meshblog/notes/linked-note">details</a>')
+    expect(html).toContain('href="/meshblog/notes/linked-note"')
+    expect(html).toContain('class="wikilink"')
+    expect(html).toContain('>details</a>')
     expect(html).not.toContain('[[')
   })
 
-  it('unresolved wikilink becomes plain text (no broken anchor, no silent 404)', async () => {
+  it('unresolved wikilink becomes a wikilink--missing span (no broken anchor)', async () => {
     const html = await renderMarkdownToHtml('Refers to [[Missing Page]].', { resolver })
     expect(html).toContain('Missing Page')
+    expect(html).toContain('wikilink--missing')
     expect(html).not.toContain('[[')
     expect(html).not.toContain('<a href')
   })
@@ -36,9 +39,10 @@ describe('renderMarkdownToHtml — wikilink pipeline integration', () => {
     expect(html).toContain('alt="a caption"')
   })
 
-  it('fallback path (no resolver) does not emit broken anchors', async () => {
+  it('fallback path (no resolver) emits wikilink--missing spans instead of anchors', async () => {
     const html = await renderMarkdownToHtml('Before [[Anything]] after.')
     expect(html).toContain('Anything')
+    expect(html).toContain('wikilink--missing')
     expect(html).not.toContain('<a href')
     expect(html).not.toContain('[[')
   })

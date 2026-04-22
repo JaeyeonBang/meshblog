@@ -15,6 +15,12 @@ function nodeRadius(node: SimNode): number {
   return Math.max(base, Math.sqrt(node.pagerank * 1000))
 }
 
+/** Radius scaled by inbound-degree (backlinks/directed mode only) */
+function backlinkRadius(inDegree: number): number {
+  const base = 5
+  return base + Math.min(Math.sqrt(inDegree) * 3, 14)
+}
+
 // Node colour is painted entirely via CSS tokens in GraphView.module.css.
 
 /** Cap animation delay so stagger doesn't exceed 600ms */
@@ -46,6 +52,31 @@ export function useForceSimulation(
         return { source: s, target: t, weight: l.weight }
       })
       .filter((l): l is SimLink => l !== null)
+
+    // In directed (backlinks) mode every node looks identical otherwise —
+    // flatten pagerank → 0, same level, same type. Compute degree maps so
+    // hubs get bigger circles and leaf nodes read as muted stubs.
+    const inDegree = new Map<string, number>()
+    const outDegree = new Map<string, number>()
+    if (opts.directed) {
+      for (const l of links) {
+        outDegree.set(l.source.id, (outDegree.get(l.source.id) ?? 0) + 1)
+        inDegree.set(l.target.id, (inDegree.get(l.target.id) ?? 0) + 1)
+      }
+    }
+    const radiusOf = (d: SimNode) =>
+      opts.directed ? backlinkRadius(inDegree.get(d.id) ?? 0) : nodeRadius(d)
+    const kindOf = (d: SimNode): string => {
+      if (!opts.directed) return d.type
+      const inD = inDegree.get(d.id) ?? 0
+      return inD === 0 ? 'backlink-leaf' : 'note'
+    }
+    const labelOf = (d: SimNode): string => {
+      if (!opts.directed) return d.label
+      const inD = inDegree.get(d.id) ?? 0
+      const outD = outDegree.get(d.id) ?? 0
+      return `${d.label}  ·  ← ${inD}  ·  → ${outD}`
+    }
 
     // --- Simulation ---
     const simulation = d3Force
@@ -116,16 +147,16 @@ export function useForceSimulation(
       .join(enter => {
         const c = enter.append('circle')
         // Accessible tooltip via <title>
-        c.append('title').text(d => d.label)
+        c.append('title').text(d => labelOf(d))
         return c
       })
-      .attr('r', d => nodeRadius(d))
-      .attr('data-kind', d => d.type)
+      .attr('r', d => radiusOf(d))
+      .attr('data-kind', d => kindOf(d))
       .attr('cx', d => d.x ?? 0)
       .attr('cy', d => d.y ?? 0)
       .attr('tabindex', 0)
       .attr('role', 'button')
-      .attr('aria-label', d => d.label)
+      .attr('aria-label', d => labelOf(d))
       .style('cursor', 'pointer')
       // Stagger entrance animation; cap at MAX_STAGGER_MS
       .style('animation-delay', (_d, i) => {
@@ -142,11 +173,11 @@ export function useForceSimulation(
       .join('text')
       .attr('font-size', 10)
       .attr('text-anchor', 'middle')
-      .attr('dy', d => nodeRadius(d) + 12)
+      .attr('dy', d => radiusOf(d) + 12)
       .attr('x', d => d.x ?? 0)
       .attr('y', d => d.y ?? 0)
       .style('pointer-events', 'none')
-      .text(d => d.label)
+      .text(d => labelOf(d))
 
     // Map nodeId → label text element for hover
     const labelByIndex = labelSel.nodes()

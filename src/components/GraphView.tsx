@@ -144,7 +144,7 @@ export default function GraphView() {
 
         // Dispatch graph:state for toolbar sync
         window.dispatchEvent(new CustomEvent('graph:state', {
-          detail: { mode, level, nodes: g.nodes }
+          detail: { mode, level, nodes: g.nodes, linksCount: g.links.length }
         }))
       })
       .catch(() => {
@@ -176,7 +176,7 @@ export default function GraphView() {
     history.replaceState(null, '', `?${q.toString()}`)
     // Dispatch state even if graph not yet loaded (nodes: [] fallback)
     window.dispatchEvent(new CustomEvent('graph:state', {
-      detail: { mode, level, nodes: graph?.nodes ?? [] }
+      detail: { mode, level, nodes: graph?.nodes ?? [], linksCount: graph?.links.length ?? 0 }
     }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, level])
@@ -198,9 +198,17 @@ export default function GraphView() {
 
   useForceSimulation(svgRef, graph, {
     onNodeClick: (node: GraphNode) => {
-      if (node.type === 'note' && manifest[node.id]) {
-        window.location.href = withBase(manifest[node.id].href)
-      }
+      // Single click selects; sidebar block + #graphOpenBtn picks up via graph:select listener.
+      const entry = manifest[node.id]
+      const href = entry ? withBase(entry.href) : null
+      window.dispatchEvent(new CustomEvent('graph:select', {
+        detail: {
+          id: node.id,
+          label: node.label,
+          type: node.type,
+          href,
+        },
+      }))
     },
     directed: mode === 'backlinks',
   })

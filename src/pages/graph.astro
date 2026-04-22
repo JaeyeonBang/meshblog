@@ -57,9 +57,16 @@ import { withBase } from '../lib/url'
         <div class="block">
           <div class="block-label">selected · post</div>
           <h4 id="graphSelectedTitle">—</h4>
-          <p class="block-meta" id="graphSelectedMeta"></p>
+          <p class="block-meta" id="graphSelectedMeta">노드를 클릭하세요 · click a node</p>
           <p class="block-excerpt" id="graphSelectedExcerpt"></p>
-          <Button variant="primary" size="sm" href="#" id="graphOpenBtn">글 열기 →</Button>
+          <Button
+            variant="primary"
+            size="sm"
+            href="#"
+            id="graphOpenBtn"
+            aria-disabled="true"
+            style="pointer-events:none;opacity:0.4"
+          >글 열기 →</Button>
         </div>
 
         <div class="block">
@@ -85,7 +92,8 @@ import { withBase } from '../lib/url'
 
 <script>
   // ── State cache ──────────────────────────────────────────────────
-  let _graphState: { mode: string; level: number; nodes: unknown[] } | null = null
+  type GraphStateDetail = { mode: string; level: number; nodes: unknown[]; linksCount?: number }
+  let _graphState: GraphStateDetail | null = null
 
   // Read state from cache or fall back to URL params
   function readState() {
@@ -99,11 +107,10 @@ import { withBase } from '../lib/url'
 
   // ── graph:state listener ─────────────────────────────────────────
   window.addEventListener('graph:state', (e: Event) => {
-    const detail = (e as CustomEvent<{ mode: string; level: number; nodes: unknown[] }>).detail
+    const detail = (e as CustomEvent<GraphStateDetail>).detail
     _graphState = detail
 
     // Update #graphMeta
-    // TODO: when mode=backlinks, the L1/L2/L3 seg buttons have no effect; consider disabling them in a future round
     const metaEl = document.getElementById('graphMeta')
     if (metaEl) {
       if (detail.mode === 'backlinks') {
@@ -111,6 +118,21 @@ import { withBase } from '../lib/url'
       } else {
         metaEl.textContent = `mode: ${detail.mode} · L${detail.level}`
       }
+    }
+
+    // Update #gcStats toolbar counter — was frozen at 0/0 pre-Round-4
+    const statsEl = document.getElementById('gcStats')
+    if (statsEl) {
+      const n = (detail.nodes ?? []).length
+      const e = detail.linksCount ?? 0
+      statsEl.textContent = `${n} nodes · ${e} edges`
+    }
+
+    // Hide the L1/L2/L3 caption in backlinks mode — level is ignored there,
+    // so the caption is misleading
+    const levelCaption = document.querySelector<HTMLElement>('.graph-controls .level-caption')
+    if (levelCaption) {
+      levelCaption.hidden = detail.mode === 'backlinks'
     }
 
     // Toggle seg--active on mode buttons
@@ -131,6 +153,32 @@ import { withBase } from '../lib/url'
     const listEl = document.getElementById('graphList')
     if (listEl && !listEl.hidden) {
       renderList(detail.nodes as Array<{ id: string; label: string; type: string }>)
+    }
+  })
+
+  // ── graph:select listener — populate "selected · post" sidebar block
+  //    + point the dead-since-forever #graphOpenBtn at the real URL.
+  window.addEventListener('graph:select', (e: Event) => {
+    const detail = (e as CustomEvent<{ id: string; label: string; type: string; href: string | null }>).detail
+    const titleEl = document.getElementById('graphSelectedTitle')
+    const metaEl = document.getElementById('graphSelectedMeta')
+    const openBtn = document.getElementById('graphOpenBtn') as HTMLAnchorElement | null
+
+    if (titleEl) titleEl.textContent = detail.label
+    if (metaEl) metaEl.textContent = detail.type
+    if (openBtn) {
+      if (detail.href) {
+        openBtn.setAttribute('href', detail.href)
+        openBtn.removeAttribute('aria-disabled')
+        openBtn.style.removeProperty('pointer-events')
+        openBtn.style.removeProperty('opacity')
+      } else {
+        // concept nodes (no route) — keep button inert
+        openBtn.setAttribute('href', '#')
+        openBtn.setAttribute('aria-disabled', 'true')
+        openBtn.style.pointerEvents = 'none'
+        openBtn.style.opacity = '0.4'
+      }
     }
   })
 

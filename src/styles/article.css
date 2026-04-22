@@ -96,6 +96,27 @@
   outline-offset: 2px;
 }
 
+/* ── Wikilinks — visibly distinct from Markdown anchors ──────────────────── */
+/* Resolved: dotted-underline stub; keeps the hover-invert contract of .prose a.
+   Missing: dashed + muted — grep-friendly on the rendered page. */
+
+.prose a.wikilink {
+  border-bottom: 1px dotted var(--ink-4);
+  padding-bottom: 1px;
+}
+
+.prose a.wikilink:hover {
+  border-bottom-style: solid;
+  border-bottom-color: var(--ink);
+}
+
+.prose .wikilink--missing {
+  color: var(--ink-4);
+  border-bottom: 1px dashed var(--ink-4);
+  padding-bottom: 1px;
+  cursor: help;
+}
+
 /* ── Inline code ──────────────────────────────────────────────────────────── */
 
 .prose code {
