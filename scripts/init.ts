@@ -190,15 +190,25 @@ jobs:
       - name: Prepare runtime dirs
         run: mkdir -p .data public/graph public/og content/notes content/posts
 
-      - name: Build (fixture fallback when OPENAI_API_KEY is absent)
+      - name: Build index (skip embeddings when key missing)
         run: |
           if [ -n "\${OPENAI_API_KEY:-}" ]; then
-            bun run build-all
+            bun run build-index
           else
-            bun run build:fixture
+            echo "::warning::OPENAI_API_KEY missing — running build-index with --skip-embed --skip-concepts"
+            bun run build-index -- --skip-embed --skip-concepts
           fi
         env:
           OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+
+      - name: Export graph
+        run: bun run export-graph
+
+      - name: Astro build
+        run: bunx astro build
+        env:
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          NODE_ENV: production
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
