@@ -130,20 +130,24 @@ function checkHexLiterals(): CheckResult {
   return { label: 'hex literals outside tokens/fonts', status, hits: filtered };
 }
 
-/** Check 2: raw letter-spacing em values (should use var(--track-*)) */
+/** Check 2: raw eyebrow tracking (0.2em) outside tokens — should use var(--track-eyebrow).
+ *  Only 0.2em is flagged because that value has a dedicated token; other tracking values
+ *  (display negatives, mid-range positives) are intentionally varied. */
 function checkLetterSpacing(): CheckResult {
   const exts = ['.astro', '.tsx', '.css', '.module.css'];
-  // Exclude tokens.css (where the vars are defined) and Button.astro (per spec)
   const files = glob(SRC, exts).filter(
-    (f) =>
-      !f.endsWith('tokens.css') &&
-      !f.includes('Button.astro'),
+    (f) => !f.endsWith('tokens.css'),
   );
 
-  const RE = /letter-spacing:\s*-?0?\.[0-9]+em\b/;
+  const RE = /letter-spacing:\s*0?\.2em\b/;
   const hits = scan(files, RE);
   const status: Status = hits.length > 0 ? 'FAIL' : 'PASS';
-  return { label: 'raw letter-spacing em', status, hits };
+  return {
+    label: 'raw eyebrow tracking 0.2em',
+    status,
+    hits,
+    note: hits.length > 0 ? 'replace with var(--track-eyebrow)' : undefined,
+  };
 }
 
 /** Check 3: cursor:pointer (WARN, human-verify required) */
@@ -169,11 +173,17 @@ function checkThreePxBorders(): CheckResult {
   const exts = ['.astro', '.tsx', '.css', '.module.css'];
   const files = glob(SRC, exts);
 
-  // Allowlist: relative paths from repo root
+  // Allowlist: relative paths from repo root.
+  // These are the documented locations where `border-top: 3px` is the intended emphasis:
+  //   - PullQuote.astro / article.css: pull-quote top rule
+  //   - PageQa.astro: "ask this page" top rule
+  //   - QaCard.astro / QAChips.module.css: expanded QA-answer top-tab (A3 flip)
   const ALLOWLIST = [
     'src/components/ui/molecules/PullQuote.astro',
     'src/components/ui/molecules/PageQa.astro',
     'src/components/ui/molecules/QaCard.astro',
+    'src/components/QAChips.module.css',
+    'src/styles/article.css',
   ];
 
   const RE = /border(-top)?:\s*3(px|\s+solid)|border-width:\s*3px/;
