@@ -34,17 +34,18 @@ describe('resolveWikilinks — D2 adversarial cases', () => {
     )
   })
 
-  // 3. Broken link → missing-state span fallback (no silent 404, visually distinct)
-  it('[[Missing]] → wikilink--missing span (no anchor)', () => {
+  // 3. Broken link → missing-state span fallback (no silent 404, visually distinct,
+  //    tooltip explains why the stub is unclickable)
+  it('[[Missing]] → wikilink--missing span with title tooltip', () => {
     expect(resolveWikilinks('[[Missing]]', resolver)).toBe(
-      '<span class="wikilink wikilink--missing">Missing</span>'
+      '<span class="wikilink wikilink--missing" title="대상 노트가 없습니다 · no matching note">Missing</span>'
     )
   })
 
   // 4. Broken link with alias → alias in missing-state span
   it('[[Missing|label]] → wikilink--missing span with alias', () => {
     expect(resolveWikilinks('[[Missing|label]]', resolver)).toBe(
-      '<span class="wikilink wikilink--missing">label</span>'
+      '<span class="wikilink wikilink--missing" title="대상 노트가 없습니다 · no matching note">label</span>'
     )
   })
 
@@ -94,7 +95,7 @@ describe('resolveWikilinks — D2 adversarial cases', () => {
   // 11. Empty target with alias → missing-state span with alias text
   it('[[|Y]] → wikilink--missing span (empty target never resolves)', () => {
     expect(resolveWikilinks('[[|Y]]', resolver)).toBe(
-      '<span class="wikilink wikilink--missing">Y</span>'
+      '<span class="wikilink wikilink--missing" title="대상 노트가 없습니다 · no matching note">Y</span>'
     )
   })
 
@@ -110,7 +111,7 @@ describe('resolveWikilinks — context integration', () => {
     const input = 'See [[Existing]] and [[Missing]] for more.'
     expect(resolveWikilinks(input, resolver)).toBe(
       'See <a href="/notes/existing" class="wikilink">Existing</a> and ' +
-        '<span class="wikilink wikilink--missing">Missing</span> for more.'
+        '<span class="wikilink wikilink--missing" title="대상 노트가 없습니다 · no matching note">Missing</span> for more.'
     )
   })
 

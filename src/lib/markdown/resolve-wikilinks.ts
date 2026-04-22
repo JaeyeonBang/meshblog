@@ -20,6 +20,10 @@ const WIKILINK_RE = /(!?)\[\[([^\]|]*)(?:\|([^\]]*))?\]\]/g
 
 const defaultHrefFor = (slug: string) => `/notes/${slug}`
 
+// Tooltip for unresolved wikilinks: cursor:help in article.css now delivers on
+// its promise. Bilingual to match the site's editorial voice.
+const MISSING_TITLE = '대상 노트가 없습니다 · no matching note'
+
 export function resolveWikilinks(
   md: string,
   resolve: WikilinkResolver,
@@ -38,14 +42,14 @@ export function resolveWikilinks(
     if (!target) {
       // [[|alias]] or [[]] — no lookup possible; emit alias in missing-state span.
       if (!alias) return ''
-      return `<span class="wikilink wikilink--missing">${alias}</span>`
+      return `<span class="wikilink wikilink--missing" title="${MISSING_TITLE}">${alias}</span>`
     }
 
     const resolved = resolve(target)
     const display = alias || resolved?.title || target
 
     if (!resolved) {
-      return `<span class="wikilink wikilink--missing">${display}</span>`
+      return `<span class="wikilink wikilink--missing" title="${MISSING_TITLE}">${display}</span>`
     }
 
     return `<a href="${hrefFor(resolved.slug)}" class="wikilink">${display}</a>`

@@ -23,7 +23,7 @@ describe('preprocessMarkdown (integration)', () => {
 
   it('without resolver → every wikilink becomes a wikilink--missing span (no silent 404)', () => {
     expect(preprocessMarkdown('See [[PageA]] for details.')).toBe(
-      'See <span class="wikilink wikilink--missing">PageA</span> for details.',
+      'See <span class="wikilink wikilink--missing" title="대상 노트가 없습니다 · no matching note">PageA</span> for details.',
     )
   })
 
@@ -45,7 +45,7 @@ describe('preprocessMarkdown (integration)', () => {
   it('unresolved targets become wikilink--missing spans, never anchors', () => {
     expect(
       preprocessMarkdown('Refers to [[Missing]].', { resolver: minimalResolver }),
-    ).toBe('Refers to <span class="wikilink wikilink--missing">Missing</span>.')
+    ).toBe('Refers to <span class="wikilink wikilink--missing" title="대상 노트가 없습니다 · no matching note">Missing</span>.')
   })
 
   it('explicit noResolver path behaves identically to default', () => {
