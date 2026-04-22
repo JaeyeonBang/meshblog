@@ -60,7 +60,6 @@ const noteCount = items.filter(i => i.kind === 'note').length
     </div>
 
     <div class="results" id="cmdk-results" role="listbox" aria-label="Search results">
-      <div class="cmdk-empty" id="cmdk-empty-initial">type to search · 볼트를 검색하세요</div>
     </div>
 
     <div class="meta-row" aria-hidden="true">
@@ -154,6 +153,14 @@ const noteCount = items.filter(i => i.kind === 'note').length
     color: var(--ink-4);
     padding: 36px 18px;
     text-align: center;
+  }
+  .recent-head {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding: 10px 18px 6px;
   }
   .group-head {
     font-family: var(--f-mono);
@@ -303,12 +310,15 @@ const noteCount = items.filter(i => i.kind === 'note').length
   }
 
   function filterItems(items: SearchItem[], q: string): SearchItem[] {
-    if (!q) return []
     const needle = q.toLowerCase().trim()
     if (!needle) return []
     return items
       .filter(it => it.title.toLowerCase().includes(needle))
       .slice(0, 20)
+  }
+
+  function recentItems(items: SearchItem[]): SearchItem[] {
+    return items.slice(0, 5)
   }
 
   function escapeHtml(s: string): string {
@@ -319,11 +329,18 @@ const noteCount = items.filter(i => i.kind === 'note').length
       .replace(/"/g, '&quot;')
   }
 
-  function renderResults(container: HTMLElement, results: SearchItem[], query: string) {
-    if (!query) {
+  function renderSuggestions(container: HTMLElement, allItems: SearchItem[]) {
+    const recent = recentItems(allItems)
+    if (recent.length === 0) {
       container.innerHTML = '<div class="cmdk-empty">type to search · 볼트를 검색하세요</div>'
       return
     }
+    let html = '<div class="recent-head">recent</div>'
+    html += recent.map(r => resultHtml(r)).join('')
+    container.innerHTML = html
+  }
+
+  function renderResults(container: HTMLElement, results: SearchItem[], query: string) {
     if (results.length === 0) {
       container.innerHTML = `<div class="cmdk-empty">no match · ${escapeHtml(query)} 일치 없음</div>`
       return
@@ -365,6 +382,9 @@ const noteCount = items.filter(i => i.kind === 'note').length
     function open() {
       bd!.classList.add('open');
       bd!.setAttribute('aria-hidden', 'false');
+      renderSuggestions(results!, items)
+      activeIdx = items.slice(0, 5).length > 0 ? 0 : -1
+      updateActive()
       setTimeout(() => inp!.focus(), 50);
     }
 
@@ -372,8 +392,9 @@ const noteCount = items.filter(i => i.kind === 'note').length
       bd!.classList.remove('open');
       bd!.setAttribute('aria-hidden', 'true');
       inp!.value = '';
-      renderResults(results!, [], '')
-      activeIdx = -1
+      renderSuggestions(results!, items)
+      activeIdx = items.slice(0, 5).length > 0 ? 0 : -1
+      updateActive()
     }
 
     function updateActive() {
@@ -386,6 +407,12 @@ const noteCount = items.filter(i => i.kind === 'note').length
 
     inp.addEventListener('input', () => {
       const q = inp.value
+      if (!q.trim()) {
+        renderSuggestions(results, items)
+        activeIdx = items.slice(0, 5).length > 0 ? 0 : -1
+        updateActive()
+        return
+      }
       const filtered = filterItems(items, q)
       renderResults(results, filtered, q)
       activeIdx = filtered.length > 0 ? 0 : -1
