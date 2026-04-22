@@ -2,31 +2,32 @@
 name: "Editorial B&W"
 variant: a
 colors:
-  ink:        "#000"
-  ink-2:      "#1a1a1a"
-  ink-3:      "#555"
-  ink-4:      "#888"
-  ink-5:      "#bbb"
-  paper:      "#fff"
-  paper-2:    "#f6f6f4"
-  rule:       "#000"
-  rule-soft:  "#d9d9d6"
+  ink:        "oklch(0% 0 0)"
+  ink-2:      "oklch(22% 0 0)"
+  ink-3:      "oklch(45% 0 0)"
+  ink-4:      "oklch(63% 0 0)"
+  ink-5:      "oklch(79% 0 0)"
+  paper:      "oklch(100% 0 0)"
+  paper-2:    "oklch(97% 0.003 85)"
+  rule:       "oklch(0% 0 0)"
+  rule-soft:  "oklch(88% 0.004 85)"
   accent:     "var(--ink)"
-  focus-ring: "#0066ff"
+  focus-ring: "oklch(45% 0.18 265)"
 darkColors:
-  ink:       "#fff"
-  ink-2:     "#e8e8e6"
-  ink-3:     "#aaa"
-  ink-4:     "#777"
-  ink-5:     "#444"
-  paper:     "#000"
-  paper-2:   "#1a1a1a"
-  rule-soft: "#2a2a2a"
+  ink:       "oklch(100% 0 0)"
+  ink-2:     "oklch(93% 0.003 85)"
+  ink-3:     "oklch(74% 0 0)"
+  ink-4:     "oklch(57% 0 0)"
+  ink-5:     "oklch(39% 0 0)"
+  paper:     "oklch(0% 0 0)"
+  paper-2:   "oklch(22% 0 0)"
+  rule-soft: "oklch(29% 0 0)"
 fonts:
-  display: "Fraunces"
-  serif:   "Fraunces"
-  sans:    "Pretendard"
-  mono:    "JetBrains Mono"
+  display:    "Fraunces"
+  serif:      "Fraunces"
+  sans:       "Pretendard"
+  mono:       "JetBrains Mono"
+  korean-serif: "Noto Serif KR"
 scale:
   radius:
     xs:   0
@@ -63,6 +64,10 @@ layout:
   w-reader-side:   "240px"
   w-graph-side:    "300px"
   w-search-box:    "760px"
+tracking:
+  eyebrow: "0.2em"
+  badge:   "0.14em"
+  nav:     "0.1em"
 ---
 
 # Editorial B&W

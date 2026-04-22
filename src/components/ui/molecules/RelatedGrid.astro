@@ -1,4 +1,6 @@
 ---
+import KindBadge from '../atoms/KindBadge.astro'
+
 interface RelatedItem {
   kind: 'post' | 'note';
   number: string;
@@ -17,7 +19,7 @@ const { items } = Astro.props;
     {items.map((item) => (
       <a class="related-item" href={item.href}>
         <div class="row1">
-          <span class:list={['kind-badge', item.kind]}>{item.kind}</span>
+          <KindBadge kind={item.kind} />
           <span class="meta">{item.meta}</span>
         </div>
         <div class="t">{item.title}</div>
@@ -33,7 +35,7 @@ const { items } = Astro.props;
   .label {
     font-family: var(--f-mono);
     font-size: 10px;
-    letter-spacing: 0.2em;
+    letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     color: var(--ink);
     padding-bottom: 10px;
@@ -65,14 +67,8 @@ const { items } = Astro.props;
     background: var(--ink);
     color: var(--paper);
   }
-  .related-item:hover .meta,
-  .related-item:hover .kind-badge {
+  .related-item:hover .meta {
     color: var(--paper);
-    border-color: var(--paper);
-  }
-  .related-item:hover .kind-badge.post {
-    background: var(--paper);
-    color: var(--ink);
   }
   .related-item:focus-visible {
     outline: 2px solid var(--focus-ring);
@@ -89,25 +85,6 @@ const { items } = Astro.props;
     align-items: center;
     gap: 10px;
     margin-bottom: 6px;
-  }
-  .kind-badge {
-    font-family: var(--f-mono);
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    padding: 2px 8px;
-    border: 1px solid var(--ink);
-    display: inline-block;
-    line-height: 1.6;
-  }
-  .kind-badge.post {
-    background: var(--ink);
-    color: var(--paper);
-  }
-  .kind-badge.note {
-    background: var(--paper);
-    color: var(--ink);
   }
   .meta {
     font-family: var(--f-mono);

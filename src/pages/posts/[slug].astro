@@ -25,6 +25,7 @@ import { estimateReadingMinutes } from '../../lib/reading-time'
 import { getReadingStats } from '../../lib/word-count'
 import { withBase } from '../../lib/url'
 import { injectLedeClass } from '../../lib/lede'
+import { getNoteMeshNodes } from '../../lib/mesh-data'
 import '../../styles/article.css'
 
 export async function getStaticPaths() {
@@ -131,16 +132,13 @@ const tocItems = [
   { label: '도입', level: 1 as const },
 ]
 
-// Mini mesh nodes (static scaffold for aside)
-const meshNodes = [
-  { label: 'this', x: 50, y: 52, kind: 'selected' as const },
-  { label: 'llm',   x: 22, y: 28, kind: 'hub' as const },
-  { label: 'graph', x: 80, y: 32, kind: 'hub' as const, href: withBase('/graph') },
-]
-const meshEdges = [
-  { from: 0, to: 1 },
-  { from: 0, to: 2 },
-]
+// Per-post subgraph: center = this post, neighbors = up to 5 inbound/outbound links.
+// Returns [] for orphan posts — MiniMesh is hidden in that case.
+const meshNodes = getNoteMeshNodes({
+  noteId: post.id,
+  noteTitle: post.title,
+  withBase,
+})
 ---
 
 <Base
@@ -210,9 +208,11 @@ const meshEdges = [
 
     <aside class="reader-aside">
       <TOC label="contents" items={tocItems} />
-      <TOC label="related mesh" mesh={true}>
-        <MiniMesh nodes={meshNodes} edges={meshEdges} size="sm" />
-      </TOC>
+      {meshNodes.length > 1 && (
+        <TOC label="related mesh" mesh={true}>
+          <MiniMesh nodes={meshNodes} size="sm" />
+        </TOC>
+      )}
       {/* TODO: restore "backlinks" when backlinks are aggregated */}
     </aside>
   </div>
@@ -356,7 +356,7 @@ const meshEdges = [
   .article-header .eyebrow {
     font-family: var(--f-mono);
     font-size: 10px;
-    letter-spacing: 0.2em;
+    letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     color: var(--ink-3);
     margin: 0 0 var(--space-3);

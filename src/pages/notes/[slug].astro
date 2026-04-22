@@ -27,6 +27,7 @@ import { estimateReadingMinutes } from '../../lib/reading-time'
 import { getReadingStats } from '../../lib/word-count'
 import { withBase } from '../../lib/url'
 import { injectLedeClass } from '../../lib/lede'
+import { getNoteMeshNodes } from '../../lib/mesh-data'
 import '../../styles/article.css'
 
 export function getStaticPaths() {
@@ -37,11 +38,7 @@ export function getStaticPaths() {
   }))
 }
 
-interface Props {
-  note: NoteRow
-}
-
-const { note } = Astro.props
+const { note } = Astro.props as { note: NoteRow }
 
 // Fetch note-tier QA cards
 const noteQa: QaCard[] = getQaForNote(note.id)
@@ -130,16 +127,13 @@ const relatedItems = related.map((r, i) => ({
   href: resolveHref(r.id, r.slug),
 }))
 
-// Mini mesh for aside
-const meshNodes = [
-  { label: 'this note', x: 50, y: 50, kind: 'selected' as const },
-  { label: 'related',   x: 28, y: 28 },
-  { label: 'graph',     x: 78, y: 35, kind: 'hub' as const, href: withBase('/graph') },
-]
-const meshEdges = [
-  { from: 0, to: 1 },
-  { from: 0, to: 2 },
-]
+// Per-note subgraph: center = this note, neighbors = up to 5 inbound/outbound links.
+// Returns [] for orphan notes — MiniMesh is hidden in that case.
+const meshNodes = getNoteMeshNodes({
+  noteId: note.id,
+  noteTitle: note.title,
+  withBase,
+})
 ---
 
 <Base
@@ -222,9 +216,11 @@ const meshEdges = [
           <Tag>{tag}</Tag>
         ))}
       </TOC>
-      <TOC label="position in mesh" mesh={true}>
-        <MiniMesh nodes={meshNodes} edges={meshEdges} size="sm" />
-      </TOC>
+      {meshNodes.length > 1 && (
+        <TOC label="position in mesh" mesh={true}>
+          <MiniMesh nodes={meshNodes} size="sm" />
+        </TOC>
+      )}
     </aside>
   </div>
 </Base>
@@ -367,7 +363,7 @@ const meshEdges = [
   .article-header .eyebrow {
     font-family: var(--f-mono);
     font-size: 10px;
-    letter-spacing: 0.2em;
+    letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     color: var(--ink-3);
     margin: 0 0 var(--space-3);
@@ -431,7 +427,7 @@ const meshEdges = [
   .backlinks-section .mono-eyebrow {
     font-family: var(--f-mono);
     font-size: 10px;
-    letter-spacing: 0.2em;
+    letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     color: var(--ink);
     padding-bottom: 8px;
