@@ -1,0 +1,182 @@
+---
+import Base from '../../layouts/Base.astro'
+import { listCategories } from '../../lib/pages/index.ts'
+import type { CategoryRow } from '../../lib/pages/index.ts'
+import { withBase } from '../../lib/url'
+
+const categories: CategoryRow[] = listCategories()
+const count = categories.length
+const totalNotes = categories.reduce((s, c) => s + c.noteCount, 0)
+const totalPosts = categories.reduce((s, c) => s + c.postCount, 0)
+---
+
+<Base
+  title="categories · meshblog"
+  description="All categories in the meshblog vault — topics that organise notes and posts."
+  topBarActive="categories"
+>
+  <div class="index-layout">
+    <header class="index-header">
+      <p class="eyebrow">taxonomy · {count} {count === 1 ? 'category' : 'categories'}</p>
+      <h1>categories</h1>
+      <p class="stats">{totalNotes} {totalNotes === 1 ? 'note' : 'notes'} · {totalPosts} {totalPosts === 1 ? 'post' : 'posts'}</p>
+    </header>
+
+    <main class="index-main">
+      <h2 class="section-label">all categories</h2>
+      {categories.length > 0 ? (
+        <ul class="cat-list" role="list">
+          {categories.map((cat) => (
+            <li class="cat-row">
+              <a href={withBase(`/categories/${cat.slug}/`)} class="cat-link">
+                <span class="cat-name">{cat.name}</span>
+                <span class="cat-meta">
+                  {cat.noteCount} {cat.noteCount === 1 ? 'note' : 'notes'}
+                  {' '}·{' '}
+                  {cat.postCount} {cat.postCount === 1 ? 'post' : 'posts'}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="empty">no categories yet · check back soon.</p>
+      )}
+    </main>
+  </div>
+</Base>
+
+<style>
+  .index-layout {
+    max-width: var(--w-page);
+    margin: 0 auto;
+    padding: 0 var(--space-8) var(--space-24);
+  }
+
+  /* ── Page header ────────────────────────────────────────────── */
+  .index-header {
+    padding: var(--space-12) 0 var(--space-10);
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: var(--space-12);
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 var(--space-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .eyebrow::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--ink);
+  }
+
+  h1 {
+    font-family: var(--f-disp);
+    font-weight: 500;
+    font-size: clamp(44px, 6vw, 72px);
+    line-height: 1.0;
+    margin: 0 0 var(--space-3);
+    letter-spacing: -0.025em;
+    font-variation-settings: "opsz" 144;
+  }
+
+  .stats {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  /* ── Section label (h2 bridge) ────────────────────────────── */
+  .section-label {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 400;
+    margin: 0 0 var(--space-4);
+  }
+
+  /* ── Category list ─────────────────────────────────────────── */
+  .index-main {
+    display: flex;
+    flex-direction: column;
+    max-width: 72ch;
+  }
+
+  .cat-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .cat-row {
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .cat-link {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-4) var(--space-5) 0;
+    text-decoration: none;
+    color: inherit;
+    transition: background var(--dur-fast) var(--ease);
+    margin-right: -16px;
+    padding-right: 16px;
+  }
+
+  .cat-link:hover {
+    background: var(--ink);
+    color: var(--paper);
+    padding-left: var(--space-4);
+    margin-left: calc(-1 * var(--space-4));
+  }
+
+  .cat-link:hover .cat-meta {
+    color: var(--paper-2);
+  }
+
+  .cat-link:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .cat-name {
+    font-family: var(--f-disp);
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .cat-meta {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+    margin-left: auto;
+    white-space: nowrap;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .empty {
+    font-family: var(--f-serif);
+    font-size: var(--fs-md);
+    font-style: italic;
+    color: var(--ink-3);
+    padding: var(--space-6) 0;
+  }
+</style>

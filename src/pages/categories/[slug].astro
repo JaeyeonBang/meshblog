@@ -1,0 +1,163 @@
+---
+import Base from '../../layouts/Base.astro'
+import NoteRow from '../../components/ui/molecules/NoteRow.astro'
+import PostCard from '../../components/ui/molecules/PostCard.astro'
+import {
+  listCategories,
+  listNotesByCategory,
+  listPostsByCategory,
+} from '../../lib/pages/index.ts'
+import type { CategoryRow } from '../../lib/pages/index.ts'
+import { withBase } from '../../lib/url'
+
+export function getStaticPaths() {
+  const categories: CategoryRow[] = listCategories()
+  return categories.map((cat) => ({
+    params: { slug: cat.slug },
+    props: { cat },
+  }))
+}
+
+interface Props {
+  cat: CategoryRow
+}
+
+const { cat } = Astro.props
+const notes = listNotesByCategory(cat.slug)
+const posts = listPostsByCategory(cat.slug)
+const hasContent = notes.length > 0 || posts.length > 0
+---
+
+<Base
+  title={`${cat.name} · categories · meshblog`}
+  description={`Notes and posts in the ${cat.name} category on meshblog.`}
+  topBarActive="categories"
+>
+  <div class="index-layout">
+    <header class="index-header">
+      <p class="eyebrow">{cat.slug} · {cat.noteCount} {cat.noteCount === 1 ? 'note' : 'notes'} · {cat.postCount} {cat.postCount === 1 ? 'post' : 'posts'}</p>
+      <h1>{cat.name}</h1>
+    </header>
+
+    <main class="index-main">
+      {!hasContent && (
+        <p class="empty">no items in this category yet.</p>
+      )}
+
+      {notes.length > 0 && (
+        <section class="cat-section">
+          <h2 class="section-label">notes</h2>
+          {notes.map((note, i) => (
+            <NoteRow
+              number={`N / ${String(i + 1).padStart(2, '0')}`}
+              title={note.title}
+              meta={(() => {
+                const d = new Date(note.updated_at)
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+              })()}
+              href={withBase(`/notes/${note.slug}`)}
+            />
+          ))}
+        </section>
+      )}
+
+      {posts.length > 0 && (
+        <section class="cat-section">
+          <h2 class="section-label">posts</h2>
+          {posts.map((post, i) => (
+            <PostCard
+              kind="post"
+              number={String(i + 1).padStart(2, '0')}
+              href={withBase(`/posts/${post.slug}`)}
+              title={post.title}
+              excerpt={post.content.replace(/[#*`_~\[\]]/g, '').slice(0, 120).trimEnd()}
+              date={new Date(post.created_at).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+              })}
+              tags={post.tags ?? []}
+            />
+          ))}
+        </section>
+      )}
+    </main>
+  </div>
+</Base>
+
+<style>
+  .index-layout {
+    max-width: var(--w-page);
+    margin: 0 auto;
+    padding: 0 var(--space-8) var(--space-24);
+  }
+
+  /* ── Page header ────────────────────────────────────────────── */
+  .index-header {
+    padding: var(--space-12) 0 var(--space-10);
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: var(--space-12);
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 var(--space-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .eyebrow::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--ink);
+  }
+
+  h1 {
+    font-family: var(--f-disp);
+    font-weight: 500;
+    font-size: clamp(44px, 6vw, 72px);
+    line-height: 1.0;
+    margin: 0 0 var(--space-3);
+    letter-spacing: -0.025em;
+    font-variation-settings: "opsz" 144;
+  }
+
+  /* ── Section label (h2 bridge) ────────────────────────────── */
+  .section-label {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 400;
+    margin: 0 0 var(--space-4);
+  }
+
+  /* ── Main column ───────────────────────────────────────────── */
+  .index-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+    max-width: var(--w-prose);
+  }
+
+  .cat-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .empty {
+    font-family: var(--f-serif);
+    font-size: var(--fs-md);
+    font-style: italic;
+    color: var(--ink-3);
+    padding: var(--space-6) 0;
+  }
+</style>

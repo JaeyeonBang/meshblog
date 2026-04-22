@@ -6,6 +6,7 @@ import SectionBreak from '../components/ui/molecules/SectionBreak.astro'
 import TOC from '../components/ui/molecules/TOC.astro'
 import QaCard from '../components/ui/molecules/QaCard.astro'
 import MiniMesh from '../components/ui/molecules/MiniMesh.astro'
+import CategoryList from '../components/ui/molecules/CategoryList.astro'
 import Button from '../components/ui/atoms/Button.astro'
 import QAChips from '../components/QAChips.tsx'
 import { listPosts, listNotes, getHomepageQa } from '../lib/pages/index.ts'
@@ -113,6 +114,8 @@ const meshNodes = getHomeMeshNodes(withBase)
           <Button href={withBase('/graph')}>전체 그래프 →</Button>
         </div>
       </TOC>
+
+      <CategoryList limit={5} />
 
       <TOC label="feed">
         <div class="feed-links">
