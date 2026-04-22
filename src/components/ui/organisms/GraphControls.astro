@@ -46,12 +46,12 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
       class="disclosure"
       id="gcDepthToggle"
       type="button"
-      aria-expanded="false"
+      aria-expanded="true"
       aria-controls="level-group"
       title="선택한 노드에서 몇 걸음까지 볼지"
-    >+ depth</button>
+    >− depth</button>
 
-    <div class="group" id="level-group" hidden>
+    <div class="group" id="level-group">
       <span class="lab" id="level-label">level</span>
       <div class="btn-group" role="radiogroup" aria-labelledby="level-label">
         {([1, 2, 3] as const).map((l) => (
@@ -88,7 +88,7 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
       </div>
     </div>
   </div>
-  <p class="level-caption" hidden>Level · 선택한 노드에서 몇 걸음까지 볼지</p>
+  <p class="level-caption">Level · 선택한 노드에서 몇 걸음까지 볼지</p>
   <span id="gcShareStatus" role="status" aria-live="polite" class="sr-only"></span>
 </div>
 
