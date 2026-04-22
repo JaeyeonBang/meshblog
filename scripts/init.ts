@@ -31,9 +31,15 @@ const DEPLOY_YML = path.join(REPO_ROOT, ".github", "workflows", "deploy.yml")
 // ── Exported helper for unit tests ────────────────────────────────────────────
 
 /**
- * Link vaultPath → target.
- * Tries fs.symlinkSync first; if it throws EPERM or EACCES (WSL→Windows mount),
- * falls back to recursive copy + fs.watch for live sync.
+ * Materialize vaultPath into target as a real directory (not a symlink) and
+ * start a watcher that mirrors subsequent vault edits.
+ *
+ * Symlinks were the original design, but `git add .` serializes a symlink as
+ * its literal target path, so `git push` ships a dangling reference; CI's
+ * build-index then reads 0 markdown files from content/notes/ and the
+ * fork user sees only the baseline posts on live. Always copying makes the
+ * publish path work out of the box. The watcher preserves the "vault is the
+ * source of truth" mental model — Obsidian edits still flow through.
  */
 export function linkVault(vaultPath: string, target: string): void {
   // /init is documented as one-time setup (SKILL.md). Any existing state at
@@ -48,41 +54,25 @@ export function linkVault(vaultPath: string, target: string): void {
     }
   }
 
-  try {
-    fs.symlinkSync(vaultPath, target, "dir")
-    console.log(`[init] Symlinked ${target} → ${vaultPath}`)
-  } catch (err: unknown) {
-    const code = (err as NodeJS.ErrnoException).code
-    if (code === "EPERM" || code === "EACCES") {
-      console.warn(
-        "[init] WARNING: symlink not permitted (WSL→Windows mount). " +
-          "Falling back to recursive copy + file watch.",
-      )
-      // Ensure target directory exists before copying into it
-      fs.mkdirSync(target, { recursive: true })
-      fs.cpSync(vaultPath, target, { recursive: true })
-      console.log(`[init] Copied vault contents into ${target}`)
+  fs.mkdirSync(target, { recursive: true })
+  fs.cpSync(vaultPath, target, { recursive: true })
+  console.log(`[init] Copied vault contents into ${target}`)
 
-      // Watch vault for changes and re-copy modified files
-      fs.watch(vaultPath, { recursive: true }, (event, filename) => {
-        if (!filename) return
-        const src = path.join(vaultPath, filename)
-        const dst = path.join(target, filename)
-        try {
-          if (fs.existsSync(src)) {
-            const dstDir = path.dirname(dst)
-            fs.mkdirSync(dstDir, { recursive: true })
-            fs.copyFileSync(src, dst)
-          }
-        } catch {
-          // Silently skip transient errors (file deleted mid-copy, etc.)
-        }
-      })
-      console.log(`[init] Watch-mode active: changes in ${vaultPath} will be mirrored to ${target}`)
-    } else {
-      throw err
+  fs.watch(vaultPath, { recursive: true }, (event, filename) => {
+    if (!filename) return
+    const src = path.join(vaultPath, filename)
+    const dst = path.join(target, filename)
+    try {
+      if (fs.existsSync(src)) {
+        const dstDir = path.dirname(dst)
+        fs.mkdirSync(dstDir, { recursive: true })
+        fs.copyFileSync(src, dst)
+      }
+    } catch {
+      // Silently skip transient errors (file deleted mid-copy, etc.)
     }
-  }
+  })
+  console.log(`[init] Watching ${vaultPath} — edits will mirror into ${target}`)
 }
 
 /**

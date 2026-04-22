@@ -17,9 +17,9 @@ import {
   mkdirSync,
   rmSync,
   writeFileSync,
+  readFileSync,
   existsSync,
   lstatSync,
-  readlinkSync,
   symlinkSync,
 } from 'node:fs'
 import { join } from 'node:path'
@@ -86,44 +86,61 @@ describe('linkVault', () => {
     rmSync(BASE, { recursive: true, force: true })
   })
 
-  it('creates a symlink when the target does not exist', () => {
+  it('materializes a real directory with vault files copied in', () => {
+    // Why copy instead of symlink: `git add .` serializes a symlink as the
+    // stored path (e.g. /tmp/test-vault), so on CI the symlink resolves to
+    // a non-existent directory and build-index finds 0 markdown files in
+    // content/notes/. Making linkVault copy + watch means fork users can
+    // `git push` their notes without any manual materialization step.
     const vault = join(BASE, 'vault')
     const target = join(BASE, 'content-notes')
     mkdirSync(vault)
-    writeFileSync(join(vault, 'one.md'), 'x')
+    writeFileSync(join(vault, 'one.md'), 'hello')
 
     linkVault(vault, target)
 
-    expect(lstatSync(target).isSymbolicLink()).toBe(true)
-    expect(readlinkSync(target)).toBe(vault)
+    const stat = lstatSync(target)
+    expect(stat.isSymbolicLink()).toBe(false)
+    expect(stat.isDirectory()).toBe(true)
+    expect(existsSync(join(target, 'one.md'))).toBe(true)
+    expect(readFileSync(join(target, 'one.md'), 'utf-8')).toBe('hello')
   })
 
-  it('replaces an existing symlink pointing elsewhere', () => {
+  it('replaces an existing symlink pointing elsewhere with a populated dir', () => {
+    // Upgrade path: a user who ran the old symlink-based init and now re-runs
+    // the copy-based init. The stale symlink must not linger.
     const vault = join(BASE, 'vault')
     const oldVault = join(BASE, 'old-vault')
     const target = join(BASE, 'content-notes')
     mkdirSync(vault)
+    writeFileSync(join(vault, 'fresh.md'), 'fresh')
     mkdirSync(oldVault)
+    writeFileSync(join(oldVault, 'stale.md'), 'stale')
     symlinkSync(oldVault, target, 'dir')
 
     linkVault(vault, target)
 
-    expect(lstatSync(target).isSymbolicLink()).toBe(true)
-    expect(readlinkSync(target)).toBe(vault)
+    expect(lstatSync(target).isSymbolicLink()).toBe(false)
+    expect(lstatSync(target).isDirectory()).toBe(true)
+    expect(existsSync(join(target, 'fresh.md'))).toBe(true)
+    expect(existsSync(join(target, 'stale.md'))).toBe(false)
   })
 
-  it('replaces an existing empty real directory with a symlink', () => {
-    // Fresh degit always lays down content/notes/ as a real directory;
-    // init must be able to swap it for a symlink to the user's vault.
+  it('replaces an existing empty real directory with a populated dir', () => {
+    // Fresh degit lays down content/notes/ as a real directory with
+    // placeholder files; init must swap it for the user's vault content.
     const vault = join(BASE, 'vault')
     const target = join(BASE, 'content-notes')
     mkdirSync(vault)
-    writeFileSync(join(vault, 'one.md'), 'x')
+    writeFileSync(join(vault, 'real.md'), 'real')
     mkdirSync(target)
+    writeFileSync(join(target, 'placeholder.md'), 'placeholder')
 
     linkVault(vault, target)
 
-    expect(lstatSync(target).isSymbolicLink()).toBe(true)
-    expect(readlinkSync(target)).toBe(vault)
+    expect(lstatSync(target).isSymbolicLink()).toBe(false)
+    expect(lstatSync(target).isDirectory()).toBe(true)
+    expect(existsSync(join(target, 'real.md'))).toBe(true)
+    expect(existsSync(join(target, 'placeholder.md'))).toBe(false)
   })
 })
