@@ -17,8 +17,8 @@
   --focus-ring: #0066ff;
 
   /* ── type families ────────────────────────────────────────────────────── */
-  --f-disp:  'Fraunces', 'Pretendard', Georgia, serif;
-  --f-serif: 'Fraunces', 'Pretendard', Georgia, serif;
+  --f-disp:  'Fraunces', 'Noto Serif KR', 'Pretendard', Georgia, serif;
+  --f-serif: 'Fraunces', 'Noto Serif KR', 'Pretendard', Georgia, serif;
   --f-sans:  'Pretendard', -apple-system, system-ui, sans-serif;
   --f-mono:  'JetBrains Mono', ui-monospace, Menlo, monospace;
 
@@ -72,6 +72,11 @@
   --w-reader-side:   240px;
   --w-graph-side:    300px;
   --w-search-box:    760px;
+
+  /* ── letter-spacing (3 semantic tracking tokens) ─────────────────────── */
+  --track-eyebrow: 0.2em;   /* free-standing eyebrow labels */
+  --track-badge:   0.14em;  /* pill badges */
+  --track-nav:     0.1em;   /* TopBar nav-link (documented exception) */
 }
 
 @media (prefers-color-scheme: dark) {

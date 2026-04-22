@@ -48,12 +48,13 @@ for (const section of ['colors', 'fonts', 'scale', 'motion', 'rules', 'shadows',
   requireField(d, section);
 }
 
-const colors  = d.colors  as Record<string, string>;
-const fonts   = d.fonts   as Record<string, string>;
-const scale   = d.scale   as { radius: Record<string, number>; space: number[]; type: Record<string, number> };
-const motion  = d.motion  as Record<string, string>;
-const shadows = d.shadows as Record<string, string>;
-const layout  = d.layout  as Record<string, string>;
+const colors   = d.colors   as Record<string, string>;
+const fonts    = d.fonts    as Record<string, string>;
+const scale    = d.scale    as { radius: Record<string, number>; space: number[]; type: Record<string, number> };
+const motion   = d.motion   as Record<string, string>;
+const shadows  = d.shadows  as Record<string, string>;
+const layout   = d.layout   as Record<string, string>;
+const tracking = (d.tracking ?? {}) as Record<string, string>;
 
 // Validate sub-fields
 if (!colors.ink)       die('colors.ink missing');
@@ -64,8 +65,9 @@ if (!scale.type)       die('scale.type missing');
 
 // ── font stack helpers ────────────────────────────────────────────────────────
 
-const F_DISP  = `'${fonts.display}', 'Pretendard', Georgia, serif`;
-const F_SERIF = `'${fonts.serif ?? fonts.display}', 'Pretendard', Georgia, serif`;
+const koSerif = fonts['korean-serif'] ? `'${fonts['korean-serif']}', ` : '';
+const F_DISP  = `'${fonts.display}', ${koSerif}'Pretendard', Georgia, serif`;
+const F_SERIF = `'${fonts.serif ?? fonts.display}', ${koSerif}'Pretendard', Georgia, serif`;
 const F_SANS  = `'${fonts.sans}', -apple-system, system-ui, sans-serif`;
 const F_MONO  = `'${fonts.mono}', ui-monospace, Menlo, monospace`;
 
@@ -249,6 +251,11 @@ ${radiusTokens}
   --w-reader-side:   ${layout['w-reader-side']};
   --w-graph-side:    ${layout['w-graph-side']};
   --w-search-box:    ${layout['w-search-box']};
+${Object.keys(tracking).length > 0 ? `
+  /* ── letter-spacing (3 semantic tracking tokens) ─────────────────────── */
+  --track-eyebrow: ${tracking.eyebrow ?? '0.2em'};   /* free-standing eyebrow labels */
+  --track-badge:   ${tracking.badge   ?? '0.14em'};  /* pill badges */
+  --track-nav:     ${tracking.nav     ?? '0.1em'};   /* TopBar nav-link (documented exception) */` : ''}
 }`;
 
 const darkColorVars = `\

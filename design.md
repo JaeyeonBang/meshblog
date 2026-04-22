@@ -23,10 +23,11 @@ darkColors:
   paper-2:   "#1a1a1a"
   rule-soft: "#2a2a2a"
 fonts:
-  display: "Fraunces"
-  serif:   "Fraunces"
-  sans:    "Pretendard"
-  mono:    "JetBrains Mono"
+  display:    "Fraunces"
+  serif:      "Fraunces"
+  sans:       "Pretendard"
+  mono:       "JetBrains Mono"
+  korean-serif: "Noto Serif KR"
 scale:
   radius:
     xs:   0
@@ -63,6 +64,10 @@ layout:
   w-reader-side:   "240px"
   w-graph-side:    "300px"
   w-search-box:    "760px"
+tracking:
+  eyebrow: "0.2em"
+  badge:   "0.14em"
+  nav:     "0.1em"
 ---
 
 # Editorial B&W
