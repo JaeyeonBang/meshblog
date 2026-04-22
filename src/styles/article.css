@@ -163,7 +163,7 @@
 
 .codeblock {
   font-family: var(--f-mono);
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   line-height: 1.65;
   background: var(--ink);
   color: var(--paper);

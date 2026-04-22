@@ -19,7 +19,6 @@ const { question, answer, open = false } = Astro.props;
   .qa-card {
     padding: 12px 0;
     border-bottom: 1px solid var(--rule-soft);
-    cursor: pointer;
   }
   .qa-card:last-child {
     border-bottom: 0;
@@ -51,7 +50,7 @@ const { question, answer, open = false } = Astro.props;
   }
   .a {
     font-family: var(--f-serif);
-    font-size: 13.5px;
+    font-size: var(--fs-sm);
     line-height: 1.6;
     color: var(--ink-2);
     margin-top: 10px;
