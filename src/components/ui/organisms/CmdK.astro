@@ -1,6 +1,4 @@
 ---
-import { withBase } from '../../../lib/url';
-import KindBadge from '../atoms/KindBadge.astro';
 // No props — global, opened via window.dispatchEvent(new Event('cmdk:open'))
 ---
 <div class="cmdk-backdrop" id="cmdk-backdrop" role="dialog" aria-modal="true" aria-label="Search" aria-hidden="true">
@@ -22,37 +20,7 @@ import KindBadge from '../atoms/KindBadge.astro';
       <span class="kbd" aria-label="Press Escape to close">esc</span>
     </div>
 
-    <div class="results" role="listbox" aria-label="Search results">
-      <div class="group-head">
-        <span>posts</span>
-        <span class="c">4</span>
-      </div>
-      <a class="result" href={withBase('/posts/why-i-built-meshblog')} role="option">
-        <span class="badge-wrap"><KindBadge kind="post" /></span>
-        <span class="t">왜 meshblog를 만들었나</span>
-        <span class="m">7 min</span>
-      </a>
-      <a class="result" href={withBase('/posts/sqlite-is-all-you-need')} role="option">
-        <span class="badge-wrap"><KindBadge kind="post" /></span>
-        <span class="t">SQLite is all you need</span>
-        <span class="m">6 min</span>
-      </a>
-
-      <div class="group-head">
-        <span>notes</span>
-        <span class="c">14</span>
-      </div>
-      <a class="result" href={withBase('/notes/knowledge-graphs')} role="option">
-        <span class="badge-wrap"><KindBadge kind="note" /></span>
-        <span class="t">knowledge-graphs</span>
-        <span class="m">N / 09</span>
-      </a>
-      <a class="result" href={withBase('/notes/rag')} role="option">
-        <span class="badge-wrap"><KindBadge kind="note" /></span>
-        <span class="t">rag — retrieval-augmented-generation</span>
-        <span class="m">N / 10</span>
-      </a>
-    </div>
+    <div class="results" role="listbox" aria-label="Search results"></div>
 
     <div class="footer" aria-hidden="true">
       <span><span class="kbd">↑↓</span> navigate</span>
@@ -168,10 +136,6 @@ import KindBadge from '../atoms/KindBadge.astro';
   .result:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: -2px;
-  }
-  .badge-wrap {
-    flex-shrink: 0;
-    display: inline-flex;
   }
   .t {
     font-family: var(--f-disp);
