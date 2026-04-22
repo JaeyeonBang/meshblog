@@ -1,0 +1,143 @@
+---
+import Base from '../../layouts/Base.astro'
+import NoteRow from '../../components/ui/molecules/NoteRow.astro'
+import { listNotes } from '../../lib/pages/index.ts'
+import type { NoteRow as NoteRowType } from '../../lib/pages/index.ts'
+import { withBase } from '../../lib/url'
+
+const notes: NoteRowType[] = listNotes()
+const count = notes.length
+
+const now = Date.now()
+const NEW_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000
+const ONE_MONTH = 30 * 24 * 60 * 60 * 1000
+
+function getNoteBadge(note: NoteRowType): 'new' | 'updated' | null {
+  const created = new Date(note.created_at).getTime()
+  const updated = new Date(note.updated_at).getTime()
+  if (now - created <= NEW_THRESHOLD_MS) return 'new'
+  if (now - updated <= ONE_MONTH) return 'updated'
+  return null
+}
+
+// Stats eyebrow: most recent updated_at as YYYY-MM
+const latestDate = notes.length > 0
+  ? (() => {
+      const d = new Date(notes[0].updated_at)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    })()
+  : null
+---
+
+<Base
+  title="notes · meshblog"
+  description="All atomic notes from the meshblog vault — ideas, references, and connected thinking."
+  topBarActive="notes"
+>
+  <div class="index-layout">
+    <header class="index-header">
+      <p class="eyebrow">atomic{latestDate ? ` · ${latestDate}` : ''}</p>
+      <h1>notes</h1>
+      <p class="stats">{count} {count === 1 ? 'entry' : 'entries'}</p>
+    </header>
+
+    <main class="index-main">
+      <!-- h2 bridges h1 → h3 inside NoteRow to prevent heading-skip violation -->
+      <h2 class="section-label">all notes</h2>
+      {notes.length > 0 ? notes.map((note, i) => (
+        <NoteRow
+          number={`N / ${String(i + 1).padStart(2, '0')}`}
+          title={note.title}
+          meta={(() => {
+            const d = new Date(note.updated_at)
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+          })()}
+          href={withBase(`/notes/${note.slug}`)}
+          badge={getNoteBadge(note)}
+        />
+      )) : (
+        <p class="empty">노트 준비 중 · notes incoming.</p>
+      )}
+    </main>
+  </div>
+</Base>
+
+<style>
+  .index-layout {
+    max-width: var(--w-page);
+    margin: 0 auto;
+    padding: 0 var(--space-8) var(--space-24);
+  }
+
+  /* ── Page header ────────────────────────────────────────────── */
+  .index-header {
+    padding: var(--space-12) 0 var(--space-10);
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: var(--space-12);
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 var(--space-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .eyebrow::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--ink);
+  }
+
+  h1 {
+    font-family: var(--f-disp);
+    font-weight: 500;
+    font-size: clamp(44px, 6vw, 72px);
+    line-height: 1.0;
+    margin: 0 0 var(--space-3);
+    letter-spacing: -0.025em;
+    font-variation-settings: "opsz" 144;
+  }
+
+  .stats {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  /* ── Section label (h2 bridge) ────────────────────────────── */
+  .section-label {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 400;
+    margin: 0 0 var(--space-4);
+  }
+
+  /* ── List ───────────────────────────────────────────────────── */
+  .index-main {
+    display: flex;
+    flex-direction: column;
+    max-width: 72ch;
+  }
+
+  .empty {
+    font-family: var(--f-serif);
+    font-size: var(--fs-md);
+    font-style: italic;
+    color: var(--ink-3);
+    padding: var(--space-6) 0;
+  }
+</style>
