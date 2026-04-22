@@ -103,8 +103,15 @@ import { withBase } from '../lib/url'
     _graphState = detail
 
     // Update #graphMeta
+    // TODO: when mode=backlinks, the L1/L2/L3 seg buttons have no effect; consider disabling them in a future round
     const metaEl = document.getElementById('graphMeta')
-    if (metaEl) metaEl.textContent = `mode: ${detail.mode} · L${detail.level}`
+    if (metaEl) {
+      if (detail.mode === 'backlinks') {
+        metaEl.textContent = `mode: backlinks · directed`
+      } else {
+        metaEl.textContent = `mode: ${detail.mode} · L${detail.level}`
+      }
+    }
 
     // Toggle seg--active on mode buttons
     document.querySelectorAll<HTMLElement>('.graph-controls [data-mode]').forEach(btn => {
