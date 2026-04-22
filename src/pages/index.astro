@@ -10,6 +10,7 @@ import Button from '../components/ui/atoms/Button.astro'
 import QAChips from '../components/QAChips.tsx'
 import { listPosts, listNotes, getHomepageQa } from '../lib/pages/index.ts'
 import { withBase } from '../lib/url'
+import { getHomeMeshNodes } from '../lib/mesh-data'
 
 const posts = listPosts().slice(0, 5)
 const notes = listNotes().slice(0, 6)
@@ -35,22 +36,10 @@ function getNoteBadge(note: { created_at: string; updated_at: string }): 'new' |
   return null
 }
 
-// Static concept mesh nodes for home sidebar
-const meshNodes = [
-  { label: 'knowledge', x: 36, y: 30, kind: 'hub' as const, href: withBase('/graph') },
-  { label: 'llm',       x: 70, y: 58, kind: 'hub' as const, href: withBase('/graph') },
-  { label: 'rag',       x: 70, y: 22, href: withBase('/graph?mode=concept') },
-  { label: 'astro',     x: 22, y: 62, href: withBase('/graph?mode=concept') },
-  { label: 'sqlite',    x: 48, y: 82, href: withBase('/graph?mode=concept') },
-  { label: 'faq',       x: 14, y: 24, href: withBase('/graph?mode=concept') },
-]
-const meshEdges = [
-  { from: 0, to: 2 },
-  { from: 0, to: 1 },
-  { from: 1, to: 3 },
-  { from: 1, to: 4 },
-  { from: 0, to: 5 },
-]
+// Live concept mesh nodes — top-6 by degree from public/graph/concept-l2.json.
+// Falls back to note-l2.json, then to static fixture when both are empty (new vault).
+// MiniMesh computes radial layout when nodes lack x/y.
+const meshNodes = getHomeMeshNodes(withBase)
 ---
 
 <Base
@@ -119,7 +108,7 @@ const meshEdges = [
       </TOC>
 
       <TOC label="concept mesh">
-        <MiniMesh nodes={meshNodes} edges={meshEdges} size="md" />
+        <MiniMesh nodes={meshNodes} size="md" />
         <p class="mesh-caption"><span class="mesh-caption__tag">Concept mesh</span> <span class="mesh-caption__body">· 자주 등장하는 개념들이 서로를 끌어당긴다</span></p>
         <div class="mesh-cta">
           <Button href={withBase('/graph')}>전체 그래프 →</Button>
