@@ -41,7 +41,11 @@ const DEPLOY_YML = path.join(REPO_ROOT, ".github", "workflows", "deploy.yml")
  * publish path work out of the box. The watcher preserves the "vault is the
  * source of truth" mental model — Obsidian edits still flow through.
  */
-export function linkVault(vaultPath: string, target: string): void {
+export function linkVault(
+  vaultPath: string,
+  target: string,
+  opts: { skipWatch?: boolean } = {},
+): void {
   // /init is documented as one-time setup (SKILL.md). Any existing state at
   // `target` is either a stale symlink from a previous run, or the placeholder
   // content/notes/ that ships with a fresh degit — both are safe to replace.
@@ -57,6 +61,10 @@ export function linkVault(vaultPath: string, target: string): void {
   fs.mkdirSync(target, { recursive: true })
   fs.cpSync(vaultPath, target, { recursive: true })
   console.log(`[init] Copied vault contents into ${target}`)
+
+  // Test seam: tests exercise copy semantics without the persistent watcher
+  // (fs.watch keeps the event loop alive and hangs vitest on teardown).
+  if (opts.skipWatch) return
 
   fs.watch(vaultPath, { recursive: true }, (event, filename) => {
     if (!filename) return
