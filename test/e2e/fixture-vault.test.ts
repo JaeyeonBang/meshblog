@@ -193,17 +193,19 @@ describe(
       }
     })
 
-    it("unicode target (emoji): wikilinks row exists for émoji-🚀", () => {
+    it("unicode target (emoji): wikilinks row resolves to the emoji-named note", () => {
       const db = createDb(TEST_DB)
       try {
+        // Note id is the slug of émoji-🚀.md (lowercased); target_raw comes
+        // from [[émoji-🚀]] in unicode-link-test.md. Lowercasing is identity
+        // for emoji + accented characters, so the two must match and resolve.
         const row = queryOne<{ target_id: string | null }>(
           db,
           "SELECT target_id FROM wikilinks WHERE target_raw = ?",
           ["émoji-🚀"],
         )
         expect(row).not.toBeNull()
-        // target_id may or may not resolve (emoji slug lowercasing is identity)
-        // the important thing is it did not crash
+        expect(row!.target_id).toBe("émoji-🚀")
       } finally {
         db.close()
       }

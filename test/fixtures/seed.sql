@@ -16,9 +16,11 @@ DELETE FROM entity_relationships;
 DELETE FROM note_entities;
 DELETE FROM entities;
 DELETE FROM notes;
+DELETE FROM categories;
 
 -- ── Notes (5, mix of en + ko) ─────────────────────────────────────────────────
-INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, graph_status, level_pin)
+-- category_slug: engineering (3 notes), ai (1 note), writing (1 note)
+INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, graph_status, level_pin, category_slug)
 VALUES
   ('fixture-ts-generics',
    'fixture-ts-generics',
@@ -28,7 +30,8 @@ VALUES
    'content/notes',
    '["typescript","generics","type-system"]',
    'done',
-   NULL),
+   NULL,
+   'engineering'),
 
   ('fixture-sqlite-patterns',
    'fixture-sqlite-patterns',
@@ -38,7 +41,8 @@ VALUES
    'content/notes',
    '["sqlite","database","node"]',
    'done',
-   1),
+   1,
+   'engineering'),
 
   ('fixture-rag-overview',
    'fixture-rag-overview',
@@ -48,7 +52,8 @@ VALUES
    'content/notes',
    '["rag","llm","embeddings","openai"]',
    'done',
-   NULL),
+   NULL,
+   'ai'),
 
   ('fixture-글쓰기-철학',
    'fixture-글쓰기-철학',
@@ -58,7 +63,8 @@ VALUES
    'content/notes',
    '["글쓰기","문서화","지식관리"]',
    'done',
-   NULL),
+   NULL,
+   'writing'),
 
   ('fixture-graph-algorithms',
    'fixture-graph-algorithms',
@@ -68,7 +74,17 @@ VALUES
    'content/notes',
    '["graph","algorithms","graphology","pagerank"]',
    'done',
-   2);
+   2,
+   'engineering');
+
+-- ── Categories (3, seeded from fixture notes) ─────────────────────────────────
+-- Aggregated manually to match category_slug distribution above:
+--   engineering: 3 notes, ai: 1 note, writing: 1 note
+INSERT INTO categories (slug, name, note_count, post_count)
+VALUES
+  ('engineering', 'Engineering', 3, 0),
+  ('ai',          'Ai',          1, 0),
+  ('writing',     'Writing',     1, 0);
 
 -- ── Entities (15) ─────────────────────────────────────────────────────────────
 -- IDs are explicit integers matching the AUTOINCREMENT column.

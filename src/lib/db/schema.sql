@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS notes (
   tags          TEXT NOT NULL DEFAULT '[]', -- JSON array
   graph_status  TEXT NOT NULL DEFAULT 'pending', -- pending | done | failed
   level_pin     INTEGER,                  -- frontmatter override: 1 | 2 | 3 | NULL
+  category_slug TEXT,                     -- optional category; NULL = uncategorized
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -45,6 +46,17 @@ CREATE TABLE IF NOT EXISTS entity_relationships (
 CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(name);
 CREATE INDEX IF NOT EXISTS idx_note_entities_entity ON note_entities(entity_id);
 CREATE INDEX IF NOT EXISTS idx_notes_hash ON notes(content_hash);
+CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category_slug);
+
+-- ── Category taxonomy ────────────────────────────────────────────────────────
+-- Populated at build-index time by aggregating category_slug from notes.
+-- note_count = notes in content/notes/, post_count = notes in content/posts/.
+CREATE TABLE IF NOT EXISTS categories (
+  slug       TEXT PRIMARY KEY,
+  name       TEXT NOT NULL,           -- display name, title-cased from slug
+  note_count INTEGER NOT NULL DEFAULT 0,
+  post_count INTEGER NOT NULL DEFAULT 0
+);
 
 -- ── Phase 2 tables ──────────────────────────────────────────────────────────
 

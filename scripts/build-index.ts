@@ -16,6 +16,58 @@ export { discoverMarkdown }
 const DB_PATH = process.env.MESHBLOG_DB ?? ".data/index.db"
 const CONTENT_DIRS = ["content/posts", "content/notes"]
 
+// ── Tag-to-category fallback map ─────────────────────────────────────────────
+// When a note has no `category` frontmatter field, the first matching tag wins.
+// Future notes can override this by adding `category: <slug>` to their frontmatter.
+// Extend this map as new content domains appear in the vault.
+const TAG_TO_CATEGORY: Record<string, string> = {
+  // engineering / dev
+  typescript: "engineering",
+  generics: "engineering",
+  "type-system": "engineering",
+  sqlite: "engineering",
+  database: "engineering",
+  node: "engineering",
+  graph: "engineering",
+  algorithms: "engineering",
+  graphology: "engineering",
+  pagerank: "engineering",
+  // ai / ml
+  rag: "ai",
+  llm: "ai",
+  embeddings: "ai",
+  openai: "ai",
+  // writing / knowledge
+  writing: "writing",
+  글쓰기: "writing",
+  문서화: "writing",
+  지식관리: "writing",
+  // design / product
+  design: "design",
+  product: "product",
+  // ops / devops
+  ops: "ops",
+  ci: "ops",
+  deploy: "ops",
+}
+
+/** Derive a category slug from a list of tags using TAG_TO_CATEGORY. */
+function deriveCategoryFromTags(tags: string[]): string | null {
+  for (const tag of tags) {
+    const cat = TAG_TO_CATEGORY[tag.toLowerCase()]
+    if (cat) return cat
+  }
+  return null
+}
+
+/** Convert a kebab-case slug to a display name (title-case, hyphens → spaces). */
+function slugToName(slug: string): string {
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ")
+}
+
 function sha256(s: string): string {
   return createHash("sha256").update(s).digest("hex")
 }
@@ -135,9 +187,15 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
     const slug = basename(path, extname(path))
     const id = slug
     const title = (fm.title as string) ?? slug
-    const tags = JSON.stringify(fm.tags ?? [])
+    const rawTags: string[] = fm.tags ?? []
+    const tags = JSON.stringify(rawTags)
     const levelPin = (fm.level_pin as number | undefined) ?? null
     const hash = sha256(content)
+
+    // Resolve category: frontmatter `category` field wins; otherwise derive from tags.
+    const categorySlug: string | null =
+      (fm.category as string | undefined)?.toLowerCase().trim() ??
+      deriveCategoryFromTags(rawTags)
 
     const existing = queryOne<{ content_hash: string }>(
       db,
@@ -147,17 +205,18 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
 
     execute(
       db,
-      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, level_pin)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, level_pin, category_slug)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
-         title        = excluded.title,
-         content      = excluded.content,
-         content_hash = excluded.content_hash,
-         folder_path  = excluded.folder_path,
-         tags         = excluded.tags,
-         level_pin    = excluded.level_pin,
-         updated_at   = datetime('now')`,
-      [id, slug, title, content, hash, folder, tags, levelPin],
+         title         = excluded.title,
+         content       = excluded.content,
+         content_hash  = excluded.content_hash,
+         folder_path   = excluded.folder_path,
+         tags          = excluded.tags,
+         level_pin     = excluded.level_pin,
+         category_slug = excluded.category_slug,
+         updated_at    = datetime('now')`,
+      [id, slug, title, content, hash, folder, tags, levelPin, categorySlug],
     )
 
     const hashChanged = !existing || existing.content_hash !== hash
@@ -263,6 +322,37 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
     }
   }
 
+  // ── Stage 5: Categories (aggregate category_slug across notes + posts) ──────
+  try {
+    // Rebuild categories table from current notes data.
+    // note_count = notes in content/notes/, post_count = notes in content/posts/.
+    const categoryRows = db
+      .prepare(
+        `SELECT
+           category_slug                             AS slug,
+           SUM(CASE WHEN folder_path = 'content/notes' THEN 1 ELSE 0 END) AS note_count,
+           SUM(CASE WHEN folder_path = 'content/posts' THEN 1 ELSE 0 END) AS post_count
+         FROM notes
+         WHERE category_slug IS NOT NULL
+         GROUP BY category_slug`,
+      )
+      .all() as Array<{ slug: string; note_count: number; post_count: number }>
+
+    // Replace all category rows atomically.
+    execute(db, "DELETE FROM categories", [])
+    for (const row of categoryRows) {
+      execute(
+        db,
+        `INSERT INTO categories (slug, name, note_count, post_count)
+         VALUES (?, ?, ?, ?)`,
+        [row.slug, slugToName(row.slug), row.note_count, row.post_count],
+      )
+    }
+    console.log(`[build-index] categories: ${categoryRows.length} distinct categories`)
+  } catch (err) {
+    console.error("[build-index] categories stage failed:", (err as Error).message)
+  }
+
   // ── Final counts ──────────────────────────────────────────────────────────
   const counts = db
     .prepare(
@@ -273,7 +363,8 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
         (SELECT COUNT(*) FROM entity_relationships) AS relationships,
         (SELECT COUNT(*) FROM note_embeddings)   AS embeddings,
         (SELECT COUNT(*) FROM concepts)          AS concepts,
-        (SELECT COUNT(*) FROM qa_cards)          AS qa_cards`,
+        (SELECT COUNT(*) FROM qa_cards)          AS qa_cards,
+        (SELECT COUNT(*) FROM categories)        AS categories`,
     )
     .get() as Record<string, number>
 
