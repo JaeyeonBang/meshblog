@@ -13,7 +13,7 @@ import { resolve } from 'node:path'
 
 export type MeshNode = {
   label: string
-  kind?: 'default' | 'hub' | 'concept' | 'selected'
+  kind?: 'default' | 'hub' | 'concept' | 'selected' | 'note'
   href?: string
   // x/y are deliberately absent — MiniMesh will compute radial layout
 }
