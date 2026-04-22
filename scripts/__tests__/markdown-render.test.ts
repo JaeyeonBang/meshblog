@@ -21,16 +21,16 @@ describe('preprocessMarkdown (integration)', () => {
     expect(preprocessMarkdown(plain)).toBe(plain)
   })
 
-  it('without resolver → every wikilink becomes plain text (no silent 404)', () => {
+  it('without resolver → every wikilink becomes a wikilink--missing span (no silent 404)', () => {
     expect(preprocessMarkdown('See [[PageA]] for details.')).toBe(
-      'See PageA for details.',
+      'See <span class="wikilink wikilink--missing">PageA</span> for details.',
     )
   })
 
-  it('with resolver → matched targets become anchors', () => {
+  it('with resolver → matched targets become .wikilink anchors', () => {
     expect(
       preprocessMarkdown('See [[PageA]] for details.', { resolver: minimalResolver }),
-    ).toBe('See <a href="/notes/pagea">PageA</a> for details.')
+    ).toBe('See <a href="/notes/pagea" class="wikilink">PageA</a> for details.')
   })
 
   it('with resolver + hrefFor → anchor uses the base-path-aware href', () => {
@@ -39,13 +39,13 @@ describe('preprocessMarkdown (integration)', () => {
         resolver: minimalResolver,
         hrefFor: (slug) => `/meshblog/notes/${slug}`,
       }),
-    ).toBe('See <a href="/meshblog/notes/pagea">PageA</a>.')
+    ).toBe('See <a href="/meshblog/notes/pagea" class="wikilink">PageA</a>.')
   })
 
-  it('unresolved targets never produce anchors, even with resolver', () => {
+  it('unresolved targets become wikilink--missing spans, never anchors', () => {
     expect(
       preprocessMarkdown('Refers to [[Missing]].', { resolver: minimalResolver }),
-    ).toBe('Refers to Missing.')
+    ).toBe('Refers to <span class="wikilink wikilink--missing">Missing</span>.')
   })
 
   it('explicit noResolver path behaves identically to default', () => {

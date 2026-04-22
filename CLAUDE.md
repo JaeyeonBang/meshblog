@@ -44,11 +44,15 @@ This repo is a **GitHub Pages–deployed personal blog harness** (https://jaeyeo
 4. Test-fixture drift — add `tests/e2e/fixture-vault/` with 30+ real-shaped notes (wikilinks, aliases, images, drafts) to CI.
 5. Scope creep ("just also /wiki while I'm here") — v2 means v2.
 
-**Current gaps at session start (commit `44f37ce`)**:
-- `.claude/skills/{init,new-post,refresh}/SKILL.md` are spec-only (well-written TODO outlines, no wired scripts).
-- `src/lib/markdown/strip-wikilinks.ts` destroys wikilinks by converting them to plain text — replace in D2.
-- `src/lib/rag/wiki.ts` `synthesizeWikiArticle` is a Phase 4 placeholder; no `/wiki` route mounts it — deferred to v2.
-- `/graph` (Req 3) is fully shipped and is the template for how D4's backlink layer should feel.
+**v1 status (verified 2026-04-22 against live prod + `test/v1-acceptance.test.ts`)** — all 6 deliverables shipped:
+- D1 `/init` — `scripts/init.ts` + `.claude/skills/init/` + `bun run init` wired.
+- D2 wikilinks — `src/lib/markdown/resolve-wikilinks.ts` + `wikilink-resolver.ts` + `preprocess.ts` compose the pipeline; `strip-wikilinks.ts` removed. 25 tests green (resolve-wikilinks 15 + wikilink-resolver 6 + render-integration 4).
+- D3 draft safety — `build-index.ts:124` filters `draft:true`/`public:false`; `scripts/audit-drafts.ts` flags leaks on `main` (0 currently).
+- D4 backlinks — `scripts/build-backlinks.ts` emits `public/graph/backlinks.json`; `GraphView.tsx` has `'backlinks'` mode alongside `'note'`/`'concept'`.
+- D5 `/new-post` + `/refresh` — `scripts/new-post.ts` + npm `refresh` script (`build-tokens → build-index → build-backlinks-if-exists → preview`) both wired.
+- D6 daily audit — `.github/workflows/daily-audit.yml` runs on cron + opens auto-PR with audit report (last success 2026-04-22 10:21).
+
+**Remaining v1 work**: week 4.5 fork-from-zero rehearsal on a clean Windows 11 home (manual integration test; not automatable here). `src/lib/rag/wiki.ts` `synthesizeWikiArticle` stays Phase 4 / v2 scope.
 
 ## Core commands
 
@@ -59,7 +63,7 @@ bun run build-tokens      # design.md → src/styles/tokens.css
 bun run dev               # dev server
 bun run preview           # serve dist/ (port auto-increments if busy)
 bunx astro check          # type + Astro error check
-npx vitest run            # full test suite (149 tests)
+npx vitest run            # full test suite (252 tests)
 ```
 
 `bun run build-all` runs the full pipeline (needs `OPENAI_API_KEY`). `build:fixture` has no key requirement.
