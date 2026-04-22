@@ -38,11 +38,7 @@ export function getStaticPaths() {
   }))
 }
 
-interface Props {
-  note: NoteRow
-}
-
-const { note } = Astro.props
+const { note } = Astro.props as { note: NoteRow }
 
 // Fetch note-tier QA cards
 const noteQa: QaCard[] = getQaForNote(note.id)
@@ -136,7 +132,6 @@ const relatedItems = related.map((r, i) => ({
 const meshNodes = getNoteMeshNodes({
   noteId: note.id,
   noteTitle: note.title,
-  noteSlug: note.slug,
   withBase,
 })
 ---

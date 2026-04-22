@@ -50,10 +50,6 @@ function loadJson<T>(relPath: string): T | null {
   }
 }
 
-function degreeOf(id: string, links: BacklinkEdge[]): number {
-  return links.filter((l) => l.source === id || l.target === id).length
-}
-
 function graphDegreeOf(id: string, links: GraphJson['links']): number {
   return links.filter((l) => l.source === id || l.target === id).length
 }
@@ -125,10 +121,9 @@ type NeighborSource = {
 export function getNoteMeshNodes(opts: {
   noteId: string
   noteTitle: string
-  noteSlug: string
   withBase: (path: string) => string
 }): MeshNode[] {
-  const { noteId, noteTitle, noteSlug, withBase } = opts
+  const { noteId, noteTitle, withBase } = opts
 
   const backlinks = loadJson<BacklinksJson>('public/graph/backlinks.json')
 
