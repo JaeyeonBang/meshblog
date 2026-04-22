@@ -1,0 +1,123 @@
+---
+import { listCategories } from '../../../lib/pages/index.ts'
+import type { CategoryRow } from '../../../lib/pages/index.ts'
+import { withBase } from '../../../lib/url'
+
+interface Props {
+  limit?: number
+  active?: string
+}
+
+const { limit = 5, active } = Astro.props
+const all: CategoryRow[] = listCategories()
+const cats = limit > 0 ? all.slice(0, limit) : all
+---
+
+<div class="cat-widget">
+  <div class="cat-label">categories</div>
+  {cats.length > 0 ? (
+    <ul class="cat-list" role="list">
+      {cats.map((cat) => (
+        <li class:list={['cat-item', active === cat.slug && 'active']}>
+          <a href={withBase(`/categories/${cat.slug}/`)} class="cat-link">
+            <span class="cat-name">{cat.name}</span>
+            <span class="cat-count">&middot; {cat.noteCount + cat.postCount}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="cat-empty">no categories yet.</p>
+  )}
+</div>
+
+<style>
+  .cat-widget {
+    margin-bottom: 36px;
+  }
+
+  .cat-label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .cat-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .cat-item {
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .cat-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px 0;
+    text-decoration: none;
+    color: var(--ink-3);
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+
+  .cat-link:hover {
+    background: var(--ink);
+    color: var(--paper);
+    padding-left: 8px;
+    margin-left: -8px;
+    padding-right: 8px;
+    margin-right: -8px;
+  }
+
+  .cat-link:hover .cat-count {
+    color: var(--paper-2);
+  }
+
+  .cat-link:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .cat-item.active .cat-link {
+    background: var(--ink);
+    color: var(--paper);
+    padding-left: 8px;
+    margin-left: -8px;
+    padding-right: 8px;
+    margin-right: -8px;
+  }
+
+  .cat-item.active .cat-count {
+    color: var(--paper-2);
+  }
+
+  .cat-name {
+    font-family: var(--f-serif);
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .cat-count {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .cat-empty {
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    font-style: italic;
+    color: var(--ink-3);
+    margin: 0;
+    padding: 4px 0;
+  }
+</style>
