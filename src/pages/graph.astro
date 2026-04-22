@@ -128,11 +128,23 @@ import { withBase } from '../lib/url'
       statsEl.textContent = `${n} nodes · ${e} edges`
     }
 
-    // Hide the L1/L2/L3 caption in backlinks mode — level is ignored there,
-    // so the caption is misleading
+    // Backlinks mode ignores level entirely — hide the whole depth disclosure
+    // (button + group + caption) so the canvas drops to 3 visible control clusters.
+    const isBacklinks = detail.mode === 'backlinks'
+    const depthBtn = document.getElementById('gcDepthToggle') as HTMLButtonElement | null
+    const levelGroup = document.getElementById('level-group') as HTMLElement | null
     const levelCaption = document.querySelector<HTMLElement>('.graph-controls .level-caption')
+    if (depthBtn) depthBtn.hidden = isBacklinks
+    if (isBacklinks && levelGroup) {
+      // Collapse if expanded; disclosure button state stays but is hidden
+      levelGroup.hidden = true
+      depthBtn?.setAttribute('aria-expanded', 'false')
+      if (depthBtn) depthBtn.textContent = '+ depth'
+    }
     if (levelCaption) {
-      levelCaption.hidden = detail.mode === 'backlinks'
+      // Caption visibility tracks depth-disclosure state OR force-hide in backlinks
+      const expanded = depthBtn?.getAttribute('aria-expanded') === 'true'
+      levelCaption.hidden = isBacklinks || !expanded
     }
 
     // Toggle seg--active on mode buttons
@@ -252,11 +264,11 @@ import { withBase } from '../lib/url'
     const listEl = document.getElementById('graphList')
     if (!listBtn || !canvasEl || !listEl) return
 
-    const isPressed = listBtn.getAttribute('aria-pressed') === 'true'
+    const isChecked = listBtn.getAttribute('aria-checked') === 'true'
 
-    if (!isPressed) {
+    if (!isChecked) {
       // Activate list view
-      listBtn.setAttribute('aria-pressed', 'true')
+      listBtn.setAttribute('aria-checked', 'true')
       canvasEl.hidden = true
       listEl.hidden = false
       // Render current nodes
@@ -265,7 +277,7 @@ import { withBase } from '../lib/url'
       listEl.focus()
     } else {
       // Deactivate list view
-      listBtn.setAttribute('aria-pressed', 'false')
+      listBtn.setAttribute('aria-checked', 'false')
       listEl.hidden = true
       canvasEl.hidden = false
       listBtn.focus()

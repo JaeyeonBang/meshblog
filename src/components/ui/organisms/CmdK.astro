@@ -1,5 +1,44 @@
 ---
-// No props — global, opened via window.dispatchEvent(new Event('cmdk:open'))
+import { withBase } from '../../../lib/url';
+import { listPosts, listNotes } from '../../../lib/pages/index';
+
+// Build-time search index — slug + title only. Keeps JSON small, client
+// filter O(n) fast, no server trip. SQLite FTS is a v2 upgrade.
+type SearchItem = {
+  id: string
+  kind: 'post' | 'note'
+  title: string
+  href: string
+  meta: string
+}
+
+let items: SearchItem[] = []
+try {
+  const posts = listPosts()
+  const notes = listNotes()
+  items = [
+    ...posts.map((p) => ({
+      id: `post-${p.slug}`,
+      kind: 'post' as const,
+      title: p.title,
+      href: withBase(`/posts/${p.slug}`),
+      meta: `${Math.max(1, Math.round((p.content?.length ?? 0) / 1000))} min`,
+    })),
+    ...notes.map((n, i) => ({
+      id: `note-${n.slug}`,
+      kind: 'note' as const,
+      title: n.title,
+      href: withBase(`/notes/${n.slug}`),
+      meta: `N / ${String(i + 1).padStart(2, '0')}`,
+    })),
+  ]
+} catch {
+  // DB unreachable (zero-key preview without fixture) — palette degrades to empty.
+  items = []
+}
+
+const postCount = items.filter(i => i.kind === 'post').length
+const noteCount = items.filter(i => i.kind === 'note').length
 ---
 <div class="cmdk-backdrop" id="cmdk-backdrop" role="dialog" aria-modal="true" aria-label="Search" aria-hidden="true">
   <div class="cmdk" id="cmdk-panel">
@@ -20,7 +59,14 @@
       <span class="kbd" aria-label="Press Escape to close">esc</span>
     </div>
 
-    <div class="results" role="listbox" aria-label="Search results"></div>
+    <div class="results" id="cmdk-results" role="listbox" aria-label="Search results">
+      <div class="cmdk-empty" id="cmdk-empty-initial">type to search · 볼트를 검색하세요</div>
+    </div>
+
+    <div class="meta-row" aria-hidden="true">
+      <span><span class="c">{postCount}</span> posts</span>
+      <span><span class="c">{noteCount}</span> notes</span>
+    </div>
 
     <div class="footer" aria-hidden="true">
       <span><span class="kbd">↑↓</span> navigate</span>
@@ -29,6 +75,13 @@
     </div>
   </div>
 </div>
+
+{/* Build-time search index — inlined so first-paint search has zero latency. */}
+<script
+  type="application/json"
+  id="cmdk-index"
+  set:html={JSON.stringify(items)}
+/>
 
 <style>
   .cmdk-backdrop {
@@ -91,6 +144,16 @@
     flex: 1;
     overflow-y: auto;
     padding: 0;
+    min-height: 120px;
+  }
+  .cmdk-empty {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-4);
+    padding: 36px 18px;
+    text-align: center;
   }
   .group-head {
     font-family: var(--f-mono);
@@ -137,6 +200,34 @@
     outline: 2px solid var(--focus-ring);
     outline-offset: -2px;
   }
+  .badge-wrap {
+    flex-shrink: 0;
+    display: inline-flex;
+  }
+  /* Runtime-rendered kind badge (scoped styles can't reach dynamic HTML) */
+  .results :global(.cmdk-kind) {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: var(--track-badge);
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border: 1px solid var(--ink);
+    display: inline-block;
+    line-height: 1.6;
+  }
+  .results :global(.cmdk-kind--post) {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .results :global(.cmdk-kind--note) {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .result:hover :global(.cmdk-kind),
+  .result.active :global(.cmdk-kind) {
+    border-color: var(--paper);
+  }
   .t {
     font-family: var(--f-disp);
     font-size: var(--fs-md);
@@ -150,6 +241,20 @@
     color: var(--ink-3);
     letter-spacing: 0.04em;
     flex-shrink: 0;
+  }
+  .meta-row {
+    padding: 8px 18px;
+    display: flex;
+    gap: 16px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    border-top: 1px solid var(--rule-soft);
+    letter-spacing: 0.04em;
+  }
+  .meta-row .c {
+    color: var(--ink);
+    margin-right: 4px;
   }
   .footer {
     padding: 10px 18px;
@@ -179,10 +284,83 @@
 </style>
 
 <script>
+  type SearchItem = {
+    id: string
+    kind: 'post' | 'note'
+    title: string
+    href: string
+    meta: string
+  }
+
+  function loadIndex(): SearchItem[] {
+    const el = document.getElementById('cmdk-index')
+    if (!el) return []
+    try {
+      return JSON.parse(el.textContent ?? '[]')
+    } catch {
+      return []
+    }
+  }
+
+  function filterItems(items: SearchItem[], q: string): SearchItem[] {
+    if (!q) return []
+    const needle = q.toLowerCase().trim()
+    if (!needle) return []
+    return items
+      .filter(it => it.title.toLowerCase().includes(needle))
+      .slice(0, 20)
+  }
+
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+  }
+
+  function renderResults(container: HTMLElement, results: SearchItem[], query: string) {
+    if (!query) {
+      container.innerHTML = '<div class="cmdk-empty">type to search · 볼트를 검색하세요</div>'
+      return
+    }
+    if (results.length === 0) {
+      container.innerHTML = `<div class="cmdk-empty">no match · ${escapeHtml(query)} 일치 없음</div>`
+      return
+    }
+    const posts = results.filter(r => r.kind === 'post')
+    const notes = results.filter(r => r.kind === 'note')
+    let html = ''
+    if (posts.length > 0) {
+      html += `<div class="group-head"><span>posts</span><span class="c">${posts.length}</span></div>`
+      html += posts.map(r => resultHtml(r)).join('')
+    }
+    if (notes.length > 0) {
+      html += `<div class="group-head"><span>notes</span><span class="c">${notes.length}</span></div>`
+      html += notes.map(r => resultHtml(r)).join('')
+    }
+    container.innerHTML = html
+  }
+
+  function resultHtml(r: SearchItem): string {
+    const badgeClass = r.kind === 'post' ? 'cmdk-kind cmdk-kind--post' : 'cmdk-kind cmdk-kind--note'
+    return (
+      `<a class="result" href="${escapeHtml(r.href)}" role="option">` +
+      `<span class="badge-wrap"><span class="${badgeClass}">${r.kind}</span></span>` +
+      `<span class="t">${escapeHtml(r.title)}</span>` +
+      `<span class="m">${escapeHtml(r.meta)}</span>` +
+      `</a>`
+    )
+  }
+
   function initCmdK() {
-    const bd = document.getElementById('cmdk-backdrop');
+    const bd = document.getElementById('cmdk-backdrop') as HTMLElement | null;
     const inp = document.getElementById('cmdk-input') as HTMLInputElement | null;
-    if (!bd || !inp) return;
+    const results = document.getElementById('cmdk-results') as HTMLElement | null;
+    if (!bd || !inp || !results) return;
+
+    const items = loadIndex()
+    let activeIdx = -1
 
     function open() {
       bd!.classList.add('open');
@@ -194,7 +372,45 @@
       bd!.classList.remove('open');
       bd!.setAttribute('aria-hidden', 'true');
       inp!.value = '';
+      renderResults(results!, [], '')
+      activeIdx = -1
     }
+
+    function updateActive() {
+      const rows = results!.querySelectorAll<HTMLAnchorElement>('.result')
+      rows.forEach((row, i) => row.classList.toggle('active', i === activeIdx))
+      if (activeIdx >= 0 && rows[activeIdx]) {
+        rows[activeIdx].scrollIntoView({ block: 'nearest' })
+      }
+    }
+
+    inp.addEventListener('input', () => {
+      const q = inp.value
+      const filtered = filterItems(items, q)
+      renderResults(results, filtered, q)
+      activeIdx = filtered.length > 0 ? 0 : -1
+      updateActive()
+    })
+
+    inp.addEventListener('keydown', (e) => {
+      const rows = results.querySelectorAll<HTMLAnchorElement>('.result')
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        if (rows.length === 0) return
+        activeIdx = Math.min(activeIdx + 1, rows.length - 1)
+        updateActive()
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (rows.length === 0) return
+        activeIdx = Math.max(activeIdx - 1, 0)
+        updateActive()
+      } else if (e.key === 'Enter') {
+        if (activeIdx >= 0 && rows[activeIdx]) {
+          e.preventDefault()
+          window.location.href = rows[activeIdx].href
+        }
+      }
+    })
 
     document.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {

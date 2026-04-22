@@ -23,14 +23,14 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
           data-mode="note"
           role="radio"
           aria-checked={mode === 'note'}
-          title="notes = articles · concepts = extracted ideas"
+          title="notes = articles"
         >notes</button>
         <button
           class:list={['seg', mode === 'concept' && 'seg--active']}
           data-mode="concept"
           role="radio"
           aria-checked={mode === 'concept'}
-          title="notes = articles · concepts = extracted ideas"
+          title="concepts = extracted ideas"
         >concepts</button>
         <button
           class:list={['seg', mode === 'backlinks' && 'seg--active']}
@@ -42,7 +42,16 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
       </div>
     </div>
 
-    <div class="group">
+    <button
+      class="disclosure"
+      id="gcDepthToggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="level-group"
+      title="선택한 노드에서 몇 걸음까지 볼지"
+    >+ depth</button>
+
+    <div class="group" id="level-group" hidden>
       <span class="lab" id="level-label">level</span>
       <div class="btn-group" role="radiogroup" aria-labelledby="level-label">
         {([1, 2, 3] as const).map((l) => (
@@ -63,12 +72,74 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
       {nodeCount} nodes · {edgeCount} edges
     </span>
 
-    <button class="action-btn" id="gcShareBtn" aria-label="Share graph link">share link</button>
-    <button class="action-btn" id="gcListBtn" aria-label="Switch to list view" aria-pressed="false">list view</button>
+    <div class="overflow" id="gcOverflow">
+      <button
+        class="overflow-trigger"
+        id="gcOverflowBtn"
+        type="button"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-label="More actions"
+        title="share · list view"
+      >⋯</button>
+      <div class="overflow-menu" id="gcOverflowMenu" role="menu" hidden>
+        <button class="overflow-item" id="gcShareBtn" role="menuitem" title="Copy a link to the current view">share link</button>
+        <button class="overflow-item" id="gcListBtn" role="menuitemcheckbox" aria-checked="false" title="Switch canvas ↔ flat list">list view</button>
+      </div>
+    </div>
   </div>
-  <p class="level-caption">Level · 선택한 노드에서 몇 걸음까지 볼지</p>
+  <p class="level-caption" hidden>Level · 선택한 노드에서 몇 걸음까지 볼지</p>
   <span id="gcShareStatus" role="status" aria-live="polite" class="sr-only"></span>
 </div>
+
+<script>
+  // Depth disclosure — collapsed by default so the graph canvas meets the
+  // ≤4 visible-controls cognitive-load gate on first paint. Level seg reveals
+  // only after the user opts in.
+  function initGraphControlsChrome() {
+    const depthBtn = document.getElementById('gcDepthToggle') as HTMLButtonElement | null
+    const levelGroup = document.getElementById('level-group')
+    const levelCaption = document.querySelector<HTMLElement>('.graph-controls .level-caption')
+    if (depthBtn && levelGroup) {
+      depthBtn.addEventListener('click', () => {
+        const open = depthBtn.getAttribute('aria-expanded') === 'true'
+        const next = !open
+        depthBtn.setAttribute('aria-expanded', String(next))
+        levelGroup.hidden = !next
+        if (levelCaption) levelCaption.hidden = !next
+        depthBtn.textContent = next ? '− depth' : '+ depth'
+      })
+    }
+
+    // Overflow menu — share + list live here now.
+    const ovBtn = document.getElementById('gcOverflowBtn') as HTMLButtonElement | null
+    const ovMenu = document.getElementById('gcOverflowMenu') as HTMLElement | null
+    const ov = document.getElementById('gcOverflow') as HTMLElement | null
+    if (ovBtn && ovMenu && ov) {
+      ovBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const open = ovBtn.getAttribute('aria-expanded') === 'true'
+        const next = !open
+        ovBtn.setAttribute('aria-expanded', String(next))
+        ovMenu.hidden = !next
+      })
+      document.addEventListener('click', (e) => {
+        if (!ov.contains(e.target as Node)) {
+          ovBtn.setAttribute('aria-expanded', 'false')
+          ovMenu.hidden = true
+        }
+      })
+      // Close after clicking a menu item (action still runs via other listeners).
+      ovMenu.addEventListener('click', () => {
+        ovBtn.setAttribute('aria-expanded', 'false')
+        ovMenu.hidden = true
+      })
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initGraphControlsChrome)
+  document.addEventListener('astro:page-load', initGraphControlsChrome)
+</script>
 
 <style>
   /* sr-only utility — visually hidden but accessible to screen readers */
@@ -177,37 +248,112 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
     white-space: nowrap;
   }
 
-  /* action buttons */
-  .action-btn {
+  /* depth disclosure button — mono eyebrow wearing a button suit */
+  .disclosure {
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
-    letter-spacing: 0.08em;
+    letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
-    font-weight: 500;
+    color: var(--ink-3);
+    background: transparent;
+    border: 0;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .disclosure:hover {
+    color: var(--ink);
+  }
+
+  .disclosure[aria-expanded="true"] {
+    color: var(--ink);
+  }
+
+  .disclosure:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* hidden groups honor the hidden attribute */
+  [hidden] { display: none !important; }
+
+  /* overflow menu — one trigger for share + list */
+  .overflow {
+    position: relative;
+  }
+
+  .overflow-trigger {
+    font-family: var(--f-mono);
+    font-size: var(--fs-sm);
+    font-weight: 600;
     padding: 6px 12px;
     border: 1px solid var(--ink);
-    cursor: pointer;
     background: var(--paper);
     color: var(--ink);
+    cursor: pointer;
     border-radius: var(--r-xs);
+    line-height: 1;
     transition:
       background var(--dur-fast) var(--ease),
       color var(--dur-fast) var(--ease);
   }
 
-  .action-btn:hover {
+  .overflow-trigger:hover,
+  .overflow-trigger[aria-expanded="true"] {
     background: var(--ink);
     color: var(--paper);
   }
 
-  .action-btn[aria-pressed="true"] {
-    background: var(--ink);
-    color: var(--paper);
-  }
-
-  .action-btn:focus-visible {
+  .overflow-trigger:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+  }
+
+  .overflow-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 160px;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .overflow-item {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    text-align: left;
+    padding: 10px 14px;
+    border: 0;
+    border-bottom: 1px solid var(--rule-soft);
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    transition:
+      background var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+
+  .overflow-item:last-child {
+    border-bottom: 0;
+  }
+
+  .overflow-item:hover,
+  .overflow-item[aria-pressed="true"],
+  .overflow-item[aria-checked="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .overflow-item:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
   }
 
   /* level caption — mono eyebrow style, below controls row */
