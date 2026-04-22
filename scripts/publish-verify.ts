@@ -243,7 +243,7 @@ function printReport(
       ? `200 (tokens: ${liveResult.tokenCount})`
       : 'FAIL (non-200)';
     const liveOk = liveResult.httpOk && liveResult.tokenCount > 0;
-    console.log(`Live URL:      ${run.url.split('/actions')[0]?.split('github.com/')[1] ? '' : ''}${liveStatus} ${liveOk ? 'OK' : 'FAIL'}`);
+    console.log(`Live URL:      ${liveStatus} ${liveOk ? 'OK' : 'FAIL'}`);
 
     if (liveResult.articleUrl) {
       const proseLabel = liveResult.articleHasProse ? 'prose: yes' : 'prose: no';
