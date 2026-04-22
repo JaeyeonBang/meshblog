@@ -91,9 +91,14 @@ VALUES
   (15, 'SQLite',             'technology',  'Embedded relational database engine',      2);
 
 -- ── note_entities (cross-reference) ──────────────────────────────────────────
+-- Cross-note entity overlaps are intentional: they enable the MiniMesh entity
+-- fallback (getEntityNeighbors) when no wikilinks exist.  At least 2 notes must
+-- share an entity_id for MiniMesh to render a neighbor edge.
 INSERT INTO note_entities (note_id, entity_id) VALUES
   ('fixture-ts-generics',     1),   -- TypeScript
   ('fixture-ts-generics',     2),   -- generics
+  ('fixture-ts-generics',     9),   -- LLM  ← shared with fixture-rag-overview
+  ('fixture-sqlite-patterns', 1),   -- TypeScript  ← shared with fixture-ts-generics
   ('fixture-sqlite-patterns', 3),   -- better-sqlite3
   ('fixture-sqlite-patterns', 4),   -- WAL mode
   ('fixture-sqlite-patterns', 15),  -- SQLite
@@ -101,9 +106,11 @@ INSERT INTO note_entities (note_id, entity_id) VALUES
   ('fixture-rag-overview',    6),   -- text-embedding-3-small
   ('fixture-rag-overview',    7),   -- RAG
   ('fixture-rag-overview',    8),   -- vector store
-  ('fixture-rag-overview',    9),   -- LLM
-  ('fixture-글쓰기-철학',     13),  -- 글쓰기
-  ('fixture-글쓰기-철학',     14),  -- TIL
+  ('fixture-rag-overview',    9),   -- LLM  ← shared with fixture-ts-generics
+  ('fixture-rag-overview',   15),   -- SQLite  ← shared with fixture-sqlite-patterns
+  ('fixture-글쓰기-철학',    13),   -- 글쓰기
+  ('fixture-글쓰기-철학',    14),   -- TIL
+  ('fixture-graph-algorithms',9),   -- LLM  ← shared with fixture-rag-overview
   ('fixture-graph-algorithms',10),  -- graphology
   ('fixture-graph-algorithms',11),  -- PageRank
   ('fixture-graph-algorithms',12);  -- Louvain
