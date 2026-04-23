@@ -1,7 +1,14 @@
+/** Node types supported by the graph canvas.
+ *  - 'note'     — individual note/post
+ *  - 'concept'  — extracted concept cluster
+ *  - 'category' — taxonomy L1 hub (one node per category)
+ */
+export type NodeKind = 'note' | 'concept' | 'category'
+
 export type GraphNode = {
   id: string
   label: string
-  type: 'note' | 'concept'
+  type: NodeKind
   level: 1 | 2 | 3
   pagerank: number
   pinned: boolean

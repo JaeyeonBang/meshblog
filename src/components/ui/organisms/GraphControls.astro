@@ -8,9 +8,9 @@ interface Props {
 const { mode, level, nodeCount = 0, edgeCount = 0 } = Astro.props;
 
 const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
-  1: { label: 'L1 · 직접', title: 'direct links only' },
-  2: { label: 'L2 · 근처', title: '2-hop neighborhood' },
-  3: { label: 'L3 · 클러스터', title: 'full cluster' },
+  1: { label: 'L1 · 카테고리 overview', title: 'top-level categories' },
+  2: { label: 'L2 · 포스트 in category', title: 'posts within selected category' },
+  3: { label: 'L3 · 노트 in category', title: 'individual notes within selected category' },
 }
 ---
 <div class="graph-controls">
@@ -48,7 +48,7 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
       type="button"
       aria-expanded="true"
       aria-controls="level-group"
-      title="선택한 노드에서 몇 걸음까지 볼지"
+      title="카테고리 계층으로 드릴다운"
     >− depth</button>
 
     <div class="group" id="level-group">
@@ -88,7 +88,7 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
       </div>
     </div>
   </div>
-  <p class="level-caption">Level · 선택한 노드에서 몇 걸음까지 볼지</p>
+  <p class="level-caption">Level · 카테고리 계층으로 드릴다운</p>
   <span id="gcShareStatus" role="status" aria-live="polite" class="sr-only"></span>
 </div>
 

@@ -128,23 +128,20 @@ import { withBase } from '../lib/url'
       statsEl.textContent = `${n} nodes · ${e} edges`
     }
 
-    // Backlinks mode ignores level entirely — hide the whole depth disclosure
-    // (button + group + caption) so the canvas drops to 3 visible control clusters.
-    const isBacklinks = detail.mode === 'backlinks'
+    // Backlinks + concept modes: hide depth disclosure entirely
+    const hideDepth = detail.mode === 'backlinks' || detail.mode === 'concept'
     const depthBtn = document.getElementById('gcDepthToggle') as HTMLButtonElement | null
     const levelGroup = document.getElementById('level-group') as HTMLElement | null
     const levelCaption = document.querySelector<HTMLElement>('.graph-controls .level-caption')
-    if (depthBtn) depthBtn.hidden = isBacklinks
-    if (isBacklinks && levelGroup) {
-      // Collapse if expanded; disclosure button state stays but is hidden
+    if (depthBtn) depthBtn.hidden = hideDepth
+    if (hideDepth && levelGroup) {
       levelGroup.hidden = true
       depthBtn?.setAttribute('aria-expanded', 'false')
       if (depthBtn) depthBtn.textContent = '+ depth'
     }
     if (levelCaption) {
-      // Caption visibility tracks depth-disclosure state OR force-hide in backlinks
       const expanded = depthBtn?.getAttribute('aria-expanded') === 'true'
-      levelCaption.hidden = isBacklinks || !expanded
+      levelCaption.hidden = hideDepth || !expanded
     }
 
     // Toggle seg--active on mode buttons
@@ -176,6 +173,8 @@ import { withBase } from '../lib/url'
     const metaEl = document.getElementById('graphSelectedMeta')
     const openBtn = document.getElementById('graphOpenBtn') as HTMLAnchorElement | null
 
+    const blockLabel = document.querySelector<HTMLElement>('.graph-aside .block-label')
+    if (blockLabel) blockLabel.textContent = 'selected · ' + detail.type
     if (titleEl) titleEl.textContent = detail.label
     if (metaEl) metaEl.textContent = detail.type
     if (openBtn) {
@@ -184,6 +183,7 @@ import { withBase } from '../lib/url'
         openBtn.removeAttribute('aria-disabled')
         openBtn.style.removeProperty('pointer-events')
         openBtn.style.removeProperty('opacity')
+        openBtn.textContent = '글 열기 →'
       } else {
         // concept nodes (no route) — keep button inert
         openBtn.setAttribute('href', '#')
@@ -191,6 +191,34 @@ import { withBase } from '../lib/url'
         openBtn.style.pointerEvents = 'none'
         openBtn.style.opacity = '0.4'
       }
+    }
+  })
+
+  // ── graph:setCategory listener — dispatched when an L1 category node is clicked.
+  window.addEventListener('graph:setCategory', (e: Event) => {
+    const detail = (e as CustomEvent<{
+      slug: string
+      label: string
+      noteCount: number
+      postCount: number
+    }>).detail
+    const titleEl = document.getElementById('graphSelectedTitle')
+    const metaEl = document.getElementById('graphSelectedMeta')
+    const excerptEl = document.getElementById('graphSelectedExcerpt')
+    const openBtn = document.getElementById('graphOpenBtn') as HTMLAnchorElement | null
+    const blockLabel = document.querySelector<HTMLElement>('.graph-aside .block-label')
+
+    if (blockLabel) blockLabel.textContent = 'selected · category'
+    if (titleEl) titleEl.textContent = detail.label
+    if (metaEl) metaEl.textContent = `${detail.noteCount} notes · ${detail.postCount} posts`
+    if (excerptEl) excerptEl.textContent = `slug: ${detail.slug}`
+    if (openBtn) {
+      const catHref = `/meshblog/categories/${detail.slug}/`
+      openBtn.setAttribute('href', catHref)
+      openBtn.removeAttribute('aria-disabled')
+      openBtn.style.removeProperty('pointer-events')
+      openBtn.style.removeProperty('opacity')
+      openBtn.textContent = '카테고리 보기 →'
     }
   })
 
