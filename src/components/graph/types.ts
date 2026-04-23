@@ -28,6 +28,8 @@ export type GraphLink = {
   source: string | GraphNode
   target: string | GraphNode
   weight: number
+  /** Edge type — 'mentions' for concept→note cross-edges; absent for same-type edges */
+  type?: string
 }
 
 export type GraphJson = {

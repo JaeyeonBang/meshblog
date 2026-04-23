@@ -7,7 +7,7 @@ import * as d3Drag from 'd3-drag'
 import type { GraphNode, GraphLink, GraphJson } from './types'
 
 type SimNode = GraphNode & d3Force.SimulationNodeDatum
-type SimLink = { source: SimNode; target: SimNode; weight: number }
+type SimLink = { source: SimNode; target: SimNode; weight: number; type?: string }
 
 /** Base radius per node kind */
 function nodeRadius(node: SimNode): number {
@@ -59,7 +59,7 @@ export function useForceSimulation(
         const s = linkMap.get(sourceId)
         const t = linkMap.get(targetId)
         if (!s || !t) return null
-        return { source: s, target: t, weight: l.weight }
+        return { source: s, target: t, weight: l.weight, type: l.type }
       })
       .filter((l): l is SimLink => l !== null)
 
@@ -147,6 +147,8 @@ export function useForceSimulation(
       .attr('x2', d => d.target.x ?? 0)
       .attr('y2', d => d.target.y ?? 0)
       .attr('marker-end', opts.directed ? 'url(#arrowhead)' : null)
+      // data-edge-type: set for cross-type edges so CSS can style them distinctly
+      .attr('data-edge-type', d => d.type ?? null)
 
     // Nodes — with data-kind, <title>, and stagger delay
     const nodeSel = g

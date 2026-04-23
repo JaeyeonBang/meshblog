@@ -26,9 +26,11 @@ export type HoverCardProps = {
   excerpt: string | null
   /** Navigable href for "open →" link (null for concept/backlink nodes) */
   href: string | null
+  /** Number of notes referencing this concept (for concepts without excerpts) */
+  refCount?: number | null
 }
 
-export function HoverCard({ node, x, y, excerpt, href }: HoverCardProps) {
+export function HoverCard({ node, x, y, excerpt, href, refCount }: HoverCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
 
   // Reposition card to avoid viewport overflow
@@ -55,11 +57,19 @@ export function HoverCard({ node, x, y, excerpt, href }: HoverCardProps) {
 
   const kindLabel = node.type === 'concept' ? 'Concept' : 'Note'
 
+  // For concept nodes without an excerpt, fall back to reference count
+  const fallbackExcerpt =
+    !excerpt && node.type === 'concept' && refCount != null
+      ? `Referenced by ${refCount} note${refCount === 1 ? '' : 's'}`
+      : null
+
   return (
     <div ref={cardRef} className={styles.card} role="tooltip" aria-live="polite">
       <span className={styles.eyebrow}>{kindLabel}</span>
       <p className={styles.title}>{node.label}</p>
-      {excerpt && <p className={styles.excerpt}>{excerpt}</p>}
+      {(excerpt || fallbackExcerpt) && (
+        <p className={styles.excerpt}>{excerpt ?? fallbackExcerpt}</p>
+      )}
       {href && (
         <a href={href} className={styles.openLink} tabIndex={-1} aria-hidden="true">
           open →
