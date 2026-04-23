@@ -1,0 +1,89 @@
+/* HoverCard.module.css — graph node hover popover
+ *
+ * Editorial invariants:
+ *   #1 — no hex literals
+ *   #2 — hairline 1px border
+ *   #4 — mono eyebrow for kind badge
+ *   #5 — NO box-shadow (shadow-hard is cmdk-only)
+ *   #6 — border-radius ≤ 4px (var(--r-md))
+ */
+
+.card {
+  position: fixed;
+  z-index: 200;
+  max-width: 280px;
+  min-width: 160px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: var(--r-md);
+  pointer-events: none;
+  /* Entrance: brief fade-in */
+  animation: hc-appear var(--dur-fast) var(--ease) both;
+}
+
+@keyframes hc-appear {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+}
+
+/* Mono eyebrow — invariant #4 */
+.eyebrow {
+  display: block;
+  font-family: var(--f-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--space-1);
+}
+
+/* Display title — Fraunces */
+.title {
+  font-family: var(--f-disp);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 var(--space-2);
+  line-height: 1.35;
+  /* Clamp long titles to 2 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Body excerpt */
+.excerpt {
+  font-family: var(--f-sans);
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+  margin: 0 0 var(--space-2);
+  line-height: 1.5;
+  /* Clamp to 3 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* "open →" affordance link */
+.openLink {
+  display: block;
+  font-family: var(--f-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  text-decoration: none;
+  margin-top: var(--space-1);
+}
+
+.openLink:hover {
+  color: var(--ink);
+}

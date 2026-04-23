@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import type { GraphJson, Manifest, GraphNode, NodeKind } from './graph/types'
 import { useForceSimulation } from './graph/useForceSimulation'
+import type { HoverState } from './graph/useForceSimulation'
+import { HoverCard } from './graph/HoverCard'
 import { withBase } from '../lib/url'
 import styles from './GraphView.module.css'
 
@@ -33,6 +35,13 @@ type TaxonomyPath = {
   level: Level
   categorySlug?: string
 }
+
+/**
+ * Mobile / touch tap tracking.
+ * First tap: show popover (via onHover), don't navigate.
+ * Second tap on the same node within 600ms: navigate.
+ */
+type TapState = { nodeId: string; ts: number } | null
 
 function getInitialMode(): Mode {
   if (typeof window === 'undefined') return 'note'
@@ -128,6 +137,35 @@ export default function GraphView() {
   const [status, setStatus] = useState<Status>('loading')
   const [retry, setRetry] = useState(0)
   const svgRef = useRef<SVGSVGElement>(null)
+
+  // Hover popover state
+  const [hoverState, setHoverState] = useState<HoverState>(null)
+  const hoverLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Mobile double-tap state
+  const tapRef = useRef<TapState>(null)
+
+  /** Debounced hover handler: 200ms delay on clear prevents flicker */
+  const handleHover = useCallback((state: HoverState) => {
+    if (hoverLeaveTimer.current) {
+      clearTimeout(hoverLeaveTimer.current)
+      hoverLeaveTimer.current = null
+    }
+    if (state) {
+      setHoverState(state)
+    } else {
+      hoverLeaveTimer.current = setTimeout(() => {
+        setHoverState(null)
+      }, 200)
+    }
+  }, [])
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverLeaveTimer.current) clearTimeout(hoverLeaveTimer.current)
+    }
+  }, [])
 
   // Listen for toolbar CustomEvents from GraphControls.astro
   useEffect(() => {
@@ -311,7 +349,7 @@ export default function GraphView() {
 
   useForceSimulation(svgRef, graph, {
     onNodeClick: (node: GraphNode) => {
-      // L1 category node clicked — drill into L2 and update sidebar
+      // L1 category node clicked in notes-mode — drill into L2 (preserve taxonomy drill-down)
       if (node.type === 'category' && categoryData) {
         const cat = categoryData.categories.find(c => c.id === node.id)
         if (cat) {
@@ -329,9 +367,11 @@ export default function GraphView() {
         return
       }
 
-      // Regular note/post/concept node
+      // Regular note/post/concept node — dispatch graph:select for sidebar, then navigate
       const entry = manifest[node.id]
       const href = entry ? withBase(entry.href) : null
+
+      // Always dispatch so sidebar updates instantly before navigation
       window.dispatchEvent(new CustomEvent('graph:select', {
         detail: {
           id: node.id,
@@ -340,9 +380,34 @@ export default function GraphView() {
           href,
         },
       }))
+
+      // Mobile double-tap: first tap → select/popover; second tap on same node → navigate
+      const isTouchDevice = window.matchMedia('(hover: none)').matches
+      if (isTouchDevice) {
+        const prev = tapRef.current
+        const now = Date.now()
+        if (prev && prev.nodeId === node.id && now - prev.ts < 600) {
+          tapRef.current = null
+          if (href) window.location.href = href
+        } else {
+          tapRef.current = { nodeId: node.id, ts: now }
+        }
+        return
+      }
+
+      // Pointer device: navigate directly
+      if (href) {
+        window.location.href = href
+      }
     },
     directed: mode === 'backlinks',
+    onHover: handleHover,
   })
+
+  // Derive popover props from hover state + manifest
+  const hoveredEntry = hoverState ? manifest[hoverState.node.id] : null
+  const hoverExcerpt = hoveredEntry?.excerpt ?? null
+  const hoverHref = hoveredEntry ? withBase(hoveredEntry.href) : null
 
   return (
     <div
@@ -385,6 +450,15 @@ export default function GraphView() {
         className={`${styles.svg}${mode === 'backlinks' ? ` ${styles.svgDirected}` : ''}`}
         style={{ display: status === 'ready' ? 'block' : 'none' }}
         aria-hidden="true"
+      />
+
+      {/* Hover popover — floats above SVG via position:fixed */}
+      <HoverCard
+        node={hoverState?.node ?? null}
+        x={hoverState?.x ?? 0}
+        y={hoverState?.y ?? 0}
+        excerpt={hoverExcerpt}
+        href={hoverHref}
       />
 
       {/* Stats */}
