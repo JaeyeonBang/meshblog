@@ -105,6 +105,13 @@
   stroke-width: 0.25px;
 }
 
+/* Cross-type edges (concept→note 'mentions'): dashed texture, subordinate
+ * to concept↔concept edges. No colour change — invariant #1. */
+.svg :global(.links line[data-edge-type="mentions"]) {
+  stroke-dasharray: 3 2;
+  stroke-opacity: 0.6;
+}
+
 /* ── Node hover ──────────────────────────────────────────────────── */
 
 .svg :global(.nodes circle:hover) {

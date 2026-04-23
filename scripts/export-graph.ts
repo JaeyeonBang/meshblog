@@ -31,7 +31,7 @@ type NodeAttrs = {
 
 type GraphJson = {
   nodes: Array<{ id: string } & NodeAttrs>
-  links: Array<{ source: string; target: string; weight?: number }>
+  links: Array<{ source: string; target: string; weight?: number; type?: string }>
 }
 
 // ── Graph builders ────────────────────────────────────────────────────────────
@@ -101,6 +101,94 @@ export function buildConceptGraph(db: Database.Database): Graph {
   }
 
   return g
+}
+
+/**
+ * addCrossEdgesToConceptGraph — Option B implementation.
+ *
+ * For each (concept_id, note_id) pair in note_entities (bridged via entities),
+ * inject the referencing note as a node (type='note') and an edge of type
+ * 'mentions' (concept→note). Deduplicates note nodes.
+ *
+ * Only notes with graph_status='done' are included so orphan/draft notes don't
+ * pollute the graph. To keep the augmented graph compact, each concept retains
+ * at most MAX_MENTIONS_PER_CONCEPT edges (ranked by confidence DESC, then
+ * mention_count DESC).
+ */
+const MAX_MENTIONS_PER_CONCEPT = 10
+
+export function addCrossEdgesToConceptGraph(
+  g: Graph,
+  db: Database.Database,
+): void {
+  // Fetch cross-edge candidates: concepts that have entity memberships linked
+  // to notes (via concept_entities → entities → note_entities).
+  // entity_count = how many shared entities link the concept to the note
+  // (acts as a proxy for relevance when confidence/mention_count are absent).
+  const rows = queryMany<{
+    concept_id: string
+    note_id: string
+    note_title: string
+    entity_count: number
+  }>(
+    db,
+    `SELECT
+       ce.concept_id,
+       ne.note_id,
+       n.title AS note_title,
+       COUNT(DISTINCT ce.entity_id) AS entity_count
+     FROM concept_entities ce
+     JOIN note_entities ne ON ne.entity_id = ce.entity_id
+     JOIN notes n ON n.id = ne.note_id AND n.graph_status = 'done'
+     WHERE ce.concept_id IN (SELECT id FROM concepts)
+     GROUP BY ce.concept_id, ne.note_id
+     ORDER BY ce.concept_id, entity_count DESC`,
+    [],
+  )
+
+  if (rows.length === 0) {
+    console.log("[export-graph] no concept↔note cross-edges found (note_entities empty or no concepts)")
+    return
+  }
+
+  // Group by concept, cap at MAX_MENTIONS_PER_CONCEPT
+  const perConcept = new Map<string, typeof rows>()
+  for (const row of rows) {
+    const list = perConcept.get(row.concept_id) ?? []
+    if (list.length < MAX_MENTIONS_PER_CONCEPT) {
+      list.push(row)
+      perConcept.set(row.concept_id, list)
+    }
+  }
+
+  // Track which note nodes we already added (dedup across concepts)
+  const addedNoteNodes = new Set<string>()
+
+  let edgeCount = 0
+  for (const [conceptId, edges] of perConcept) {
+    if (!g.hasNode(conceptId)) continue   // should never happen, but guard anyway
+
+    for (const row of edges) {
+      // Add note node if not present
+      if (!g.hasNode(row.note_id)) {
+        g.addNode(row.note_id, { label: row.note_title, type: "note" })
+        addedNoteNodes.add(row.note_id)
+      }
+
+      // Add cross-edge: undirected graph so we check both directions
+      if (!g.hasEdge(conceptId, row.note_id) && !g.hasEdge(row.note_id, conceptId)) {
+        g.addEdge(conceptId, row.note_id, {
+          weight: row.entity_count,
+          edgeType: "mentions",  // stored on graph edge attrs
+        })
+        edgeCount++
+      }
+    }
+  }
+
+  console.log(
+    `[export-graph] cross-edges: ${edgeCount} mentions edges, ${addedNoteNodes.size} note nodes injected into concept graph`,
+  )
 }
 
 // ── Level assignment ──────────────────────────────────────────────────────────
@@ -242,7 +330,13 @@ export function exportLevel(
 
   g.forEachEdge((_edge, attrs, src, dst) => {
     if (includedNodes.has(src) && includedNodes.has(dst)) {
-      json.links.push({ source: src, target: dst, weight: attrs.weight as number })
+      const link: { source: string; target: string; weight: number; type?: string } = {
+        source: src,
+        target: dst,
+        weight: attrs.weight as number,
+      }
+      if (attrs.edgeType) link.type = attrs.edgeType as string
+      json.links.push(link)
     }
   })
 
@@ -267,9 +361,11 @@ export async function runExportGraph(
   exportLevel(noteGraph, 2, join(outputDir, "note-l2.json"))
   exportLevel(noteGraph, 3, join(outputDir, "note-l3.json"))
 
-  // Concept Graph
+  // Concept Graph + cross-edges (Option B: note nodes injected into concept graph)
   const conceptGraph = buildConceptGraph(db)
   console.log(`[export-graph] concept graph: ${conceptGraph.order} nodes, ${conceptGraph.size} edges`)
+  addCrossEdgesToConceptGraph(conceptGraph, db)
+  console.log(`[export-graph] concept graph after cross-edges: ${conceptGraph.order} nodes, ${conceptGraph.size} edges`)
   assignLevels(conceptGraph, db, "concept")
   exportLevel(conceptGraph, 1, join(outputDir, "concept-l1.json"))
   exportLevel(conceptGraph, 2, join(outputDir, "concept-l2.json"))

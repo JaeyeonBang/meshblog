@@ -409,6 +409,17 @@ export default function GraphView() {
   const hoverExcerpt = hoveredEntry?.excerpt ?? null
   const hoverHref = hoveredEntry ? withBase(hoveredEntry.href) : null
 
+  // For concept nodes: count cross-edges (type='mentions') to give a reference count fallback
+  const hoverRefCount = (() => {
+    if (!hoverState || hoverState.node.type !== 'concept' || !graph) return null
+    const nid = hoverState.node.id
+    return graph.links.filter(l => {
+      const src = typeof l.source === 'string' ? l.source : l.source.id
+      const dst = typeof l.target === 'string' ? l.target : l.target.id
+      return l.type === 'mentions' && (src === nid || dst === nid)
+    }).length || null
+  })()
+
   return (
     <div
       className={styles.root}
@@ -459,6 +470,7 @@ export default function GraphView() {
         y={hoverState?.y ?? 0}
         excerpt={hoverExcerpt}
         href={hoverHref}
+        refCount={hoverRefCount}
       />
 
       {/* Stats */}
