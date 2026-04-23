@@ -2,6 +2,7 @@
 import { listCategories } from '../../../lib/pages/index.ts'
 import type { CategoryRow } from '../../../lib/pages/index.ts'
 import { withBase } from '../../../lib/url'
+import { formatCategoryName } from '../../../lib/categories/display-name'
 
 interface Props {
   limit?: number
@@ -20,7 +21,7 @@ const cats = limit > 0 ? all.slice(0, limit) : all
       {cats.map((cat) => (
         <li class:list={['cat-item', active === cat.slug && 'active']}>
           <a href={withBase(`/categories/${cat.slug}/`)} class="cat-link">
-            <span class="cat-name">{cat.name}</span>
+            <span class="cat-name">{formatCategoryName(cat.slug, cat.name)}</span>
             <span class="cat-count">&middot; {cat.noteCount + cat.postCount}</span>
           </a>
         </li>

@@ -86,7 +86,7 @@ Before committing UI changes, every file under `src/` must satisfy:
 2. Hairlines only — `border: 1px solid` default; `3px` reserved for emphasis (pull-quote top, page-qa top, footer top).
 3. Hover-invert — interactive surfaces flip `background/color` on `:hover` (paper ↔ ink), not subtle opacity.
 4. Mono eyebrows — uppercase labels use `var(--f-mono)` + `letter-spacing: 0.2em` + 10–11px + `var(--ink-3)`.
-5. One shadow only — `var(--shadow-hard)` on `.cmdk` exclusively.
+5. One shadow only — `var(--shadow-hard)` on modal panels (`.cmdk`, `.help`) exclusively. No other shadows anywhere.
 6. Radius ≤ 4px except `--r-pill` for `.kbd` legacy.
 
 Run the `blog-bw-polish` skill to lint these before committing.

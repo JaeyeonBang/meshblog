@@ -27,6 +27,7 @@ import { estimateReadingMinutes } from '../../lib/reading-time'
 import { getReadingStats } from '../../lib/word-count'
 import { withBase } from '../../lib/url'
 import { injectLedeClass } from '../../lib/lede'
+import { stripLeadingH1 } from '../../lib/markdown/strip-title'
 import { getNoteMeshNodes } from '../../lib/mesh-data'
 import '../../styles/article.css'
 
@@ -103,9 +104,9 @@ const readingMinutes = estimateReadingMinutes(note.content)
 const { words: wordCount } = getReadingStats(note.content)
 const updatedDate = new Date(note.updated_at)
 const updatedYYYYMM = `${updatedDate.getFullYear()}-${String(updatedDate.getMonth() + 1).padStart(2, '0')}`
-const excerpt = note.content.replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
+const excerpt = stripLeadingH1(note.content).replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
 const wikilinkResolver = buildNoteResolver(listAllLinkable())
-const contentHtml = await renderMarkdownToHtml(note.content, {
+const contentHtml = await renderMarkdownToHtml(stripLeadingH1(note.content), {
   resolver: wikilinkResolver,
   hrefFor: (slug) => withBase(`/notes/${slug}`),
 })
