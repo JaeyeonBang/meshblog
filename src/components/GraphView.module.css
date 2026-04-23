@@ -133,20 +133,26 @@
   outline-offset: 3px;
 }
 
-/* ── Hover label (show sibling text on circle hover) ────────────── */
+/* ── Labels: visible by default, dim siblings on hover ──────────── */
 
-/* Labels are always rendered; opacity 0 by default, 1 on parent hover */
+/* Labels always visible at rest */
 .svg :global(.labels text) {
   fill: var(--ink);
   font-family: var(--f-mono);
   font-size: 10px;
   letter-spacing: 0.04em;
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
   transition: opacity var(--dur-fast) var(--ease);
 }
 
-.svg :global(.labels text.label--visible) {
+/* Sibling labels dim when another node is focused/hovered */
+.svg :global(.labels text.label--dim) {
+  opacity: 0.25;
+}
+
+/* Hovered / focused node label: always full opacity (overrides dim) */
+.svg :global(.labels text.label--focused) {
   opacity: 1;
 }
 
@@ -277,4 +283,72 @@
 .retryBtn:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* ── Cluster differentiation (Louvain community detection) ──────── */
+/*
+ * Cluster 0–4: five grayscale stops, solid/dashed strokes.
+ * Cluster 5–9: same tones, dotted stroke (graceful degradation for >5 clusters).
+ * data-cluster is set only when cluster metadata is present in the JSON;
+ * absent → default data-kind styling applies (backward compat).
+ *
+ * Stroke-width stays at 1.5px (hairline invariant). Dashed/dotted use subtle
+ * patterns that read as editorial texture, not noise.
+ */
+
+/* cluster 0 — --ink, solid */
+.svg :global(.nodes circle[data-cluster="0"]) {
+  stroke: var(--ink);
+}
+
+/* cluster 1 — --ink-2, solid */
+.svg :global(.nodes circle[data-cluster="1"]) {
+  stroke: var(--ink-2);
+}
+
+/* cluster 2 — --ink-3, dashed */
+.svg :global(.nodes circle[data-cluster="2"]) {
+  stroke: var(--ink-3);
+  stroke-dasharray: 4 3;
+}
+
+/* cluster 3 — --ink-4, solid */
+.svg :global(.nodes circle[data-cluster="3"]) {
+  stroke: var(--ink-4);
+}
+
+/* cluster 4 — --ink-5, dashed */
+.svg :global(.nodes circle[data-cluster="4"]) {
+  stroke: var(--ink-5);
+  stroke-dasharray: 4 3;
+}
+
+/* cluster 5 — --ink, dotted (graceful overflow) */
+.svg :global(.nodes circle[data-cluster="5"]) {
+  stroke: var(--ink);
+  stroke-dasharray: 2 2;
+}
+
+/* cluster 6 — --ink-2, dotted */
+.svg :global(.nodes circle[data-cluster="6"]) {
+  stroke: var(--ink-2);
+  stroke-dasharray: 2 2;
+}
+
+/* cluster 7 — --ink-3, dotted */
+.svg :global(.nodes circle[data-cluster="7"]) {
+  stroke: var(--ink-3);
+  stroke-dasharray: 2 2;
+}
+
+/* cluster 8 — --ink-4, dotted */
+.svg :global(.nodes circle[data-cluster="8"]) {
+  stroke: var(--ink-4);
+  stroke-dasharray: 2 2;
+}
+
+/* cluster 9 — --ink-5, dotted (last distinct slot; ≥10 wraps mod 10) */
+.svg :global(.nodes circle[data-cluster="9"]) {
+  stroke: var(--ink-5);
+  stroke-dasharray: 2 2;
 }
