@@ -3,6 +3,7 @@ import Base from '../../layouts/Base.astro'
 import { listCategories } from '../../lib/pages/index.ts'
 import type { CategoryRow } from '../../lib/pages/index.ts'
 import { withBase } from '../../lib/url'
+import { formatCategoryName } from '../../lib/categories/display-name'
 
 const categories: CategoryRow[] = listCategories()
 const count = categories.length
@@ -29,7 +30,7 @@ const totalPosts = categories.reduce((s, c) => s + c.postCount, 0)
           {categories.map((cat) => (
             <li class="cat-row">
               <a href={withBase(`/categories/${cat.slug}/`)} class="cat-link">
-                <span class="cat-name">{cat.name}</span>
+                <span class="cat-name">{formatCategoryName(cat.slug, cat.name)}</span>
                 <span class="cat-meta">
                   {cat.noteCount} {cat.noteCount === 1 ? 'note' : 'notes'}
                   {' '}·{' '}

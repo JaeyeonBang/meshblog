@@ -13,7 +13,7 @@ Enforces the 6 invariants of the editorial B&W direction.
 2. Hairlines only — `border: 1px solid` default; `3px` reserved for emphasis (pull-quote top, page-qa top, footer top)
 3. Hover-invert — every interactive surface flips `background/color` on `:hover` (paper↔ink) OR gains an underline; no subtle opacity shifts
 4. Mono eyebrow — uppercase labels use `font-family: var(--f-mono)` + `letter-spacing: 0.2em` + `text-transform: uppercase` + `font-size: 10–11px` + `color: var(--ink-3)`
-5. One shadow only — `box-shadow: var(--shadow-hard)` allowed on `.cmdk` only
+5. One shadow only — `box-shadow: var(--shadow-hard)` allowed on modal panels (`.cmdk`, `.help`) only; no other shadows anywhere
 6. Radius ≤4px except `--r-pill` for `.kbd` legacy
 
 ## Run order
@@ -32,7 +32,7 @@ grep -rn --include='*.astro' --include='*.css' \
 
 # 3. Stray shadows
 grep -rn --include='*.astro' --include='*.css' 'box-shadow' src/ \
-  | grep -v 'CmdK.astro' | grep -v '--shadow-hard'
+  | grep -v 'CmdK.astro' | grep -v 'HelpModal.astro' | grep -v '--shadow-hard'
 
 # 4. Hairline violations
 grep -rn --include='*.astro' --include='*.css' -E 'border(-[a-z]+)?:\s*([2-9]|1[0-9])px' src/ \

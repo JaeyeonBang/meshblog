@@ -25,6 +25,7 @@ import { estimateReadingMinutes } from '../../lib/reading-time'
 import { getReadingStats } from '../../lib/word-count'
 import { withBase } from '../../lib/url'
 import { injectLedeClass } from '../../lib/lede'
+import { stripLeadingH1 } from '../../lib/markdown/strip-title'
 import { getNoteMeshNodes } from '../../lib/mesh-data'
 import '../../styles/article.css'
 
@@ -103,9 +104,9 @@ const formattedDate = createdDate.toLocaleDateString('ko-KR', {
   month: '2-digit',
   day: '2-digit',
 })
-const excerpt = post.content.replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
+const excerpt = stripLeadingH1(post.content).replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
 const wikilinkResolver = buildNoteResolver(listAllLinkable())
-const contentHtml = await renderMarkdownToHtml(post.content, {
+const contentHtml = await renderMarkdownToHtml(stripLeadingH1(post.content), {
   resolver: wikilinkResolver,
   hrefFor: (slug) => withBase(`/notes/${slug}`),
 })

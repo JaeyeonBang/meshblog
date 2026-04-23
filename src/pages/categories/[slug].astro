@@ -9,6 +9,8 @@ import {
 } from '../../lib/pages/index.ts'
 import type { CategoryRow } from '../../lib/pages/index.ts'
 import { withBase } from '../../lib/url'
+import { stripLeadingH1 } from '../../lib/markdown/strip-title'
+import { formatCategoryName } from '../../lib/categories/display-name'
 
 export function getStaticPaths() {
   const categories: CategoryRow[] = listCategories()
@@ -26,17 +28,18 @@ const { cat } = Astro.props
 const notes = listNotesByCategory(cat.slug)
 const posts = listPostsByCategory(cat.slug)
 const hasContent = notes.length > 0 || posts.length > 0
+const catName = formatCategoryName(cat.slug, cat.name)
 ---
 
 <Base
-  title={`${cat.name} · categories · meshblog`}
-  description={`Notes and posts in the ${cat.name} category on meshblog.`}
+  title={`${catName} · categories · meshblog`}
+  description={`Notes and posts in the ${catName} category on meshblog.`}
   topBarActive="categories"
 >
   <div class="index-layout">
     <header class="index-header">
       <p class="eyebrow">{cat.noteCount} {cat.noteCount === 1 ? 'note' : 'notes'} · {cat.postCount} {cat.postCount === 1 ? 'post' : 'posts'}</p>
-      <h1>{cat.name}</h1>
+      <h1>{catName}</h1>
     </header>
 
     <main class="index-main">
@@ -70,7 +73,7 @@ const hasContent = notes.length > 0 || posts.length > 0
               number={String(i + 1).padStart(2, '0')}
               href={withBase(`/posts/${post.slug}`)}
               title={post.title}
-              excerpt={post.content.replace(/[#*`_~\[\]]/g, '').slice(0, 120).trimEnd()}
+              excerpt={stripLeadingH1(post.content).replace(/[#*`_~\[\]]/g, '').slice(0, 120).trimEnd()}
               date={new Date(post.created_at).toLocaleDateString('ko-KR', {
                 year: 'numeric',
                 month: '2-digit',
