@@ -29,4 +29,20 @@ describe('stripLeadingH1', () => {
   it('preserves content when there is no leading heading', () => {
     expect(stripLeadingH1('Just text.\nMore text.')).toBe('Just text.\nMore text.')
   })
+
+  // gray-matter leaves the blank line after the frontmatter closing `---` inside
+  // the content string, so real post bodies start with `\n\n# Title\n\n...`.
+  // The regex must tolerate arbitrary leading whitespace (newlines / spaces)
+  // before the `#`, otherwise the live build still emits a duplicate <h1>.
+  it('strips leading whitespace + # Title (gray-matter output shape)', () => {
+    expect(stripLeadingH1('\n\n# Title\n\nBody.')).toBe('Body.')
+  })
+
+  it('strips leading spaces + # Title', () => {
+    expect(stripLeadingH1('  # Title\n\nBody.')).toBe('Body.')
+  })
+
+  it('strips leading single \\n + # Title', () => {
+    expect(stripLeadingH1('\n# Title\nNext.')).toBe('Next.')
+  })
 })

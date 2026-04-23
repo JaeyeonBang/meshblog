@@ -7,9 +7,13 @@
  * intact — both result in the title appearing twice (DOM + excerpt). This
  * helper normalizes both call-sites.
  *
- * Only strips the FIRST line when it starts with `# ` (single hash + space).
+ * Strips the FIRST heading line when it (optionally preceded by whitespace)
+ * starts with `# ` (single hash + space). Leading whitespace tolerance matters
+ * because `gray-matter` returns content with the blank line after the closing
+ * `---` preserved, so real post bodies arrive as `\n\n# Title\n\n...`.
+ *
  * Leaves `## ...`, `###...`, or text-first content alone.
  */
 export function stripLeadingH1(markdown: string): string {
-  return markdown.replace(/^#\s[^\n]*\n+/, '')
+  return markdown.replace(/^\s*#\s[^\n]*\n+/, '')
 }
