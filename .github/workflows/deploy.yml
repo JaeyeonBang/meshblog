@@ -62,7 +62,15 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
       - name: Export category graph
-        run: bun run export-category-graph
+        run: |
+          if [ -f scripts/export-category-graph.ts ]; then
+            bun run export-category-graph
+          else
+            echo "::warning::export-category-graph.ts not present — skipping"
+          fi
+
+      - name: Cluster communities (Louvain grayscale differentiation)
+        run: bun run cluster-communities
 
       - name: Build backlinks graph
         run: bun run build-backlinks
