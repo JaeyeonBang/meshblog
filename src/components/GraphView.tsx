@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { GraphJson, Manifest, GraphNode } from './graph/types'
+import type { GraphJson, Manifest, GraphNode, NodeKind } from './graph/types'
 import { useForceSimulation } from './graph/useForceSimulation'
 import { withBase } from '../lib/url'
 import styles from './GraphView.module.css'
@@ -10,9 +10,29 @@ type BacklinksJson = {
   edges: Array<{ source: string; target: string; alias?: string }>
 }
 
+/** Shape of public/graph/categories.json (from export-category-graph.ts) */
+type CategoryNode = {
+  id: string
+  label: string
+  noteCount: number
+  postCount: number
+}
+
+type CategoryGraphJson = {
+  categories: CategoryNode[]
+  postsByCategory: Record<string, Array<{ id: string; label: string; categorySlug: string }>>
+  notesByCategory: Record<string, Array<{ id: string; label: string; categorySlug: string }>>
+}
+
 type Mode = 'note' | 'concept' | 'backlinks'
 type Level = 1 | 2 | 3
 type Status = 'loading' | 'ready' | 'error' | 'empty'
+
+/** Taxonomy path for notes-mode drill-down */
+type TaxonomyPath = {
+  level: Level
+  categorySlug?: string
+}
 
 function getInitialMode(): Mode {
   if (typeof window === 'undefined') return 'note'
@@ -28,7 +48,7 @@ function backlinksToGraphJson(bl: BacklinksJson): GraphJson {
     nodes: bl.nodes.map(n => ({
       id: n.id,
       label: n.title,
-      type: 'note' as const,
+      type: 'note' as NodeKind,
       level: 3 as const,
       pagerank: 0,
       pinned: false,
@@ -41,6 +61,57 @@ function backlinksToGraphJson(bl: BacklinksJson): GraphJson {
   }
 }
 
+/**
+ * Convert CategoryGraphJson into a GraphJson for the given taxonomy level.
+ * - level=1: one node per category (type='category')
+ * - level=2: posts in the selected category (type='note')
+ * - level=3: notes in the selected category (type='note')
+ * Falls back to L1 when categorySlug is missing for L2/L3.
+ */
+function categoryToGraphJson(
+  data: CategoryGraphJson,
+  level: Level,
+  categorySlug?: string,
+): GraphJson {
+  if (level === 1 || !categorySlug) {
+    // L1: one node per category — pagerank drives circle radius
+    const nodes: GraphNode[] = data.categories.map(c => ({
+      id: c.id,
+      label: c.label,
+      type: 'category' as NodeKind,
+      level: 1 as const,
+      pagerank: (c.noteCount + c.postCount) / 100,
+      pinned: false,
+    }))
+    return { nodes, links: [] }
+  }
+
+  if (level === 2) {
+    const posts = data.postsByCategory[categorySlug] ?? []
+    const nodes: GraphNode[] = posts.map(p => ({
+      id: p.id,
+      label: p.label,
+      type: 'note' as NodeKind,
+      level: 2 as const,
+      pagerank: 0,
+      pinned: false,
+    }))
+    return { nodes, links: [] }
+  }
+
+  // level === 3
+  const notes = data.notesByCategory[categorySlug] ?? []
+  const nodes: GraphNode[] = notes.map(n => ({
+    id: n.id,
+    label: n.label,
+    type: 'note' as NodeKind,
+    level: 3 as const,
+    pagerank: 0,
+    pinned: false,
+  }))
+  return { nodes, links: [] }
+}
+
 function getInitialLevel(): Level {
   if (typeof window === 'undefined') return 1
   const p = Number(new URLSearchParams(window.location.search).get('level') ?? '1')
@@ -50,7 +121,9 @@ function getInitialLevel(): Level {
 export default function GraphView() {
   const [mode, setMode] = useState<Mode>(getInitialMode)
   const [level, setLevel] = useState<Level>(getInitialLevel)
+  const [taxonomy, setTaxonomy] = useState<TaxonomyPath>({ level: getInitialLevel() })
   const [graph, setGraph] = useState<GraphJson | null>(null)
+  const [categoryData, setCategoryData] = useState<CategoryGraphJson | null>(null)
   const [manifest, setManifest] = useState<Manifest>({})
   const [status, setStatus] = useState<Status>('loading')
   const [retry, setRetry] = useState(0)
@@ -65,7 +138,18 @@ export default function GraphView() {
     const onSetLevel = (e: Event) => {
       const detail = (e as CustomEvent<number>).detail
       const n = Number(detail)
-      if (n === 1 || n === 2 || n === 3) setLevel(n as Level)
+      if (n === 1 || n === 2 || n === 3) {
+        const next = n as Level
+        setLevel(next)
+        setTaxonomy(prev => {
+          // If clicking L2/L3 with no category selected, auto-select biggest category
+          if ((next === 2 || next === 3) && !prev.categorySlug && categoryData) {
+            const biggest = categoryData.categories[0]
+            return { level: next, categorySlug: biggest?.id }
+          }
+          return { ...prev, level: next }
+        })
+      }
     }
     window.addEventListener('graph:setMode', onSetMode)
     window.addEventListener('graph:setLevel', onSetLevel)
@@ -73,19 +157,18 @@ export default function GraphView() {
       window.removeEventListener('graph:setMode', onSetMode)
       window.removeEventListener('graph:setLevel', onSetLevel)
     }
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryData])
 
-  // Fetch graph + manifest whenever mode/level/retry changes
+  // Fetch graph + manifest whenever mode/taxonomy/retry changes
   useEffect(() => {
     let cancelled = false
     setStatus('loading')
     setGraph(null)
 
-    // Update aria-busy on canvas while loading
     const canvasEl = document.getElementById('graphCanvas')
     if (canvasEl) canvasEl.setAttribute('aria-busy', 'true')
 
-    // Show loading overlay, hide others
     const loadingEl = document.getElementById('graphLoadingState')
     const emptyEl = document.getElementById('graphEmptyState')
     const errorEl = document.getElementById('graphErrorState')
@@ -96,21 +179,40 @@ export default function GraphView() {
       errorEl.setAttribute('aria-hidden', 'true')
     }
 
-    const graphUrl =
-      mode === 'backlinks'
-        ? withBase('/graph/backlinks.json')
-        : withBase(`/graph/${mode}-l${level}.json`)
+    let graphFetch: Promise<GraphJson>
 
-    const graphFetch =
-      mode === 'backlinks'
-        ? fetch(graphUrl).then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`)
-            return r.json().then((bl: BacklinksJson) => backlinksToGraphJson(bl))
-          })
-        : fetch(graphUrl).then(r => {
+    if (mode === 'backlinks') {
+      const graphUrl = withBase('/graph/backlinks.json')
+      graphFetch = fetch(graphUrl).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json().then((bl: BacklinksJson) => backlinksToGraphJson(bl))
+      })
+    } else if (mode === 'concept') {
+      const graphUrl = withBase(`/graph/concept-l${level}.json`)
+      graphFetch = fetch(graphUrl).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json() as Promise<GraphJson>
+      })
+    } else {
+      // notes mode — try categories.json first, fall back to note-l{level}.json
+      graphFetch = fetch(withBase('/graph/categories.json'))
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`)
+          return r.json() as Promise<CategoryGraphJson>
+        })
+        .then(data => {
+          if (cancelled) return { nodes: [], links: [] } as GraphJson
+          setCategoryData(data)
+          return categoryToGraphJson(data, taxonomy.level, taxonomy.categorySlug)
+        })
+        .catch(() => {
+          // Graceful fallback to old hop-distance files
+          return fetch(withBase(`/graph/note-l${level}.json`)).then(r => {
             if (!r.ok) throw new Error(`HTTP ${r.status}`)
             return r.json() as Promise<GraphJson>
           })
+        })
+    }
 
     Promise.all([
       graphFetch,
@@ -125,10 +227,7 @@ export default function GraphView() {
         const nextStatus: Status = g.nodes.length === 0 ? 'empty' : 'ready'
         setStatus(nextStatus)
 
-        // Remove aria-busy on canvas
         if (canvasEl) canvasEl.removeAttribute('aria-busy')
-
-        // Hide loading overlay
         if (loadingEl) loadingEl.setAttribute('aria-hidden', 'true')
 
         if (nextStatus === 'empty') {
@@ -136,25 +235,20 @@ export default function GraphView() {
         } else {
           if (emptyEl) emptyEl.setAttribute('aria-hidden', 'true')
         }
-        // Ensure error-state overlay is hidden on success
         if (errorEl) {
           errorEl.hidden = true
           errorEl.setAttribute('aria-hidden', 'true')
         }
 
-        // Dispatch graph:state for toolbar sync
         window.dispatchEvent(new CustomEvent('graph:state', {
-          detail: { mode, level, nodes: g.nodes, linksCount: g.links.length }
+          detail: { mode, level: taxonomy.level, nodes: g.nodes, linksCount: g.links.length }
         }))
       })
       .catch(() => {
         if (cancelled) return
         setStatus('error')
 
-        // Remove aria-busy on canvas
         if (canvasEl) canvasEl.removeAttribute('aria-busy')
-
-        // Hide loading + empty overlays, show error
         if (loadingEl) loadingEl.setAttribute('aria-hidden', 'true')
         if (emptyEl) emptyEl.setAttribute('aria-hidden', 'true')
         if (errorEl) {
@@ -167,24 +261,43 @@ export default function GraphView() {
       cancelled = true
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, level, retry])
+  }, [mode, taxonomy, retry])
 
-  // Sync URL without triggering navigation + dispatch graph:state on mode/level change
+  // When taxonomy changes and categoryData already loaded: recompute client-side (no refetch)
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const q = new URLSearchParams({ mode, level: String(level) })
-    history.replaceState(null, '', `?${q.toString()}`)
-    // Dispatch state even if graph not yet loaded (nodes: [] fallback)
+    if (mode !== 'note' || !categoryData) return
+    const g = categoryToGraphJson(categoryData, taxonomy.level, taxonomy.categorySlug)
+    setGraph(g)
+    const nextStatus: Status = g.nodes.length === 0 ? 'empty' : 'ready'
+    setStatus(nextStatus)
+
+    const canvasEl = document.getElementById('graphCanvas')
+    const emptyEl = document.getElementById('graphEmptyState')
+    const loadingEl = document.getElementById('graphLoadingState')
+    if (canvasEl) canvasEl.removeAttribute('aria-busy')
+    if (loadingEl) loadingEl.setAttribute('aria-hidden', 'true')
+    if (emptyEl) emptyEl.setAttribute('aria-hidden', nextStatus === 'empty' ? 'false' : 'true')
+
     window.dispatchEvent(new CustomEvent('graph:state', {
-      detail: { mode, level, nodes: graph?.nodes ?? [], linksCount: graph?.links.length ?? 0 }
+      detail: { mode, level: taxonomy.level, nodes: g.nodes, linksCount: g.links.length }
     }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, level])
+  }, [taxonomy])
+
+  // Sync URL params
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const q = new URLSearchParams({ mode, level: String(taxonomy.level) })
+    history.replaceState(null, '', `?${q.toString()}`)
+    window.dispatchEvent(new CustomEvent('graph:state', {
+      detail: { mode, level: taxonomy.level, nodes: graph?.nodes ?? [], linksCount: graph?.links.length ?? 0 }
+    }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, taxonomy.level])
 
   // Wire Astro overlay retry button to React retry mechanism
   useEffect(() => {
     const handler = () => {
-      // Hide error overlay before re-fetching
       const errorEl = document.getElementById('graphErrorState')
       if (errorEl) {
         errorEl.hidden = true
@@ -198,7 +311,25 @@ export default function GraphView() {
 
   useForceSimulation(svgRef, graph, {
     onNodeClick: (node: GraphNode) => {
-      // Single click selects; sidebar block + #graphOpenBtn picks up via graph:select listener.
+      // L1 category node clicked — drill into L2 and update sidebar
+      if (node.type === 'category' && categoryData) {
+        const cat = categoryData.categories.find(c => c.id === node.id)
+        if (cat) {
+          window.dispatchEvent(new CustomEvent('graph:setCategory', {
+            detail: {
+              slug: cat.id,
+              label: cat.label,
+              noteCount: cat.noteCount,
+              postCount: cat.postCount,
+            },
+          }))
+          setTaxonomy({ level: 2, categorySlug: cat.id })
+          setLevel(2)
+        }
+        return
+      }
+
+      // Regular note/post/concept node
       const entry = manifest[node.id]
       const href = entry ? withBase(entry.href) : null
       window.dispatchEvent(new CustomEvent('graph:select', {
@@ -232,8 +363,23 @@ export default function GraphView() {
         })}
       </ul>
 
-      {/* SVG — always rendered so svgRef is stable.
-           Arrowhead <defs> for backlinks mode are injected by useForceSimulation. */}
+      {/* Back button for L2/L3 drill-down (notes mode only) */}
+      {mode === 'note' && taxonomy.level > 1 && (
+        <button
+          className={styles.backBtn}
+          onClick={() => {
+            const prev = (taxonomy.level - 1) as Level
+            setTaxonomy({ level: prev, categorySlug: taxonomy.categorySlug })
+            setLevel(prev)
+          }}
+          aria-label={`Back to L${taxonomy.level - 1}`}
+        >
+          ← L{taxonomy.level - 1}
+          {taxonomy.level === 2 ? ' · 카테고리' : ' · 포스트'}
+        </button>
+      )}
+
+      {/* SVG — always rendered so svgRef is stable. */}
       <svg
         ref={svgRef}
         className={`${styles.svg}${mode === 'backlinks' ? ` ${styles.svgDirected}` : ''}`}
@@ -241,7 +387,7 @@ export default function GraphView() {
         aria-hidden="true"
       />
 
-      {/* Stats: absolute-positioned inside .root */}
+      {/* Stats */}
       {status === 'ready' && graph && (
         <p className={styles.stats}>
           {graph.nodes.length} nodes · {graph.links.length} links

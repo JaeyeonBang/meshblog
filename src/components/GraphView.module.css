@@ -65,6 +65,21 @@
 }
 
 /*
+  category nodes (L1 taxonomy) — heavier border, hollow, no fill colour (B&W only).
+  Radius driven by pagerank proxy (noteCount + postCount).
+*/
+.svg :global(.nodes circle[data-kind="category"]) {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 2.5px;
+}
+
+.svg :global(.nodes circle[data-kind="category"]:hover) {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+
+/*
   backlink-leaf — nodes with zero inbound references in backlinks mode.
   Muted so the eye reads hubs (higher inDegree → larger ink-stroked circles)
   as the active structure.
@@ -200,6 +215,38 @@
   .svg :global(.nodes circle:not([data-kind])) {
     stroke-width: 1.8px;
   }
+}
+
+/* ── Back button (taxonomy drill-down breadcrumb) ──────────────── */
+
+.backBtn {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-4);
+  font-family: var(--f-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 4px 10px;
+  border: 1px solid var(--ink);
+  cursor: pointer;
+  background: var(--paper);
+  color: var(--ink);
+  z-index: 10;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.backBtn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.backBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* ── Retry button ────────────────────────────────────────────────── */
