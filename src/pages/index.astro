@@ -47,7 +47,6 @@ const meshNodes = getHomeMeshNodes(withBase)
   title="meshblog"
   description="Personal 2nd brain — posts, notes, and an AI-powered knowledge graph."
   ogImage="/og/index.png"
-  topBarActive="posts"
 >
   <div class="home-layout">
     <div class="home-main">
@@ -56,6 +55,17 @@ const meshNodes = getHomeMeshNodes(withBase)
         <div class="eyebrow">vault · public · 2026</div>
         <h1>두 번째 뇌를, 남들이 읽을 수 있게 <em>내보내기</em>.</h1>
         <p class="sub">메모를 모으고, 개념을 잇고, 혼자 읽기 아까운 생각을 공개합니다. Think of it as an Obsidian vault you can read over my shoulder.</p>
+      </div>
+
+      <div class="home-wedge fade-up">
+        <div class="wedge-eyebrow">open source · fork + deploy</div>
+        <p class="wedge-sentence">Fork this vault as a template. Claude Code skills audit it daily.</p>
+        <a
+          class="wedge-link"
+          href="https://github.com/JaeyeonBang/meshblog"
+          target="_blank"
+          rel="noopener"
+        >Fork on GitHub →</a>
       </div>
 
       <div class="feed stagger">
@@ -117,12 +127,6 @@ const meshNodes = getHomeMeshNodes(withBase)
 
       <CategoryList limit={5} />
 
-      <TOC label="feed">
-        <div class="feed-links">
-          <a href={withBase('/atom.xml')}>→ atom · rss</a>
-          <a href="https://github.com/jaeyeonbang">→ github</a>
-        </div>
-      </TOC>
     </aside>
   </div>
 </Base>
@@ -216,6 +220,55 @@ const meshNodes = getHomeMeshNodes(withBase)
     margin: 0;
   }
 
+  /* ── Home wedge (fork-and-use OSS signal) ─────────────────── */
+  .home-wedge {
+    padding: var(--space-8) 0 var(--space-8);
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: var(--space-12);
+  }
+
+  .wedge-eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .wedge-sentence {
+    font-family: var(--f-disp);
+    font-size: var(--fs-xl);
+    color: var(--ink);
+    line-height: 1.4;
+    margin: 0 0 var(--space-5);
+    max-width: 46ch;
+  }
+
+  .wedge-link {
+    font-family: var(--f-mono);
+    font-size: var(--fs-sm);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    display: inline-block;
+    padding: 2px 0;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+
+  .wedge-link:hover {
+    background: var(--ink);
+    color: var(--paper);
+    text-decoration: none;
+  }
+
+  .wedge-link:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
   /* ── Feed ──────────────────────────────────────────────────── */
   .feed {
     display: flex;
@@ -244,25 +297,6 @@ const meshNodes = getHomeMeshNodes(withBase)
   .mesh-cta {
     margin-top: var(--space-4);
     width: 100%;
-  }
-
-  .feed-links {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-  }
-
-  .feed-links a {
-    font-family: var(--f-serif);
-    font-size: var(--fs-sm);
-    color: var(--ink-2);
-    padding: 4px 0;
-    display: block;
-    transition: color var(--dur-fast) var(--ease);
-  }
-
-  .feed-links a:hover {
-    color: var(--ink);
   }
 
   /* ── Mesh caption ──────────────────────────────────────────── */
