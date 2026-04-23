@@ -379,17 +379,7 @@ import { withBase } from '../lib/url'
     overflow: hidden;
     width: 100%;
     height: 100%;
-    /*
-      Subtle radial gradient: centre is --paper (bright), edges fade to
-      --paper-2 (slightly sunk). Tokens handle light/dark inversion.
-      No hex literals.
-    */
-    background:
-      radial-gradient(
-        ellipse 70% 70% at 50% 50%,
-        var(--paper) 30%,
-        var(--paper-2) 100%
-      );
+    background: var(--paper);
   }
 
   /* ── Loading state ─────────────────────────────────────── */
