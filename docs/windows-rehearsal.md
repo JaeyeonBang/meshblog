@@ -4,6 +4,25 @@ Last item on the v1 punch-list from `CLAUDE.md`. WSL-based CI covers the 80% tha
 
 Run once on a **clean Windows 11 Home** (not Pro — the permission model differs) with a real Obsidian vault. Not a WSL shell — real PowerShell + Git Bash. If all steps pass, v1 is done.
 
+## One-line rehearsal
+
+Prereqs first (see below), then from any PowerShell window:
+
+```powershell
+iwr https://raw.githubusercontent.com/JaeyeonBang/meshblog/main/scripts/windows-rehearsal.ps1 -OutFile rehearsal.ps1
+.\rehearsal.ps1 -VaultPath "C:\Users\me\Documents\ObsidianVault"
+```
+
+Drives the 8 steps below — automates the mechanical parts (prereq check, clean fork, scripted `/init`, push, `publish-verify`, daily-audit trigger) and stops at 4 visual checkpoints where you confirm browser-visible results with `[y/N]`. Produces `docs/rehearsals/YYYY-MM-DD-windows.md` with PASS/FAIL per step.
+
+Flags:
+- `-VaultPath <path>` (required) — absolute path to your Obsidian vault
+- `-RepoName <owner/name>` (optional) — default `<you>/meshblog-rehearsal-YYYYMMDD`
+- `-WorkDir <path>` (optional) — default `$HOME\meshblog-rehearsal`
+- `-SkipPush` (optional) — skip criteria #6 + #7, no throwaway fork repo on GitHub
+
+The script is a convenience; the manual walkthrough below is still the source of truth and catches anything the script skips (CRLF in markdown, ACL on NTFS, PowerShell readline quirks).
+
 ## Prerequisites
 
 Install in this order on the target Windows machine:
