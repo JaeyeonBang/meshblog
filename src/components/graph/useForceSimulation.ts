@@ -27,10 +27,20 @@ function backlinkRadius(inDegree: number): number {
 const MAX_STAGGER_MS = 600
 const STAGGER_STEP_MS = 40
 
+export type HoverState = {
+  node: GraphNode
+  x: number
+  y: number
+} | null
+
 export function useForceSimulation(
   svgRef: RefObject<SVGSVGElement | null>,
   graph: GraphJson | null,
-  opts: { onNodeClick?: (n: GraphNode) => void; directed?: boolean },
+  opts: {
+    onNodeClick?: (n: GraphNode) => void
+    directed?: boolean
+    onHover?: (state: HoverState) => void
+  },
 ): void {
   useEffect(() => {
     const svgEl = svgRef.current
@@ -152,6 +162,8 @@ export function useForceSimulation(
       })
       .attr('r', d => radiusOf(d))
       .attr('data-kind', d => kindOf(d))
+      // data-cluster: set from Louvain output when present; absent = no attr (backward compat)
+      .attr('data-cluster', d => d.cluster != null ? String(d.cluster % 10) : null)
       .attr('cx', d => d.x ?? 0)
       .attr('cy', d => d.y ?? 0)
       .attr('tabindex', 0)
@@ -179,35 +191,53 @@ export function useForceSimulation(
       .style('pointer-events', 'none')
       .text(d => labelOf(d))
 
-    // Map nodeId → label text element for hover
-    const labelByIndex = labelSel.nodes()
+    // Map node index → label text element for dim/focus
+    const labelNodes = labelSel.nodes()
 
-    // Hover: show label when circle is hovered
+    /** Apply dim-siblings + focused-label when a node is active */
+    function applyFocus(activeIdx: number): void {
+      labelSel.each(function (_d, i) {
+        const isFocused = i === activeIdx
+        d3Selection.select(this)
+          .classed('label--focused', isFocused)
+          .classed('label--dim', !isFocused)
+      })
+    }
+
+    /** Restore full opacity on all labels */
+    function clearFocus(): void {
+      labelSel
+        .classed('label--focused', false)
+        .classed('label--dim', false)
+    }
+
     nodeSel
-      .on('mouseenter', (_event, _d) => {
-        const idx = nodeSel.nodes().indexOf(_event.currentTarget as SVGCircleElement)
-        if (idx !== -1 && labelByIndex[idx]) {
-          d3Selection.select(labelByIndex[idx]).classed('label--visible', true)
-        }
+      .on('mouseenter', (event: MouseEvent, d: SimNode) => {
+        const idx = nodeSel.nodes().indexOf(event.currentTarget as SVGCircleElement)
+        if (idx !== -1) applyFocus(idx)
+        opts.onHover?.({ node: d, x: event.clientX, y: event.clientY })
       })
-      .on('mouseleave', (_event, _d) => {
-        const idx = nodeSel.nodes().indexOf(_event.currentTarget as SVGCircleElement)
-        if (idx !== -1 && labelByIndex[idx]) {
-          d3Selection.select(labelByIndex[idx]).classed('label--visible', false)
-        }
+      .on('mousemove', (event: MouseEvent, d: SimNode) => {
+        opts.onHover?.({ node: d, x: event.clientX, y: event.clientY })
       })
-      .on('focus', (_event, _d) => {
-        const idx = nodeSel.nodes().indexOf(_event.currentTarget as SVGCircleElement)
-        if (idx !== -1 && labelByIndex[idx]) {
-          d3Selection.select(labelByIndex[idx]).classed('label--visible', true)
-        }
+      .on('mouseleave', () => {
+        clearFocus()
+        opts.onHover?.(null)
       })
-      .on('blur', (_event, _d) => {
-        const idx = nodeSel.nodes().indexOf(_event.currentTarget as SVGCircleElement)
-        if (idx !== -1 && labelByIndex[idx]) {
-          d3Selection.select(labelByIndex[idx]).classed('label--visible', false)
-        }
+      .on('focus', (event: FocusEvent, d: SimNode) => {
+        const idx = nodeSel.nodes().indexOf(event.currentTarget as SVGCircleElement)
+        if (idx !== -1) applyFocus(idx)
+        // Position popover near the circle's bounding box for keyboard users
+        const rect = (event.currentTarget as SVGCircleElement).getBoundingClientRect()
+        opts.onHover?.({ node: d, x: rect.right, y: rect.top })
       })
+      .on('blur', () => {
+        clearFocus()
+        opts.onHover?.(null)
+      })
+
+    // Silence unused variable warning for labelNodes (kept for potential future use)
+    void labelNodes
 
     // --- Zoom ---
     const zoomBehavior = d3Zoom
