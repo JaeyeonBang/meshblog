@@ -128,15 +128,40 @@ if (-not $RepoName) {
 Write-Host "Repo:    $RepoName"
 
 # ── Step 1: clean fork ───────────────────────────────────────────────────────
+# degit does NOT create a .git/ (that's its whole point vs git clone). We
+# initialize an empty git history with a single commit so step 7's
+# `gh repo create --source . --push` has something to push. Inline identity
+# so we don't depend on the operator's global git config.
 Step -Id "1" -Title "clean fork (criterion #1 — install)" -Auto {
   if (Test-Path $WorkDir) { Remove-Item -Recurse -Force $WorkDir }
   New-Item -ItemType Directory -Path $WorkDir | Out-Null
   Push-Location $WorkDir
   try {
     npx -y degit JaeyeonBang/meshblog . 2>&1 | Out-Null
+    git init -b main 2>&1 | Out-Null
+    git -c user.name="rehearsal" -c user.email="rehearsal@example.com" `
+      -c commit.gpgsign=false add . 2>&1 | Out-Null
+    git -c user.name="rehearsal" -c user.email="rehearsal@example.com" `
+      -c commit.gpgsign=false commit -m "init from degit" --quiet 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "git init+commit failed after degit" }
+
+    # Rehearsal-only: patch astro.config.mjs's base path so the fork (whose
+    # repo name won't be 'meshblog') deploys to the correct Pages subpath.
+    # meshblog init doesn't do this yet — tracked as a follow-up.
+    $repoShort = ($RepoName -split '/')[-1]
+    $configPath = Join-Path $WorkDir "astro.config.mjs"
+    if (Test-Path $configPath) {
+      $c = Get-Content $configPath -Raw
+      $patched = $c -replace "base:\s*['""]/meshblog['""]", "base: '/$repoShort'"
+      if ($patched -ne $c) {
+        Set-Content -Path $configPath -Value $patched -Encoding UTF8 -NoNewline
+        Write-Host "  patched astro.config.mjs base to /$repoShort"
+      }
+    }
+
     bun install 2>&1 | Tee-Object -Variable installOut | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "bun install failed" }
-    Write-Host "  cloned + dependencies installed."
+    Write-Host "  cloned + git init + dependencies installed."
   } finally {
     Pop-Location
   }
@@ -163,10 +188,12 @@ Step -Id "2" -Title "/init two-prompt flow (criterion #1)" -Auto {
       throw "init did not print the expected 'Copied vault contents' line"
     }
     Write-Host "  init completed; content/notes/ materialized."
+    Write-Host "  waiting 4s for the spawned dev server to become HTTP-responsive…"
+    Start-Sleep -Seconds 4
   } finally {
     Pop-Location
   }
-} -VisualPrompt "Open http://localhost:4321/meshblog/ in your browser. Do your real vault notes render (not the fixture seed)?"
+} -VisualPrompt "Open http://localhost:4321/$(($RepoName -split '/')[-1])/ in your browser. Do your real vault notes render (not the fixture seed)?"
 
 # ── Step 3: keyless real-vault render (criterion #2) ─────────────────────────
 # Covered by the visual prompt on Step 2 (same URL). Assert via content sniff.
@@ -196,7 +223,8 @@ Step -Id "5" -Title "draft:true absent from landing page (criterion #4)" -Auto {
       return
     }
     $draftSlug = $drafts[0].BaseName
-    $landing = (curl.exe -s "http://localhost:4321/meshblog/")
+    $repoShort = ($RepoName -split '/')[-1]
+    $landing = (curl.exe -s "http://localhost:4321/$repoShort/")
     if ($landing -match [regex]::Escape($draftSlug)) {
       throw "draft slug '$draftSlug' LEAKED to landing page"
     }
@@ -211,7 +239,7 @@ Step -Id "5" -Title "draft:true absent from landing page (criterion #4)" -Auto {
 
 # ── Step 6: backlinks mode toggle (criterion #5) — visual only ───────────────
 Step -Id "6" -Title "/graph exposes Backlinks mode (criterion #5)" `
-  -VisualPrompt "Open http://localhost:4321/meshblog/graph/. Do you see three mode buttons: Notes, Concepts, Backlinks?"
+  -VisualPrompt "Open http://localhost:4321/$(($RepoName -split '/')[-1])/graph/. Do you see three mode buttons: Notes, Concepts, Backlinks?"
 
 # ── Step 7: push → live (criterion #6) ───────────────────────────────────────
 if ($SkipPush) {
@@ -228,9 +256,15 @@ if ($SkipPush) {
       gh repo create $RepoName --public --source . --push 2>&1 | Out-Null
       if ($LASTEXITCODE -ne 0) { throw "gh repo create failed" }
       Write-Host "  repo created + pushed. Running publish-verify…"
-      bun run publish-verify 2>&1 | Tee-Object -Variable publishOut | Out-Null
+      # publish-verify's default base URL points at the upstream meshblog;
+      # override so the verifier actually checks the fork's Pages URL, not
+      # our original site. Keeps this rehearsal honest.
+      $forkUser = ($RepoName -split '/')[0]
+      $repoShort = ($RepoName -split '/')[-1]
+      $forkUrl = "https://$forkUser.github.io/$repoShort/"
+      bun run publish-verify -- --base-url $forkUrl 2>&1 | Tee-Object -Variable publishOut | Out-Null
       if ($LASTEXITCODE -ne 0) { throw "publish-verify exited $LASTEXITCODE" }
-      Write-Host "  live site verified."
+      Write-Host "  live site verified at $forkUrl"
     } finally {
       Pop-Location
     }
