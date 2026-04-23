@@ -1,0 +1,286 @@
+---
+// HelpModal.astro — `?` keybinding help modal
+// Mirrors CmdK.astro structure: backdrop → panel → keyboard listeners → aria-modal
+// No data imports needed — pure static content.
+---
+<div class="help-backdrop" id="help-backdrop" role="dialog" aria-modal="true" aria-label="Help and keyboard shortcuts" aria-hidden="true">
+  <div class="help" id="help-panel">
+    <div class="help-head">
+      <div class="help-title">도움말 · help</div>
+      <button class="help-close" id="help-close" aria-label="Close help">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M1 1L13 13M13 1L1 13"/>
+        </svg>
+      </button>
+    </div>
+
+    <section class="help-section" aria-labelledby="help-s1">
+      <h3 class="help-eyebrow" id="help-s1">단축키 · shortcuts</h3>
+      <ul class="help-keys">
+        <li><span class="kbd">⌘K</span> <span>검색 열기 · open search</span></li>
+        <li><span class="kbd">?</span> <span>도움말 · this help</span></li>
+        <li><span class="kbd">↑↓</span> <span>결과 탐색 · navigate results</span></li>
+        <li><span class="kbd">↵</span> <span>열기 · open</span></li>
+        <li><span class="kbd">esc</span> <span>닫기 · close</span></li>
+      </ul>
+    </section>
+
+    <section class="help-section" aria-labelledby="help-s2">
+      <h3 class="help-eyebrow" id="help-s2">meshblog 기초 · basics</h3>
+      <dl class="help-terms">
+        <div><dt>vault</dt><dd>Obsidian 볼트를 그대로 정적 사이트로 렌더. Claude Code 스킬이 매일 감사한다.</dd></div>
+        <div><dt>concept mesh</dt><dd>노트에서 자동 추출한 개념들이 같이 등장할 때 엣지로 연결된다.</dd></div>
+        <div><dt>backlinks</dt><dd>현재 노트를 <code>[[reference]]</code>로 가리키는 다른 노트들.</dd></div>
+      </dl>
+    </section>
+
+    <section class="help-section help-section--fork" aria-labelledby="help-s3">
+      <h3 class="help-eyebrow" id="help-s3">이 템플릿 · fork this</h3>
+      <p class="help-fork">
+        이 블로그는 오픈소스 템플릿입니다. 포크해서 당신의 볼트를 연결하세요.
+        <a class="help-fork-link" href="https://github.com/JaeyeonBang/meshblog" target="_blank" rel="noopener">Fork on GitHub →</a>
+      </p>
+    </section>
+
+    <div class="help-foot" aria-hidden="true">
+      <span><span class="kbd">esc</span> 닫기</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .help-backdrop {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--ink) 35%, transparent);
+    z-index: 90;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 12vh;
+  }
+  .help-backdrop.open {
+    display: flex;
+  }
+  .help {
+    width: min(560px, calc(100vw - 32px));
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 76vh;
+    box-shadow: var(--shadow-hard);
+  }
+  .help-head {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--ink);
+  }
+  .help-title {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .help-close {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--ink);
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .help-close:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .help-close:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  .help-section {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--rule-soft);
+    overflow-y: auto;
+  }
+  .help-section:last-of-type {
+    border-bottom: 0;
+  }
+  .help-eyebrow {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 10px;
+    font-weight: 500;
+  }
+  .help-keys {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+  }
+  .help-keys li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+  }
+  .help-terms {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .help-terms > div {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 12px;
+    align-items: baseline;
+  }
+  .help-terms dt {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    color: var(--ink);
+  }
+  .help-terms dd {
+    margin: 0;
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .help-terms dd code {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    background: var(--paper-2);
+    padding: 1px 4px;
+    border: 1px solid var(--rule-soft);
+  }
+  .help-fork {
+    margin: 0;
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+    line-height: 1.6;
+  }
+  .help-fork-link {
+    display: inline-block;
+    margin-left: 6px;
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink);
+    border-bottom: 1px solid var(--ink);
+    padding-bottom: 1px;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .help-fork-link:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .help-foot {
+    padding: 10px 18px;
+    display: flex;
+    gap: 16px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    border-top: 1px solid var(--rule-soft);
+    letter-spacing: 0.04em;
+  }
+  @media (max-width: 560px) {
+    .help-keys {
+      grid-template-columns: 1fr;
+    }
+    .help-terms > div {
+      grid-template-columns: 90px 1fr;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    function init() {
+      const bd = document.getElementById('help-backdrop') as HTMLElement | null;
+      const panel = document.getElementById('help-panel') as HTMLElement | null;
+      const closeBtn = document.getElementById('help-close') as HTMLButtonElement | null;
+      if (!bd || !panel || !closeBtn) return;
+      if (bd.dataset.initialized === '1') return;
+      bd.dataset.initialized = '1';
+
+      let lastFocus: HTMLElement | null = null;
+
+      const open = () => {
+        // Close CmdK first if it happens to be open — they're mutually exclusive.
+        const cmdk = document.getElementById('cmdk-backdrop');
+        if (cmdk && cmdk.classList.contains('open')) {
+          cmdk.classList.remove('open');
+          cmdk.setAttribute('aria-hidden', 'true');
+        }
+        lastFocus = (document.activeElement as HTMLElement) || null;
+        bd.classList.add('open');
+        bd.setAttribute('aria-hidden', 'false');
+        // Push focus to close button for a11y (first tabbable element).
+        setTimeout(() => closeBtn.focus(), 0);
+      };
+
+      const close = () => {
+        bd.classList.remove('open');
+        bd.setAttribute('aria-hidden', 'true');
+        if (lastFocus && typeof lastFocus.focus === 'function') {
+          lastFocus.focus();
+        }
+      };
+
+      closeBtn.addEventListener('click', close);
+
+      bd.addEventListener('click', (e) => {
+        if (e.target === bd) close();
+      });
+
+      window.addEventListener('help:open', open as EventListener);
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && bd.classList.contains('open')) {
+          e.preventDefault();
+          close();
+          return;
+        }
+        // Suppress `?` when user is typing in an editable field
+        const target = e.target as HTMLElement | null;
+        const tag = target?.tagName;
+        const isEditable =
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          tag === 'SELECT' ||
+          (target?.isContentEditable ?? false);
+        if (isEditable) return;
+        // `?` is Shift+/ on US keyboards; accept both e.key === '?' and Shift + '/'
+        if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+          e.preventDefault();
+          bd.classList.contains('open') ? close() : open();
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('astro:page-load', init);
+  })();
+</script>

@@ -13,6 +13,7 @@ import '../styles/responsive.css'
 import TopBar from '../components/ui/organisms/TopBar.astro'
 import Footer from '../components/ui/organisms/Footer.astro'
 import CmdK from '../components/ui/organisms/CmdK.astro'
+import HelpModal from '../components/ui/organisms/HelpModal.astro'
 
 export interface Props {
   title: string
@@ -166,5 +167,6 @@ const fontPreloadHref = `${BASE}/fonts/Pretendard-Regular.subset.91.woff2`
 
     <Footer />
     <CmdK />
+    <HelpModal />
   </body>
 </html>
