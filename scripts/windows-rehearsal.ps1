@@ -36,6 +36,11 @@
   deploy will succeed on GitHub but the live URL stays 404 and publish-verify
   fails. Prints a warning before creating.
 
+.PARAMETER CleanupAfter
+  After writing the report, kill the spawned dev server (via .init-dev.pid),
+  remove $WorkDir, and prompt to delete the fork repo on GitHub. Prompts for
+  the fork delete are mandatory — destructive confirm is not automated.
+
 .EXAMPLE
   # Clone this script from main and run it in one line. No Obsidian needed
   # — uses the bundled fixture-vault.
@@ -61,7 +66,9 @@ param(
 
   [switch]$SkipPush,
 
-  [switch]$Private
+  [switch]$Private,
+
+  [switch]$CleanupAfter
 )
 
 $ErrorActionPreference = "Stop"
@@ -438,5 +445,50 @@ if ($failCount -eq 0 -and $skipCount -eq 0) {
 Set-Content -Path $reportPath -Value $lines -Encoding UTF8
 Write-Host ""
 Write-Host "Report written: $reportPath" -ForegroundColor Green
+
+# ── Optional cleanup ────────────────────────────────────────────────────────
+if ($CleanupAfter) {
+  Write-Host ""
+  Write-Host "═══ Cleanup (-CleanupAfter) ═══" -ForegroundColor Cyan
+
+  # 1. Kill spawned dev server via PID file written by /init (commit e451845).
+  $pidFile = Join-Path $WorkDir ".init-dev.pid"
+  if (Test-Path $pidFile) {
+    $devPid = (Get-Content $pidFile -Raw).Trim()
+    try {
+      Stop-Process -Id $devPid -Force -ErrorAction Stop
+      Write-Host "  killed dev server (PID $devPid)"
+    } catch {
+      Write-Host "  dev server PID $devPid not running (already dead?)" -ForegroundColor Yellow
+    }
+  } else {
+    Write-Host "  no .init-dev.pid — skipping dev server kill" -ForegroundColor Yellow
+  }
+
+  # 2. Remove work dir. Report was already persisted to disk at $reportPath
+  # but $reportPath is inside $WorkDir, so copy it out before rm-rf.
+  $reportBackup = Join-Path $HOME "meshblog-rehearsal-$date-windows.md"
+  if (Test-Path $reportPath) {
+    Copy-Item -Path $reportPath -Destination $reportBackup -Force
+    Write-Host "  report preserved at $reportBackup"
+  }
+  Remove-Item -Recurse -Force $WorkDir
+  Write-Host "  removed $WorkDir"
+
+  # 3. Delete the fork repo — destructive, mandatory prompt.
+  if (-not $SkipPush) {
+    $confirm = Read-Host "  Delete fork repo '$RepoName' on GitHub? This is destructive. [y/N]"
+    if ($confirm -match '^[yY]') {
+      gh repo delete $RepoName --yes 2>&1 | Out-Null
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "  deleted $RepoName on GitHub"
+      } else {
+        Write-Host "  gh repo delete failed (missing 'delete_repo' scope? run: gh auth refresh -s delete_repo)" -ForegroundColor Red
+      }
+    } else {
+      Write-Host "  fork repo kept on GitHub — delete manually if needed"
+    }
+  }
+}
 
 if ($failCount -gt 0) { exit 1 }
