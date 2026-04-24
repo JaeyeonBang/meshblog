@@ -82,7 +82,20 @@ interface GhRun {
 
 // ── Step 1: locate the run ────────────────────────────────────────────────────
 
-function locateRun(flags: Flags): { run: GhRun; warnMismatch: boolean } {
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * One attempt at finding a run that matches targetSha (or the newest run for
+ * the workflow if targetSha is null). Returns null if no matching run exists
+ * yet — caller decides whether to retry. Exits 3 on an explicit --run-id
+ * failure (operator requested a specific ID; no point retrying).
+ */
+function tryLocateRun(flags: Flags, targetSha: string | null): {
+  run: GhRun;
+  warnMismatch: boolean;
+} | null {
   if (flags.runId) {
     const raw = exec(
       `gh run view ${flags.runId} --json databaseId,headSha,status,conclusion,url,createdAt`,
@@ -97,24 +110,58 @@ function locateRun(flags: Flags): { run: GhRun; warnMismatch: boolean } {
   const runs: GhRun[] = JSON.parse(raw);
 
   if (runs.length === 0) {
-    console.error(`[publish-verify] No runs found for workflow "${flags.workflow}".`);
-    process.exit(3);
+    return null;
   }
-
-  const targetSha = flags.commit ?? tryExec('git rev-parse HEAD');
 
   if (targetSha) {
     const matching = runs.find((r) => r.headSha === targetSha);
     if (matching) {
       return { run: matching, warnMismatch: false };
     }
-    console.warn(
-      `[publish-verify] WARN: No run found for commit ${targetSha.slice(0, 8)}. ` +
-      'Using the most recent run — it may not correspond to the current commit.',
-    );
+    // No match yet — caller decides whether to retry.
+    return null;
   }
 
   return { run: runs[0]!, warnMismatch: true };
+}
+
+/**
+ * Locate the target run, with exponential backoff for fresh-fork rehearsals
+ * where `gh repo create --push` beats `gh run list` by several seconds. Total
+ * wait is 5s + 10s + 20s + 30s ≈ 65s, fewer API calls than fixed 5s × 12 and
+ * more tolerant of REST caching. Existing meshblog pushes (main always has
+ * runs) succeed on first attempt, so the backoff is transparent.
+ */
+async function locateRun(flags: Flags): Promise<{ run: GhRun; warnMismatch: boolean }> {
+  const targetSha = flags.commit ?? tryExec('git rev-parse HEAD');
+  const delaysMs = [5_000, 10_000, 20_000, 30_000];
+
+  for (let attempt = 0; attempt <= delaysMs.length; attempt++) {
+    const result = tryLocateRun(flags, targetSha);
+    if (result) {
+      if (result.warnMismatch && targetSha) {
+        console.warn(
+          `[publish-verify] WARN: No run found for commit ${targetSha.slice(0, 8)}. ` +
+            'Using the most recent run — it may not correspond to the current commit.',
+        );
+      }
+      return result;
+    }
+
+    if (attempt === delaysMs.length) break;
+    const delay = delaysMs[attempt]!;
+    console.log(
+      `[publish-verify] run not visible yet (retry ${attempt + 1}/${delaysMs.length} in ${
+        delay / 1000
+      }s)`,
+    );
+    await sleep(delay);
+  }
+
+  console.error(
+    `[publish-verify] No matching run for workflow "${flags.workflow}" after ~65s of retries.`,
+  );
+  process.exit(3);
 }
 
 // ── Step 2: watch the run ─────────────────────────────────────────────────────
@@ -265,7 +312,7 @@ async function main(): Promise<void> {
   requireGh();
 
   console.log('[publish-verify] Locating run...');
-  const { run, warnMismatch } = locateRun(flags);
+  const { run, warnMismatch } = await locateRun(flags);
 
   if (warnMismatch) {
     console.warn(`[publish-verify] WARN: Run ${run.databaseId} (${run.headSha.slice(0, 8)}) may not match HEAD.`);
