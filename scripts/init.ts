@@ -420,24 +420,63 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
     })
     dev.unref()
 
+    // Resolve the site's base path from astro.config.mjs. Forks with custom
+    // repo names patch this field; old behavior hardcoded /meshblog/ and
+    // printed a URL that 404'd. Fall back to /meshblog/ (original default)
+    // when the file is missing or the base field is dynamic — with a stderr
+    // warning so the drift is not silent.
+    const baseSlug = resolveAstroBase()
+    const openUrl = `http://localhost:4321/${baseSlug}/`
+
     // Probe port 4321 so silent spawn failures (missing bun, port in use,
     // astro crash) become visible before we tell the operator "Open: ...".
     // Fail-soft: the dev server may still be booting at probe time; a failed
     // probe is a warning, not an error exit.
     const probeOk = await probePort(4321, 2000)
     if (probeOk) {
-      console.log("\n[init] Done. Open: http://localhost:4321/meshblog/\n")
+      console.log(`\n[init] Done. Open: ${openUrl}\n`)
     } else {
       console.error(
         `\n[init] WARNING: dev server not responding on port 4321 after 2s. ` +
           `PID ${dev.pid ?? "?"}. The server may still be starting — try opening ` +
-          `http://localhost:4321/meshblog/ in a moment. If it stays unreachable, ` +
+          `${openUrl} in a moment. If it stays unreachable, ` +
           `check that bun is on PATH and port 4321 is free.\n`,
       )
     }
   } catch (err) {
     rl.close()
     throw err
+  }
+}
+
+/**
+ * Read astro.config.mjs and return the base slug (no slashes) via
+ * parseAstroBase. Falls back to "meshblog" with a stderr warning when the
+ * file is missing or the base field can't be parsed — so a silent drift
+ * (e.g., someone switches to a template literal) surfaces immediately
+ * instead of producing a 404 URL.
+ */
+function resolveAstroBase(): string {
+  try {
+    if (!fs.existsSync(ASTRO_CONFIG)) {
+      console.error(
+        "[init] WARNING: astro.config.mjs not found — using default base /meshblog/",
+      )
+      return "meshblog"
+    }
+    const content = fs.readFileSync(ASTRO_CONFIG, "utf-8")
+    const parsed = parseAstroBase(content)
+    if (parsed === null) {
+      console.error(
+        "[init] WARNING: could not parse astro.config.mjs base field " +
+          "(dynamic expression?) — falling back to /meshblog/",
+      )
+      return "meshblog"
+    }
+    return parsed
+  } catch (err) {
+    console.error(`[init] WARNING: failed to read astro.config.mjs: ${err}`)
+    return "meshblog"
   }
 }
 
