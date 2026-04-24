@@ -62,4 +62,20 @@ export default defineConfig({
     expect(parseAstroBase("base:'/tight'")).toBe("tight")
     expect(parseAstroBase("base:   '/loose'")).toBe("loose")
   })
+
+  // Trailing-slash cases — without these, resolveAstroBase produces URLs
+  // like http://localhost:4321/meshblog// (double slash). Regression fix.
+  it("strips a trailing slash in the literal", () => {
+    expect(parseAstroBase(`base: '/meshblog/'`)).toBe("meshblog")
+  })
+
+  it("strips a trailing slash even with double quotes and hyphens", () => {
+    expect(parseAstroBase(`base: "/foo-bar-2/"`)).toBe("foo-bar-2")
+  })
+
+  it("returns null for a lone-slash base (no slug content)", () => {
+    // `base: '/'` is semantically "no prefix" — callers want the fallback
+    // path, not an empty slug that produces http://localhost:4321//.
+    expect(parseAstroBase(`base: '/'`)).toBeNull()
+  })
 })

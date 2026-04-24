@@ -67,10 +67,16 @@ export function getDevSpawnOptions(
  * (a) /init's caller always falls back to `/meshblog/` + a stderr warning
  *     when this returns null, so downstream is safe,
  * (b) full JS parsing here is scope creep for a one-shot read at init time.
+ *
+ * Trailing slashes in the literal (`base: '/meshblog/'`) are stripped from
+ * the return value. Without this, resolveAstroBase would emit URLs like
+ * `http://localhost:4321/meshblog//` (double slash) — technically 200s under
+ * Astro's dev server but looks broken and breaks downstream string concat.
  */
 export function parseAstroBase(content: string): string | null {
-  const m = content.match(/base:\s*['"]\/([^'"]+)['"]/)
-  return m?.[1] ?? null
+  const m = content.match(/base:\s*['"]\/([^'"]*?)\/?['"]/)
+  const slug = m?.[1]
+  return slug ? slug : null
 }
 
 // ── Exported helper for unit tests ────────────────────────────────────────────
