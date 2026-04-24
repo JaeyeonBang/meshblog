@@ -386,22 +386,37 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
         env: { ...process.env },
       })
     } else {
+      // Pipeline mirrors package.json's `refresh` script so forks produce
+      // the same artifacts CI does on `main` pushes:
+      //   tokens → index → backlinks → graph → og → astro build
+      //
+      // - build-tokens: design.md → src/styles/tokens.css (stale CSS otherwise)
+      // - build-index: markdown → SQLite (--skip-embed --skip-concepts keyless)
+      // - build-backlinks: wikilinks → public/graph/backlinks.json (empty
+      //   Backlinks mode on /graph otherwise)
+      // - export-graph: SQLite → public/graph/{notes,concepts}.json
+      // - build-og: OG images for link previews (missing otherwise)
+      // - astro build: final static site
       console.log("[init] Running keyless build pipeline …")
-      execSync("bun run build-index -- --skip-embed --skip-concepts", {
-        cwd: REPO_ROOT,
-        stdio: "inherit",
-        env: { ...process.env },
-      })
-      execSync("bun run export-graph", {
-        cwd: REPO_ROOT,
-        stdio: "inherit",
-        env: { ...process.env },
-      })
-      execSync("bunx astro build", {
-        cwd: REPO_ROOT,
-        stdio: "inherit",
-        env: { ...process.env, NODE_ENV: "production" },
-      })
+      const pipeline: Array<[string, string]> = [
+        ["build-tokens", "bun run build-tokens"],
+        ["build-index", "bun run build-index -- --skip-embed --skip-concepts"],
+        ["build-backlinks", "bun run build-backlinks"],
+        ["export-graph", "bun run export-graph"],
+        ["build-og", "bun run build-og"],
+        ["astro build", "bunx astro build"],
+      ]
+      for (const [label, cmd] of pipeline) {
+        console.log(`[init] ${label} …`)
+        execSync(cmd, {
+          cwd: REPO_ROOT,
+          stdio: "inherit",
+          env:
+            label === "astro build"
+              ? { ...process.env, NODE_ENV: "production" }
+              : { ...process.env },
+        })
+      }
     }
 
     if (opts.skipSpawn) {
