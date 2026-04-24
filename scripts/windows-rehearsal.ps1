@@ -179,8 +179,16 @@ Step -Id "2" -Title "/init two-prompt flow (criterion #1)" -Auto {
     $initInput = "$VaultPath`n$repoShort`n"
     # Write to temp file and pipe — PowerShell's here-string + `cmd /c` is
     # fragile with unicode paths; a temp file is robust.
+    #
+    # PS 5.1 default (Windows 11 Home): `Set-Content -Encoding UTF8` writes a
+    # BOM. When cmd redirects the file to bun init's stdin, readline reads
+    # the BOM bytes as part of the first line: `"﻿C:\vault\path"`. That
+    # path does not exist → init crashes. Write BOM-less UTF-8 via .NET
+    # directly. `New-Object` syntax works on both PS 5.1 and PS 7+;
+    # `[UTF8Encoding]::new($false)` is PS 7+ only and crashes on 5.1.
     $tmpAnswers = [System.IO.Path]::GetTempFileName()
-    Set-Content -Path $tmpAnswers -Value $initInput -NoNewline -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding -ArgumentList $false
+    [System.IO.File]::WriteAllText($tmpAnswers, $initInput, $utf8NoBom)
     cmd /c "bun run init < `"$tmpAnswers`"" 2>&1 | Tee-Object -Variable initOut | Out-Null
     Remove-Item $tmpAnswers -Force
     if ($LASTEXITCODE -ne 0) { throw "bun run init exited $LASTEXITCODE" }
