@@ -10,18 +10,26 @@ Prereqs first (see below), then from any PowerShell window:
 
 ```powershell
 iwr https://raw.githubusercontent.com/JaeyeonBang/meshblog/main/scripts/windows-rehearsal.ps1 -OutFile rehearsal.ps1
+.\rehearsal.ps1
+```
+
+No Obsidian needed — the script uses the bundled `test/e2e/fixture-vault/` (30 adversarial notes) and marks the report SEMI-SYNTHETIC. For full v1 acceptance, pass your real vault:
+
+```powershell
 .\rehearsal.ps1 -VaultPath "C:\Users\me\Documents\ObsidianVault"
 ```
 
 Drives the 8 steps below — automates the mechanical parts (prereq check, clean fork, scripted `/init`, push, `publish-verify`, daily-audit trigger) and stops at 4 visual checkpoints where you confirm browser-visible results with `[y/N]`. Produces `docs/rehearsals/YYYY-MM-DD-windows.md` with PASS/FAIL per step.
 
 Flags:
-- `-VaultPath <path>` (required) — absolute path to your Obsidian vault
+- `-VaultPath <path>` (optional) — absolute path to your Obsidian vault. Omit to use the bundled fixture-vault (SEMI-SYNTHETIC marker applied to the report).
 - `-RepoName <owner/name>` (optional) — default `<you>/meshblog-rehearsal-YYYYMMDD`
 - `-WorkDir <path>` (optional) — default `$HOME\meshblog-rehearsal`
 - `-SkipPush` (optional) — skip criteria #6 + #7, no throwaway fork repo on GitHub
 
 The script is a convenience; the manual walkthrough below is still the source of truth and catches anything the script skips (CRLF in markdown, ACL on NTFS, PowerShell readline quirks).
+
+**v1 acceptance completion**: a SEMI-SYNTHETIC green run means the flow works, but real-vault evidence is still required. Before closing v1, do one more pass with `-VaultPath` pointing at an actual Obsidian vault that contains wikilinks + a `draft: true` note + an embedded image.
 
 ## Prerequisites
 

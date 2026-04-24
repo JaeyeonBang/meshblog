@@ -13,8 +13,10 @@
   Writes a timestamped pass/fail report to docs/rehearsals/.
 
 .PARAMETER VaultPath
-  Absolute path to your Obsidian vault. Must contain at least one note with
-  [[wikilinks]], one with draft:true, and ideally one ![[image]] embed.
+  Absolute path to your Obsidian vault. Optional — if omitted, the rehearsal
+  uses the bundled test/e2e/fixture-vault/ (30 adversarial notes with
+  wikilinks, drafts, images, unicode) and marks the report SEMI-SYNTHETIC.
+  Pass a real vault path to complete v1 acceptance evidence.
 
 .PARAMETER RepoName
   GitHub repo name (owner/name) for the test fork. Will be created with
@@ -29,8 +31,13 @@
   marked SKIPPED in the report.
 
 .EXAMPLE
-  # Clone this script from main and run it in one line
+  # Clone this script from main and run it in one line. No Obsidian needed
+  # — uses the bundled fixture-vault.
   iwr https://raw.githubusercontent.com/JaeyeonBang/meshblog/main/scripts/windows-rehearsal.ps1 -OutFile rehearsal.ps1
+  .\rehearsal.ps1
+
+.EXAMPLE
+  # Test against your real Obsidian vault for full v1 acceptance evidence.
   .\rehearsal.ps1 -VaultPath "C:\Users\me\Documents\ObsidianVault"
 
 .EXAMPLE
@@ -40,8 +47,7 @@
 
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)]
-  [string]$VaultPath,
+  [string]$VaultPath = "",
 
   [string]$RepoName = "",
 
@@ -98,13 +104,27 @@ function Require-Command {
   }
 }
 
+# ── Vault resolution ─────────────────────────────────────────────────────────
+# $VaultMode distinguishes what the rehearsal actually tested when we write
+# the report. Bundled fixture = v1 acceptance #2 evidence is SEMI-SYNTHETIC;
+# user-provided vault = full acceptance. Resolved after Step 1 because the
+# fixture-vault only exists inside the cloned fork.
+$script:VaultMode = if ($VaultPath) { "user-provided" } else { "bundled-fixture" }
+
 # ── Banner ───────────────────────────────────────────────────────────────────
 Write-Host "meshblog Windows fork-from-zero rehearsal" -ForegroundColor Magenta
-Write-Host "Vault:   $VaultPath"
+if ($script:VaultMode -eq "bundled-fixture") {
+  Write-Host "Vault:   (bundled fixture-vault — 30 adversarial test notes)" -ForegroundColor Yellow
+  Write-Host "         Pass -VaultPath to test your real Obsidian vault instead." -ForegroundColor Yellow
+} else {
+  Write-Host "Vault:   $VaultPath (user-provided)"
+}
 Write-Host "WorkDir: $WorkDir"
 Write-Host ""
 
-if (-not (Test-Path $VaultPath)) {
+# When a vault path is provided, verify it exists up front. Bundled-fixture
+# resolution happens after Step 1 (the fixture lives inside the clone).
+if ($script:VaultMode -eq "user-provided" -and -not (Test-Path $VaultPath)) {
   Write-Host "Vault path does not exist: $VaultPath" -ForegroundColor Red
   exit 1
 }
@@ -165,6 +185,19 @@ Step -Id "1" -Title "clean fork (criterion #1 — install)" -Auto {
   } finally {
     Pop-Location
   }
+}
+
+# Resolve bundled-fixture path now that the clone exists. Defer from pre-Step-1
+# because the fixture-vault is bundled inside the repo, not on the operator's
+# filesystem until after degit runs.
+if ($script:VaultMode -eq "bundled-fixture") {
+  $VaultPath = Join-Path $WorkDir "test\e2e\fixture-vault"
+  if (-not (Test-Path $VaultPath)) {
+    Write-Host "Bundled fixture-vault not found at: $VaultPath" -ForegroundColor Red
+    Write-Host "The fork may be corrupted or upstream drifted. Pass -VaultPath explicitly." -ForegroundColor Red
+    exit 1
+  }
+  Write-Host "  Resolved bundled vault: $VaultPath" -ForegroundColor Yellow
 }
 
 # ── Step 2: /init with scripted input (criterion #1) ─────────────────────────
@@ -313,11 +346,12 @@ $total = $script:Results.Count
 $lines = @()
 $lines += "# Windows rehearsal — $date"
 $lines += ""
-$lines += "- Operator:  $env:USERNAME"
-$lines += "- OS:        $((Get-CimInstance Win32_OperatingSystem).Caption)"
-$lines += "- Vault:     ``$VaultPath``"
-$lines += "- Repo:      ``$RepoName``"
-$lines += "- Summary:   $passCount PASS / $failCount FAIL / $skipCount SKIP ($total total)"
+$lines += "- Operator:   $env:USERNAME"
+$lines += "- OS:         $((Get-CimInstance Win32_OperatingSystem).Caption)"
+$lines += "- Vault:      ``$VaultPath``"
+$lines += "- Vault mode: $script:VaultMode"
+$lines += "- Repo:       ``$RepoName``"
+$lines += "- Summary:    $passCount PASS / $failCount FAIL / $skipCount SKIP ($total total)"
 $lines += ""
 $lines += "| # | Title | Status | Time | Note |"
 $lines += "|---|---|---|---|---|"
@@ -325,10 +359,17 @@ foreach ($r in $script:Results) {
   $lines += "| $($r.Id) | $($r.Title) | $($r.Status) | $($r.Time) | $($r.Note) |"
 }
 $lines += ""
+
+# Verdict line: distinguish a full acceptance run (user-provided vault) from
+# a smoke run (bundled fixture). The SEMI-SYNTHETIC suffix is load-bearing —
+# v1 closure requires at least one rerun with a real Obsidian vault.
+$syntheticNote = if ($script:VaultMode -eq "bundled-fixture") {
+  " (v1 acceptance evidence SEMI-SYNTHETIC — rerun with -VaultPath on a real Obsidian vault to complete)"
+} else { "" }
 if ($failCount -eq 0 -and $skipCount -eq 0) {
-  $lines += "**v1 acceptance complete.** All 7 criteria verified on Windows 11 Home."
+  $lines += "**v1 acceptance complete.** All 7 criteria verified on Windows 11 Home.$syntheticNote"
 } elseif ($failCount -eq 0) {
-  $lines += "Partial pass. $skipCount step(s) skipped — rerun without ``-SkipPush`` to cover #6 + #7."
+  $lines += "Partial pass. $skipCount step(s) skipped — rerun without ``-SkipPush`` to cover #6 + #7.$syntheticNote"
 } else {
   $lines += "**v1 acceptance BLOCKED.** $failCount step(s) failed. See CLAUDE.md Active Risks + docs/windows-rehearsal.md 'If something fails' for triage."
 }
