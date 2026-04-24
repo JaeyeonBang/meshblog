@@ -79,6 +79,34 @@ export function parseAstroBase(content: string): string | null {
   return slug ? slug : null
 }
 
+// ── Keyless build pipeline ────────────────────────────────────────────────────
+
+/**
+ * Ordered list of commands runInit executes for a non-empty vault. Exported
+ * so tests can lock the order as a contract — the plan flagged that
+ * build-backlinks + build-og used to be missing and fork users got an empty
+ * /graph Backlinks mode + broken OG previews as a result.
+ *
+ * Matches package.json's `refresh` script order. Each tuple is
+ * [human-readable-label, shell-command].
+ *
+ * - build-tokens: design.md → src/styles/tokens.css (stale CSS otherwise)
+ * - build-index: markdown → SQLite (--skip-embed --skip-concepts keyless)
+ * - build-backlinks: wikilinks → public/graph/backlinks.json (empty
+ *   Backlinks mode on /graph otherwise)
+ * - export-graph: SQLite → public/graph/{notes,concepts}.json
+ * - build-og: OG images for link previews (missing otherwise)
+ * - astro build: final static site
+ */
+export const KEYLESS_PIPELINE: ReadonlyArray<readonly [string, string]> = [
+  ["build-tokens", "bun run build-tokens"],
+  ["build-index", "bun run build-index -- --skip-embed --skip-concepts"],
+  ["build-backlinks", "bun run build-backlinks"],
+  ["export-graph", "bun run export-graph"],
+  ["build-og", "bun run build-og"],
+  ["astro build", "bunx astro build"],
+] as const
+
 // ── Exported helper for unit tests ────────────────────────────────────────────
 
 /**
@@ -400,27 +428,8 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
         env: { ...process.env },
       })
     } else {
-      // Pipeline mirrors package.json's `refresh` script so forks produce
-      // the same artifacts CI does on `main` pushes:
-      //   tokens → index → backlinks → graph → og → astro build
-      //
-      // - build-tokens: design.md → src/styles/tokens.css (stale CSS otherwise)
-      // - build-index: markdown → SQLite (--skip-embed --skip-concepts keyless)
-      // - build-backlinks: wikilinks → public/graph/backlinks.json (empty
-      //   Backlinks mode on /graph otherwise)
-      // - export-graph: SQLite → public/graph/{notes,concepts}.json
-      // - build-og: OG images for link previews (missing otherwise)
-      // - astro build: final static site
       console.log("[init] Running keyless build pipeline …")
-      const pipeline: Array<[string, string]> = [
-        ["build-tokens", "bun run build-tokens"],
-        ["build-index", "bun run build-index -- --skip-embed --skip-concepts"],
-        ["build-backlinks", "bun run build-backlinks"],
-        ["export-graph", "bun run export-graph"],
-        ["build-og", "bun run build-og"],
-        ["astro build", "bunx astro build"],
-      ]
-      for (const [label, cmd] of pipeline) {
+      for (const [label, cmd] of KEYLESS_PIPELINE) {
         console.log(`[init] ${label} …`)
         execSync(cmd, {
           cwd: REPO_ROOT,
