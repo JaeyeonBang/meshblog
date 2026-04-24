@@ -28,6 +28,8 @@ import { getReadingStats } from '../../lib/word-count'
 import { withBase } from '../../lib/url'
 import { injectLedeClass } from '../../lib/lede'
 import { stripLeadingH1 } from '../../lib/markdown/strip-title'
+import { extractToc } from '../../lib/markdown/extract-toc'
+import { plainExcerpt } from '../../lib/markdown/plain-excerpt'
 import { getNoteMeshNodes } from '../../lib/mesh-data'
 import '../../styles/article.css'
 
@@ -104,7 +106,7 @@ const readingMinutes = estimateReadingMinutes(note.content)
 const { words: wordCount } = getReadingStats(note.content)
 const updatedDate = new Date(note.updated_at)
 const updatedYYYYMM = `${updatedDate.getFullYear()}-${String(updatedDate.getMonth() + 1).padStart(2, '0')}`
-const excerpt = stripLeadingH1(note.content).replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
+const excerpt = plainExcerpt(note.content, 160)
 const wikilinkResolver = buildNoteResolver(listAllLinkable())
 const contentHtml = await renderMarkdownToHtml(stripLeadingH1(note.content), {
   resolver: wikilinkResolver,
@@ -126,6 +128,13 @@ const relatedItems = related.map((r, i) => ({
   title: r.title,
   meta: '',
   href: resolveHref(r.id, r.slug),
+}))
+
+// TOC items from the rendered article HTML (H2/H3 with ids from rehype-slug).
+const tocItems = extractToc(contentHtml).map((e) => ({
+  label: e.label,
+  level: e.level === 2 ? 1 as const : 2 as const,
+  href: `#${e.id}`,
 }))
 
 // Per-note subgraph: center = this note, neighbors = up to 5 inbound/outbound links.
@@ -202,6 +211,9 @@ const meshNodes = getNoteMeshNodes({
     </article>
 
     <aside class="reader-aside">
+      {tocItems.length > 0 && (
+        <TOC label="contents" items={tocItems} />
+      )}
       {backlinks.length > 0 && (
         <section aria-label="backlinks" class="backlinks-section">
           <h3 class="mono-eyebrow">referenced by · {backlinks.length}</h3>

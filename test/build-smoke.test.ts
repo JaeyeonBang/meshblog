@@ -249,4 +249,80 @@ describe("build smoke", { timeout: 180_000 }, () => {
 
     expect(violations, `Title consistency violations:\n  ${violations.join("\n  ")}`).toEqual([])
   })
+
+  // ── P1: TOC extraction actually works ───────────────────────────────────────
+  //
+  // Regression gate: previously the TOC scaffold was `[{label:'도입', level:1}]`
+  // hardcoded in [slug].astro, causing 1-item TOC on every article regardless
+  // of heading count. Now TOC is extracted from rendered HTML via extractToc().
+
+  it("at least one note page renders a TOC with more than 1 entry", () => {
+    const notesDir = join(DIST, "notes")
+    const slugDirs = readdirSync(notesDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+    let maxEntries = 0
+    for (const slug of slugDirs) {
+      const file = join(notesDir, slug, "index.html")
+      if (!existsSync(file)) continue
+      const html = readFileSync(file, "utf-8")
+      // Count TOC anchor links inside .reader-aside that link to heading anchors (#id).
+      // The TOC renders <a href="#slug-id"> for each heading extracted by extractToc().
+      const asideBlock = html.match(/<aside[^>]*class="[^"]*reader-aside[^"]*"[^>]*>([\s\S]*?)<\/aside>/)
+      if (!asideBlock) continue
+      const linkCount = (asideBlock[1].match(/<a[^>]*href="#[^"]+"/g) || []).length
+      if (linkCount > maxEntries) maxEntries = linkCount
+    }
+    expect(maxEntries, "at least one note page should have a multi-entry TOC").toBeGreaterThan(1)
+  })
+
+  // ── P2: excerpt (meta description) must not contain H2 heading text ──────
+  //
+  // Regression gate: excerpt sliced right into a mid-body H2 on post 26,
+  // leaking "실제로 부닥친 문제들" into the preview. plainExcerpt() strips
+  // all heading lines before slicing.
+
+  it("no article meta description leaks H2 heading text", () => {
+    function walk(dir: string): string[] {
+      const acc: string[] = []
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name.startsWith(".")) continue
+        const full = join(dir, entry.name)
+        if (entry.isDirectory()) acc.push(...walk(full))
+        else if (entry.name === "index.html") acc.push(full)
+      }
+      return acc
+    }
+    const articleFiles = [
+      ...walk(join(DIST, "notes")),
+      ...walk(join(DIST, "posts")),
+    ]
+    expect(articleFiles.length).toBeGreaterThan(0)
+    const violations: string[] = []
+    for (const file of articleFiles) {
+      const html = readFileSync(file, "utf-8")
+      const descM = html.match(/<meta name="description" content="([^"]+)"/)
+      if (!descM) continue
+      const desc = descM[1]
+      // Collect all H2 plain text on this page
+      const h2s = Array.from(html.matchAll(/<h2\b[^>]*>([\s\S]*?)<\/h2>/g))
+        .map(m => m[1].replace(/<[^>]+>/g, '').trim())
+        .filter(t => t.length > 5)
+      for (const h2 of h2s) {
+        if (desc.includes(h2)) {
+          violations.push(`${file.slice(DIST.length + 1)}: description contains H2 text "${h2}"`)
+        }
+      }
+    }
+    expect(violations, `Excerpt leaks:\n  ${violations.join("\n  ")}`).toEqual([])
+  })
+
+  // ── P3: /graph page has a back-to-posts affordance ────────────────────
+  it("/graph page has a visible back-to-posts link", () => {
+    const html = readFileSync(join(DIST, "graph", "index.html"), "utf-8")
+    // Check that both graph-back class and /posts href are present on the same <a> tag
+    // (attribute order may vary from Astro's renderer)
+    expect(html).toMatch(/class="graph-back"/)
+    expect(html).toMatch(/href="[^"]*\/posts\/?[^"]*"[^>]*class="graph-back"|class="graph-back"[^>]*href="[^"]*\/posts\/?[^"]*"/)
+  })
 })

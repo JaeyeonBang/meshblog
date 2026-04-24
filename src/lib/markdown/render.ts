@@ -3,6 +3,7 @@ import remarkParse from 'remark-parse'
 import remarkGfm from 'remark-gfm'
 import remarkRehype from 'remark-rehype'
 import rehypeRaw from 'rehype-raw'
+import rehypeSlug from 'rehype-slug'
 import rehypeStringify from 'rehype-stringify'
 import { preprocessMarkdown, type PreprocessOptions } from './preprocess'
 
@@ -16,6 +17,7 @@ export async function renderMarkdownToHtml(
     .use(remarkGfm)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
+    .use(rehypeSlug)
     .use(rehypeStringify, { allowDangerousHtml: true })
     .process(processed)
   return String(file)

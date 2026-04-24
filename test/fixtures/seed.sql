@@ -69,7 +69,23 @@ VALUES
   ('fixture-graph-algorithms',
    'fixture-graph-algorithms',
    'Graph Algorithms with Graphology',
-   'Graphology is a JavaScript graph library. PageRank scores nodes by connectivity. Louvain clustering groups nodes into communities. Use graphology-metrics for centrality calculations. Graph ideas show up in retrieval too — see [[fixture-rag-overview]].',
+   '# Graph Algorithms with Graphology
+
+## Overview of the Library
+
+Graphology is a JavaScript graph library. It provides a flexible and performant graph data structure.
+
+## Computing Node Importance via Iteration
+
+The algorithm scores nodes by connectivity. High-degree nodes accumulate more score through iterative propagation.
+
+## Community Detection Methods
+
+Louvain clustering groups nodes into communities. Use graphology-metrics for centrality calculations.
+
+## Connections to Information Retrieval
+
+Graph ideas show up in retrieval too — see [[fixture-rag-overview]].',
    'abc0000000000000000000000000000000000000000000000000000000005',
    'content/notes',
    '["graph","algorithms","graphology","pagerank"]',

@@ -16,8 +16,11 @@ import { withBase } from '../lib/url'
   <div class="graph-layout">
     <!-- ── Header ──────────────────────────────────────── -->
     <div class="graph-header">
-      <h1>Knowledge mesh</h1>
-      <span class="header-meta" id="graphMeta">mode: note · L1</span>
+      <a href={withBase('/posts')} class="graph-back">← posts</a>
+      <div class="graph-header-row">
+        <h1>Knowledge mesh</h1>
+        <span class="header-meta" id="graphMeta">mode: note · L1</span>
+      </div>
     </div>
 
     <!-- ── Controls ───────────────────────────────────── -->
@@ -331,10 +334,36 @@ import { withBase } from '../lib/url'
     padding: var(--space-6) 0 var(--space-5);
     border-bottom: 1px solid var(--ink);
     display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: 0;
+  }
+
+  .graph-header-row {
+    display: flex;
     align-items: baseline;
     gap: var(--space-6);
     flex-wrap: wrap;
-    margin-bottom: 0;
+  }
+
+  .graph-back {
+    display: inline-block;
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: lowercase;
+    color: var(--ink-3);
+    margin-bottom: var(--space-2);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .graph-back:hover {
+    color: var(--ink);
+  }
+
+  .graph-back:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   .graph-header h1 {
