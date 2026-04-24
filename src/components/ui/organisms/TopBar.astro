@@ -50,11 +50,7 @@ const links = [
     title="Help · ?"
     onclick="window.dispatchEvent(new Event('help:open'))"
   >
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.9.4-1 1.2-1 1.7"/>
-      <circle cx="12" cy="17" r="0.5" fill="currentColor"/>
-    </svg>
+    <span class="kbd">?</span>
   </button>
   {showSearch && (
     <button
