@@ -52,7 +52,16 @@ This repo is a **GitHub Pages–deployed personal blog harness** (https://jaeyeo
 - D5 `/new-post` + `/refresh` — `scripts/new-post.ts` + npm `refresh` script (`build-tokens → build-index → build-backlinks-if-exists → preview`) both wired.
 - D6 daily audit — `.github/workflows/daily-audit.yml` runs on cron + opens auto-PR with audit report (last success 2026-04-22 10:21).
 
-**Remaining v1 work**: week 4.5 fork-from-zero rehearsal on a clean Windows 11 home — see `docs/windows-rehearsal.md` for the step-by-step checklist. Everything automatable has been automated (see the matrix at the bottom of that doc); what's left is genuinely OS-specific. `src/lib/rag/wiki.ts` `synthesizeWikiArticle` stays Phase 4 / v2 scope.
+**Remaining v1 work**: week 4.5 fork-from-zero rehearsal on a clean Windows 11 home — see `docs/windows-rehearsal.md` for the step-by-step checklist. One-line runner: `iwr <raw-url>/scripts/windows-rehearsal.ps1 -OutFile rehearsal.ps1; .\rehearsal.ps1`. Flags:
+
+- `-VaultPath <path>` (optional) — your Obsidian vault. Omit to use the bundled `test/e2e/fixture-vault/` (report marked SEMI-SYNTHETIC — real vault needed to close v1).
+- `-RepoName <owner/name>` (optional) — default `<you>/meshblog-rehearsal-YYYYMMDD`.
+- `-WorkDir <path>` (optional) — clone target, default `$HOME\meshblog-rehearsal`.
+- `-SkipPush` — skip criteria #6 + #7 (no throwaway GitHub fork). Marks those steps SKIP in the report.
+- `-Private` — create the fork private instead of public. Requires GitHub Pro/Enterprise for GH Pages to work.
+- `-CleanupAfter` — after writing the report, kill the spawned dev server (via `.init-dev.pid`), remove `$WorkDir`, prompt before deleting the fork repo.
+
+Everything automatable has been automated (see the matrix at the bottom of that doc); what's left is genuinely OS-specific. `src/lib/rag/wiki.ts` `synthesizeWikiArticle` stays Phase 4 / v2 scope.
 
 ## Core commands
 
