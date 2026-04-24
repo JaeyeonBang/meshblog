@@ -59,4 +59,27 @@ describe('HelpModal.astro', () => {
     const shadowUses = (src.match(/var\(--shadow-hard\)/g) || []).length
     expect(shadowUses).toBe(1)
   })
+
+  it('contains the "what is meshblog" intro section', () => {
+    expect(src).toMatch(/help-section--intro/)
+    expect(src).toMatch(/Obsidian 볼트를 정적 사이트로/)
+    expect(src).toMatch(/help-intro-en/)
+    expect(src).toMatch(/Claude Code skills audit it daily/)
+  })
+
+  it('fork section has 3 numbered steps, not a single paragraph', () => {
+    expect(src).toMatch(/<ol class="help-steps">/)
+    const stepMatches = (src.match(/<li>\s*<span class="help-step-num">/g) || []).length
+    expect(stepMatches).toBe(3)
+    // Specific step anchors
+    expect(src).toMatch(/gh repo fork JaeyeonBang\/meshblog/)
+    expect(src).toMatch(/claude \/init/)
+    expect(src).toMatch(/git push origin main/)
+  })
+
+  it('preserves the Fork on GitHub external link', () => {
+    // After expanding to steps, the canonical CTA link must still be present.
+    expect(src).toMatch(/href="https:\/\/github\.com\/JaeyeonBang\/meshblog"/)
+    expect(src).toMatch(/target="_blank"/)
+  })
 })

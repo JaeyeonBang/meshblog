@@ -14,6 +14,15 @@
       </button>
     </div>
 
+    <section class="help-section help-section--intro" aria-label="Meshblog overview">
+      <p class="help-intro">
+        meshblog은 Obsidian 볼트를 정적 사이트로 내보내는 오픈소스 템플릿입니다.
+        Claude Code 스킬이 매일 벽장을 감사하고, 깨진 링크와 드래프트 누출을 잡아준다.
+        <br />
+        <span class="help-intro-en">meshblog turns your Obsidian vault into a public site. Claude Code skills audit it daily — broken links, draft leaks, stale metadata — and tell you what was fixed.</span>
+      </p>
+    </section>
+
     <section class="help-section" aria-labelledby="help-s1">
       <h3 class="help-eyebrow" id="help-s1">단축키 · shortcuts</h3>
       <ul class="help-keys">
@@ -36,10 +45,21 @@
 
     <section class="help-section help-section--fork" aria-labelledby="help-s3">
       <h3 class="help-eyebrow" id="help-s3">이 템플릿 · fork this</h3>
-      <p class="help-fork">
-        이 블로그는 오픈소스 템플릿입니다. 포크해서 당신의 볼트를 연결하세요.
-        <a class="help-fork-link" href="https://github.com/JaeyeonBang/meshblog" target="_blank" rel="noopener">Fork on GitHub →</a>
-      </p>
+      <ol class="help-steps">
+        <li>
+          <span class="help-step-num">1</span>
+          <span class="help-step-body">GitHub에서 포크 · <code>gh repo fork JaeyeonBang/meshblog</code></span>
+        </li>
+        <li>
+          <span class="help-step-num">2</span>
+          <span class="help-step-body">클론 + <code>claude /init</code> · vault 경로 연결</span>
+        </li>
+        <li>
+          <span class="help-step-num">3</span>
+          <span class="help-step-body"><code>git push origin main</code> · GitHub Pages가 자동 배포</span>
+        </li>
+      </ol>
+      <a class="help-fork-link" href="https://github.com/JaeyeonBang/meshblog" target="_blank" rel="noopener">Fork on GitHub →</a>
     </section>
 
     <div class="help-foot" aria-hidden="true">
@@ -172,13 +192,6 @@
     padding: 1px 4px;
     border: 1px solid var(--rule-soft);
   }
-  .help-fork {
-    margin: 0;
-    font-family: var(--f-serif);
-    font-size: var(--fs-sm);
-    color: var(--ink-2);
-    line-height: 1.6;
-  }
   .help-fork-link {
     display: inline-block;
     margin-left: 6px;
@@ -212,6 +225,61 @@
     .help-terms > div {
       grid-template-columns: 90px 1fr;
     }
+  }
+  .help-section--intro {
+    border-bottom: 1px solid var(--rule-soft);
+    padding: 16px 18px;
+  }
+  .help-intro {
+    margin: 0;
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink);
+    line-height: 1.55;
+  }
+  .help-intro-en {
+    display: block;
+    margin-top: 6px;
+    color: var(--ink-3);
+    font-size: var(--fs-xs);
+    font-style: italic;
+  }
+  .help-steps {
+    margin: 0 0 10px;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .help-steps li {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--f-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .help-step-num {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--ink);
+    border: 1px solid var(--ink);
+    line-height: 1;
+  }
+  .help-step-body code {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    background: var(--paper-2);
+    padding: 1px 4px;
+    border: 1px solid var(--rule-soft);
   }
 </style>
 
