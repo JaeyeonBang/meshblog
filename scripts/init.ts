@@ -17,6 +17,7 @@
  */
 
 import * as fs from "node:fs"
+import * as net from "node:net"
 import * as path from "node:path"
 import { createInterface, type Interface as ReadlineInterface } from "node:readline"
 import { execSync, spawn } from "node:child_process"
@@ -27,6 +28,50 @@ const REPO_ROOT = path.resolve(import.meta.dirname, "..")
 const CONTENT_NOTES = path.join(REPO_ROOT, "content", "notes")
 const ENV_LOCAL = path.join(REPO_ROOT, ".env.local")
 const DEPLOY_YML = path.join(REPO_ROOT, ".github", "workflows", "deploy.yml")
+const ASTRO_CONFIG = path.join(REPO_ROOT, "astro.config.mjs")
+
+// ── Platform-scoped spawn options (test seam) ────────────────────────────────
+
+/**
+ * Dev server spawn options per platform.
+ *
+ * Windows puts parent + child in the same job object with `detached: false`,
+ * so when the parent `process.exit(0)`s (which /init does after print-and-spawn),
+ * the kernel kills the orphaned child immediately. `detached: true` creates a
+ * new console + process group, letting the child survive. `stdio: "ignore"`
+ * is required for new-console detachment on Windows — it gives up log streaming
+ * in exchange for the server actually staying up.
+ *
+ * On non-Windows, `detached: false` + `stdio: "inherit"` preserves the current
+ * behavior: dev logs stream to the operator's terminal.
+ */
+export function getDevSpawnOptions(
+  platform: NodeJS.Platform,
+): { detached: boolean; stdio: "inherit" | "ignore" } {
+  if (platform === "win32") {
+    return { detached: true, stdio: "ignore" }
+  }
+  return { detached: false, stdio: "inherit" }
+}
+
+// ── astro.config.mjs base parser (test seam) ──────────────────────────────────
+
+/**
+ * Extract the subpath from `base: '/foo'` or `base: "/foo"` in astro.config.mjs.
+ * Returns the slug without slashes, or null if the field is missing or expressed
+ * as anything other than an immediate string literal.
+ *
+ * Only matches when `base:` is directly followed by whitespace and a quoted
+ * string literal. Template literals, function calls, and env-based expressions
+ * (`process.env.BASE ?? '/default'`) return null. Accepted as-is because:
+ * (a) /init's caller always falls back to `/meshblog/` + a stderr warning
+ *     when this returns null, so downstream is safe,
+ * (b) full JS parsing here is scope creep for a one-shot read at init time.
+ */
+export function parseAstroBase(content: string): string | null {
+  const m = content.match(/base:\s*['"]\/([^'"]+)['"]/)
+  return m?.[1] ?? null
+}
 
 // ── Exported helper for unit tests ────────────────────────────────────────────
 
@@ -281,7 +326,21 @@ async function promptRepoName(ask: Ask): Promise<string | null> {
 
 // ── Main entry ────────────────────────────────────────────────────────────────
 
-async function main(): Promise<void> {
+/**
+ * Options for `runInit`. All fields optional — when omitted, the behavior
+ * matches the original interactive `/init` flow.
+ *
+ * Tests use `vaultPath` + `repoName` to bypass readline prompts, and
+ * `skipSpawn` to return before launching the dev server (no background
+ * processes to clean up).
+ */
+export interface RunInitOptions {
+  vaultPath?: string
+  repoName?: string | null
+  skipSpawn?: boolean
+}
+
+export async function runInit(opts: RunInitOptions = {}): Promise<void> {
   console.log("\n=== meshblog /init ===\n")
 
   const rl = createInterface({ input: process.stdin })
@@ -289,10 +348,11 @@ async function main(): Promise<void> {
 
   try {
     // 1. Vault path
-    const vaultPath = await promptVaultPath(ask)
+    const vaultPath = opts.vaultPath ?? (await promptVaultPath(ask))
 
     // 2. GitHub repo name
-    const repoName = await promptRepoName(ask)
+    const repoName =
+      opts.repoName !== undefined ? opts.repoName : await promptRepoName(ask)
 
     rl.close()
 
@@ -326,38 +386,161 @@ async function main(): Promise<void> {
         env: { ...process.env },
       })
     } else {
+      // Pipeline mirrors package.json's `refresh` script so forks produce
+      // the same artifacts CI does on `main` pushes:
+      //   tokens → index → backlinks → graph → og → astro build
+      //
+      // - build-tokens: design.md → src/styles/tokens.css (stale CSS otherwise)
+      // - build-index: markdown → SQLite (--skip-embed --skip-concepts keyless)
+      // - build-backlinks: wikilinks → public/graph/backlinks.json (empty
+      //   Backlinks mode on /graph otherwise)
+      // - export-graph: SQLite → public/graph/{notes,concepts}.json
+      // - build-og: OG images for link previews (missing otherwise)
+      // - astro build: final static site
       console.log("[init] Running keyless build pipeline …")
-      execSync("bun run build-index -- --skip-embed --skip-concepts", {
-        cwd: REPO_ROOT,
-        stdio: "inherit",
-        env: { ...process.env },
-      })
-      execSync("bun run export-graph", {
-        cwd: REPO_ROOT,
-        stdio: "inherit",
-        env: { ...process.env },
-      })
-      execSync("bunx astro build", {
-        cwd: REPO_ROOT,
-        stdio: "inherit",
-        env: { ...process.env, NODE_ENV: "production" },
-      })
+      const pipeline: Array<[string, string]> = [
+        ["build-tokens", "bun run build-tokens"],
+        ["build-index", "bun run build-index -- --skip-embed --skip-concepts"],
+        ["build-backlinks", "bun run build-backlinks"],
+        ["export-graph", "bun run export-graph"],
+        ["build-og", "bun run build-og"],
+        ["astro build", "bunx astro build"],
+      ]
+      for (const [label, cmd] of pipeline) {
+        console.log(`[init] ${label} …`)
+        execSync(cmd, {
+          cwd: REPO_ROOT,
+          stdio: "inherit",
+          env:
+            label === "astro build"
+              ? { ...process.env, NODE_ENV: "production" }
+              : { ...process.env },
+        })
+      }
     }
 
-    // 7. Spawn dev server (non-blocking)
+    if (opts.skipSpawn) {
+      console.log("\n[init] Done (skipSpawn mode — dev server not started).\n")
+      return
+    }
+
+    // 7. Spawn dev server (non-blocking). Platform-specific options: see
+    //    getDevSpawnOptions jsdoc for why Windows needs detached:true.
     console.log("\n[init] Starting dev server …")
+    const spawnOpts = getDevSpawnOptions(process.platform)
     const dev = spawn("bun", ["run", "dev"], {
       cwd: REPO_ROOT,
-      stdio: "inherit",
-      detached: false,
+      ...spawnOpts,
       env: { ...process.env },
     })
     dev.unref()
 
-    console.log("\n[init] Done. Open: http://localhost:4321/meshblog/\n")
-    process.exit(0)
+    // Write the PID so the orphaned dev server can be stopped without
+    // hunting through Task Manager. Windows especially — detached:true
+    // means no parent-child link, and `bun run dev` spawns nested
+    // processes, so we record the spawn-level PID and tell the operator
+    // how to kill it.
+    if (dev.pid !== undefined) {
+      const pidPath = path.join(REPO_ROOT, ".init-dev.pid")
+      try {
+        fs.writeFileSync(pidPath, String(dev.pid), "utf-8")
+        console.log(`[init] dev PID ${dev.pid} written to .init-dev.pid`)
+        if (process.platform === "win32") {
+          console.log(
+            "[init] To stop: Stop-Process -Id (Get-Content .init-dev.pid)",
+          )
+        } else {
+          console.log("[init] To stop: kill $(cat .init-dev.pid)")
+        }
+      } catch (err) {
+        console.error(`[init] WARNING: could not write .init-dev.pid: ${err}`)
+      }
+    }
+
+    // Resolve the site's base path from astro.config.mjs. Forks with custom
+    // repo names patch this field; old behavior hardcoded /meshblog/ and
+    // printed a URL that 404'd. Fall back to /meshblog/ (original default)
+    // when the file is missing or the base field is dynamic — with a stderr
+    // warning so the drift is not silent.
+    const baseSlug = resolveAstroBase()
+    const openUrl = `http://localhost:4321/${baseSlug}/`
+
+    // Probe port 4321 so silent spawn failures (missing bun, port in use,
+    // astro crash) become visible before we tell the operator "Open: ...".
+    // Fail-soft: the dev server may still be booting at probe time; a failed
+    // probe is a warning, not an error exit.
+    const probeOk = await probePort(4321, 2000)
+    if (probeOk) {
+      console.log(`\n[init] Done. Open: ${openUrl}\n`)
+    } else {
+      console.error(
+        `\n[init] WARNING: dev server not responding on port 4321 after 2s. ` +
+          `PID ${dev.pid ?? "?"}. The server may still be starting — try opening ` +
+          `${openUrl} in a moment. If it stays unreachable, ` +
+          `check that bun is on PATH and port 4321 is free.\n`,
+      )
+    }
   } catch (err) {
     rl.close()
+    throw err
+  }
+}
+
+/**
+ * Read astro.config.mjs and return the base slug (no slashes) via
+ * parseAstroBase. Falls back to "meshblog" with a stderr warning when the
+ * file is missing or the base field can't be parsed — so a silent drift
+ * (e.g., someone switches to a template literal) surfaces immediately
+ * instead of producing a 404 URL.
+ */
+function resolveAstroBase(): string {
+  try {
+    if (!fs.existsSync(ASTRO_CONFIG)) {
+      console.error(
+        "[init] WARNING: astro.config.mjs not found — using default base /meshblog/",
+      )
+      return "meshblog"
+    }
+    const content = fs.readFileSync(ASTRO_CONFIG, "utf-8")
+    const parsed = parseAstroBase(content)
+    if (parsed === null) {
+      console.error(
+        "[init] WARNING: could not parse astro.config.mjs base field " +
+          "(dynamic expression?) — falling back to /meshblog/",
+      )
+      return "meshblog"
+    }
+    return parsed
+  } catch (err) {
+    console.error(`[init] WARNING: failed to read astro.config.mjs: ${err}`)
+    return "meshblog"
+  }
+}
+
+/**
+ * Probe TCP port with timeout. Returns true on connect, false on timeout or
+ * ECONNREFUSED. Used after dev spawn to catch silent startup failures.
+ */
+function probePort(port: number, timeoutMs: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new net.Socket()
+    const done = (ok: boolean) => {
+      socket.destroy()
+      resolve(ok)
+    }
+    socket.setTimeout(timeoutMs)
+    socket.once("connect", () => done(true))
+    socket.once("timeout", () => done(false))
+    socket.once("error", () => done(false))
+    socket.connect(port, "127.0.0.1")
+  })
+}
+
+async function main(): Promise<void> {
+  try {
+    await runInit()
+    process.exit(0)
+  } catch (err) {
     console.error("[init] Fatal error:", err)
     process.exit(1)
   }
