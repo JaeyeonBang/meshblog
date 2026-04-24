@@ -13,6 +13,7 @@ import { listPosts, listNotes, getHomepageQa } from '../lib/pages/index.ts'
 import { withBase } from '../lib/url'
 import { getHomeMeshNodes } from '../lib/mesh-data'
 import { stripLeadingH1 } from '../lib/markdown/strip-title'
+import { plainExcerpt } from '../lib/markdown/plain-excerpt'
 
 const posts = listPosts().slice(0, 5)
 const notes = listNotes().slice(0, 6)
@@ -76,7 +77,7 @@ const meshNodes = getHomeMeshNodes(withBase)
             number={String(i + 1).padStart(2, '0')}
             href={withBase(`/posts/${post.slug}`)}
             title={post.title}
-            excerpt={stripLeadingH1(post.content).replace(/[#*`_~\[\]]/g, '').slice(0, 120).trimEnd()}
+            excerpt={plainExcerpt(post.content, 120)}
             date={new Date(post.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
             tags={post.tags ?? []}
             featured={i === 0}

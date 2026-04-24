@@ -5,6 +5,7 @@ import { listPosts } from '../../lib/pages/index.ts'
 import type { PostRow } from '../../lib/pages/index.ts'
 import { withBase } from '../../lib/url'
 import { stripLeadingH1 } from '../../lib/markdown/strip-title'
+import { plainExcerpt } from '../../lib/markdown/plain-excerpt'
 
 const posts: PostRow[] = listPosts()
 const count = posts.length
@@ -51,7 +52,7 @@ const latestDate = posts.length > 0
           number={String(i + 1).padStart(2, '0')}
           href={withBase(`/posts/${post.slug}`)}
           title={post.title}
-          excerpt={stripLeadingH1(post.content).replace(/[#*`_~\[\]]/g, '').slice(0, 120).trimEnd()}
+          excerpt={plainExcerpt(post.content, 120)}
           date={new Date(post.created_at).toLocaleDateString('ko-KR', {
             year: 'numeric',
             month: '2-digit',

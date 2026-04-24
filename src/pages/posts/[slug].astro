@@ -26,6 +26,8 @@ import { getReadingStats } from '../../lib/word-count'
 import { withBase } from '../../lib/url'
 import { injectLedeClass } from '../../lib/lede'
 import { stripLeadingH1 } from '../../lib/markdown/strip-title'
+import { extractToc } from '../../lib/markdown/extract-toc'
+import { plainExcerpt } from '../../lib/markdown/plain-excerpt'
 import { getNoteMeshNodes } from '../../lib/mesh-data'
 import '../../styles/article.css'
 
@@ -104,7 +106,7 @@ const formattedDate = createdDate.toLocaleDateString('ko-KR', {
   month: '2-digit',
   day: '2-digit',
 })
-const excerpt = stripLeadingH1(post.content).replace(/[#*`_~\[\]]/g, '').slice(0, 160).trimEnd()
+const excerpt = plainExcerpt(post.content, 160)
 const wikilinkResolver = buildNoteResolver(listAllLinkable())
 const contentHtml = await renderMarkdownToHtml(stripLeadingH1(post.content), {
   resolver: wikilinkResolver,
@@ -128,10 +130,12 @@ const relatedItems = related.map((r, i) => ({
   href: resolveHref(r.id),
 }))
 
-// TOC items (static scaffold — real TOC requires runtime heading extraction)
-const tocItems = [
-  { label: '도입', level: 1 as const },
-]
+// TOC items from the rendered article HTML (H2/H3 with ids from rehype-slug).
+const tocItems = extractToc(contentHtml).map((e) => ({
+  label: e.label,
+  level: e.level === 2 ? 1 as const : 2 as const,
+  href: `#${e.id}`,
+}))
 
 // Per-post subgraph: center = this post, neighbors = up to 5 inbound/outbound links.
 // Returns [] for orphan posts — MiniMesh is hidden in that case.
