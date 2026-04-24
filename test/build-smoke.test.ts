@@ -193,4 +193,60 @@ describe("build smoke", { timeout: 180_000 }, () => {
     const html = readFileSync(join(notesDir, slugWithHtml!, "index.html"), "utf-8")
     expect(html).toMatch(/\d+ min ·/)
   })
+
+  // ── Title consistency (Round 7 #4 Consistency & Standards regression gate) ──
+  //
+  // Every dist HTML page must satisfy:
+  //   1. <title> present, non-empty
+  //   2. Home (dist/index.html) is exactly "meshblog"
+  //   3. Every other page ends with "· meshblog" — the brand suffix
+  //   4. No title may use an em-dash (—) as a separator; "·" is canonical
+  //
+  // Why: title separator drifted to a mix of "·" and "—" across /graph, /404,
+  // and article pages had no brand suffix at all — caught by Round 7 QA sweep.
+
+  it("all dist HTML pages use consistent <title> pattern", () => {
+    function findHtmlFiles(dir: string, acc: string[] = []): string[] {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name.startsWith(".")) continue
+        const full = join(dir, entry.name)
+        if (entry.isDirectory()) findHtmlFiles(full, acc)
+        else if (entry.name.endsWith(".html")) acc.push(full)
+      }
+      return acc
+    }
+
+    const htmlFiles = findHtmlFiles(DIST)
+    expect(htmlFiles.length).toBeGreaterThan(0)
+
+    const violations: string[] = []
+    for (const file of htmlFiles) {
+      const rel = file.slice(DIST.length + 1)
+      const html = readFileSync(file, "utf-8")
+      const m = html.match(/<title>([^<]*)<\/title>/)
+      if (!m) {
+        violations.push(`${rel}: missing <title>`)
+        continue
+      }
+      const title = m[1].trim()
+      if (title.length === 0) {
+        violations.push(`${rel}: empty <title>`)
+        continue
+      }
+      if (title.includes("—")) {
+        violations.push(`${rel}: em-dash in <title> — use "·" as separator (${JSON.stringify(title)})`)
+      }
+      if (rel === "index.html") {
+        if (title !== "meshblog") {
+          violations.push(`${rel}: home title must be exactly "meshblog", got ${JSON.stringify(title)}`)
+        }
+        continue
+      }
+      if (!title.endsWith("· meshblog")) {
+        violations.push(`${rel}: title ${JSON.stringify(title)} must end with "· meshblog"`)
+      }
+    }
+
+    expect(violations, `Title consistency violations:\n  ${violations.join("\n  ")}`).toEqual([])
+  })
 })
