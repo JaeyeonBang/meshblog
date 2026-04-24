@@ -336,16 +336,45 @@ if ($SkipPush) {
   }
   Write-Host "═══ 8 — daily audit (SKIPPED, depends on step 7) ═══" -ForegroundColor DarkYellow
 } else {
+  # Poll for the auto-PR instead of asking the operator to wait 2 minutes
+  # and answer yes/no. Idempotency: capture $dispatchTime before the
+  # workflow run and filter by `created:>$dispatchTime`, so a re-run against
+  # a fork that already has stale "Daily audit report" PRs from a previous
+  # rehearsal doesn't produce a false PASS.
   Step -Id "8" -Title "daily audit manual trigger (criterion #7)" -Auto {
     Push-Location $WorkDir
     try {
+      $dispatchTime = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
       gh workflow run daily-audit.yml --repo $RepoName 2>&1 | Out-Null
       if ($LASTEXITCODE -ne 0) { throw "workflow dispatch failed" }
-      Write-Host "  workflow dispatched. Check Actions tab in 1-2 min for a 'Daily audit report' PR."
+      Write-Host "  workflow dispatched at $dispatchTime. Polling for auto-PR…"
+
+      $query = "Daily audit report in:title created:>$dispatchTime"
+      $deadline = (Get-Date).AddMinutes(3)
+      $prUrl = $null
+      while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 15
+        $prs = gh pr list --repo $RepoName --search $query --json number,url,createdAt 2>$null
+        if ($LASTEXITCODE -eq 0 -and $prs -and $prs -ne "[]") {
+          $parsed = $prs | ConvertFrom-Json
+          if ($parsed.Count -gt 0) {
+            $prUrl = $parsed[0].url
+            break
+          }
+        }
+        $elapsed = [int]((Get-Date) - (Get-Date $dispatchTime)).TotalSeconds
+        Write-Host "    still waiting (${elapsed}s elapsed)…"
+      }
+
+      if ($prUrl) {
+        Write-Host "  auto-PR detected: $prUrl" -ForegroundColor Green
+      } else {
+        throw "no 'Daily audit report' PR appeared within 3 minutes. Check https://github.com/$RepoName/actions for the workflow run log."
+      }
     } finally {
       Pop-Location
     }
-  } -VisualPrompt "Wait ~2 minutes, then check https://github.com/$RepoName/pulls. Did an auto-PR titled 'Daily audit report' appear?"
+  }
 }
 
 # ── Report ──────────────────────────────────────────────────────────────────
