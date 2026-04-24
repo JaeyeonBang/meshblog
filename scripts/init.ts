@@ -17,6 +17,7 @@
  */
 
 import * as fs from "node:fs"
+import * as net from "node:net"
 import * as path from "node:path"
 import { createInterface, type Interface as ReadlineInterface } from "node:readline"
 import { execSync, spawn } from "node:child_process"
@@ -408,21 +409,55 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
       return
     }
 
-    // 7. Spawn dev server (non-blocking)
+    // 7. Spawn dev server (non-blocking). Platform-specific options: see
+    //    getDevSpawnOptions jsdoc for why Windows needs detached:true.
     console.log("\n[init] Starting dev server …")
+    const spawnOpts = getDevSpawnOptions(process.platform)
     const dev = spawn("bun", ["run", "dev"], {
       cwd: REPO_ROOT,
-      stdio: "inherit",
-      detached: false,
+      ...spawnOpts,
       env: { ...process.env },
     })
     dev.unref()
 
-    console.log("\n[init] Done. Open: http://localhost:4321/meshblog/\n")
+    // Probe port 4321 so silent spawn failures (missing bun, port in use,
+    // astro crash) become visible before we tell the operator "Open: ...".
+    // Fail-soft: the dev server may still be booting at probe time; a failed
+    // probe is a warning, not an error exit.
+    const probeOk = await probePort(4321, 2000)
+    if (probeOk) {
+      console.log("\n[init] Done. Open: http://localhost:4321/meshblog/\n")
+    } else {
+      console.error(
+        `\n[init] WARNING: dev server not responding on port 4321 after 2s. ` +
+          `PID ${dev.pid ?? "?"}. The server may still be starting — try opening ` +
+          `http://localhost:4321/meshblog/ in a moment. If it stays unreachable, ` +
+          `check that bun is on PATH and port 4321 is free.\n`,
+      )
+    }
   } catch (err) {
     rl.close()
     throw err
   }
+}
+
+/**
+ * Probe TCP port with timeout. Returns true on connect, false on timeout or
+ * ECONNREFUSED. Used after dev spawn to catch silent startup failures.
+ */
+function probePort(port: number, timeoutMs: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new net.Socket()
+    const done = (ok: boolean) => {
+      socket.destroy()
+      resolve(ok)
+    }
+    socket.setTimeout(timeoutMs)
+    socket.once("connect", () => done(true))
+    socket.once("timeout", () => done(false))
+    socket.once("error", () => done(false))
+    socket.connect(port, "127.0.0.1")
+  })
 }
 
 async function main(): Promise<void> {
