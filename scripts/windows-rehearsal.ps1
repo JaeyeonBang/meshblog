@@ -135,9 +135,22 @@ Step -Id "0" -Title "prereqs" -Auto {
   Require-Command node "https://nodejs.org/ (v22+)"
   Require-Command bun "irm bun.sh/install.ps1 | iex"
   Require-Command gh "winget install --id GitHub.cli"
+
   $ghStatus = gh auth status 2>&1
   if ($LASTEXITCODE -ne 0) { throw "gh not authenticated. Run: gh auth login" }
-  Write-Host "  all tools present; gh authed."
+
+  # Default `gh auth login` OAuth scope omits `workflow`. Step 8 calls
+  # `gh workflow run daily-audit.yml` which requires that scope, so check
+  # here and fail fast with the refresh command instead of silently failing
+  # 5 steps later with an opaque 403.
+  if (-not $SkipPush) {
+    $scopeText = $ghStatus -join "`n"
+    if ($scopeText -notmatch '\bworkflow\b') {
+      throw "gh is authed but missing 'workflow' scope (needed for Step 8 daily-audit dispatch). Run: gh auth refresh -s workflow"
+    }
+  }
+
+  Write-Host "  all tools present; gh authed with required scopes."
 }
 
 if (-not $RepoName) {
