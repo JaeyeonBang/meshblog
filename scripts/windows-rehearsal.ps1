@@ -13,8 +13,10 @@
   Writes a timestamped pass/fail report to docs/rehearsals/.
 
 .PARAMETER VaultPath
-  Absolute path to your Obsidian vault. Must contain at least one note with
-  [[wikilinks]], one with draft:true, and ideally one ![[image]] embed.
+  Absolute path to your Obsidian vault. Optional — if omitted, the rehearsal
+  uses the bundled test/e2e/fixture-vault/ (30 adversarial notes with
+  wikilinks, drafts, images, unicode) and marks the report SEMI-SYNTHETIC.
+  Pass a real vault path to complete v1 acceptance evidence.
 
 .PARAMETER RepoName
   GitHub repo name (owner/name) for the test fork. Will be created with
@@ -28,9 +30,25 @@
   do not want to leave a dead fork repo on GitHub. Criteria #6 + #7 will be
   marked SKIPPED in the report.
 
+.PARAMETER Private
+  Create the fork repo as private instead of public. Requires GitHub Pro or
+  Enterprise for GH Pages to work on a private repo — without it, Step 7's
+  deploy will succeed on GitHub but the live URL stays 404 and publish-verify
+  fails. Prints a warning before creating.
+
+.PARAMETER CleanupAfter
+  After writing the report, kill the spawned dev server (via .init-dev.pid),
+  remove $WorkDir, and prompt to delete the fork repo on GitHub. Prompts for
+  the fork delete are mandatory — destructive confirm is not automated.
+
 .EXAMPLE
-  # Clone this script from main and run it in one line
+  # Clone this script from main and run it in one line. No Obsidian needed
+  # — uses the bundled fixture-vault.
   iwr https://raw.githubusercontent.com/JaeyeonBang/meshblog/main/scripts/windows-rehearsal.ps1 -OutFile rehearsal.ps1
+  .\rehearsal.ps1
+
+.EXAMPLE
+  # Test against your real Obsidian vault for full v1 acceptance evidence.
   .\rehearsal.ps1 -VaultPath "C:\Users\me\Documents\ObsidianVault"
 
 .EXAMPLE
@@ -40,14 +58,17 @@
 
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)]
-  [string]$VaultPath,
+  [string]$VaultPath = "",
 
   [string]$RepoName = "",
 
   [string]$WorkDir = (Join-Path $HOME "meshblog-rehearsal"),
 
-  [switch]$SkipPush
+  [switch]$SkipPush,
+
+  [switch]$Private,
+
+  [switch]$CleanupAfter
 )
 
 $ErrorActionPreference = "Stop"
@@ -98,13 +119,27 @@ function Require-Command {
   }
 }
 
+# ── Vault resolution ─────────────────────────────────────────────────────────
+# $VaultMode distinguishes what the rehearsal actually tested when we write
+# the report. Bundled fixture = v1 acceptance #2 evidence is SEMI-SYNTHETIC;
+# user-provided vault = full acceptance. Resolved after Step 1 because the
+# fixture-vault only exists inside the cloned fork.
+$script:VaultMode = if ($VaultPath) { "user-provided" } else { "bundled-fixture" }
+
 # ── Banner ───────────────────────────────────────────────────────────────────
 Write-Host "meshblog Windows fork-from-zero rehearsal" -ForegroundColor Magenta
-Write-Host "Vault:   $VaultPath"
+if ($script:VaultMode -eq "bundled-fixture") {
+  Write-Host "Vault:   (bundled fixture-vault — 30 adversarial test notes)" -ForegroundColor Yellow
+  Write-Host "         Pass -VaultPath to test your real Obsidian vault instead." -ForegroundColor Yellow
+} else {
+  Write-Host "Vault:   $VaultPath (user-provided)"
+}
 Write-Host "WorkDir: $WorkDir"
 Write-Host ""
 
-if (-not (Test-Path $VaultPath)) {
+# When a vault path is provided, verify it exists up front. Bundled-fixture
+# resolution happens after Step 1 (the fixture lives inside the clone).
+if ($script:VaultMode -eq "user-provided" -and -not (Test-Path $VaultPath)) {
   Write-Host "Vault path does not exist: $VaultPath" -ForegroundColor Red
   exit 1
 }
@@ -115,9 +150,22 @@ Step -Id "0" -Title "prereqs" -Auto {
   Require-Command node "https://nodejs.org/ (v22+)"
   Require-Command bun "irm bun.sh/install.ps1 | iex"
   Require-Command gh "winget install --id GitHub.cli"
+
   $ghStatus = gh auth status 2>&1
   if ($LASTEXITCODE -ne 0) { throw "gh not authenticated. Run: gh auth login" }
-  Write-Host "  all tools present; gh authed."
+
+  # Default `gh auth login` OAuth scope omits `workflow`. Step 8 calls
+  # `gh workflow run daily-audit.yml` which requires that scope, so check
+  # here and fail fast with the refresh command instead of silently failing
+  # 5 steps later with an opaque 403.
+  if (-not $SkipPush) {
+    $scopeText = $ghStatus -join "`n"
+    if ($scopeText -notmatch '\bworkflow\b') {
+      throw "gh is authed but missing 'workflow' scope (needed for Step 8 daily-audit dispatch). Run: gh auth refresh -s workflow"
+    }
+  }
+
+  Write-Host "  all tools present; gh authed with required scopes."
 }
 
 if (-not $RepoName) {
@@ -125,6 +173,35 @@ if (-not $RepoName) {
   $today = (Get-Date).ToString("yyyyMMdd")
   $RepoName = "$ghUser/meshblog-rehearsal-$today"
 }
+
+# Same-day reruns against the default name conflict at Step 7's
+# `gh repo create` (409). Detect here so we can fail fast with a
+# useful suggestion instead of after ~45s of setup work.
+if (-not $SkipPush) {
+  gh repo view $RepoName 2>&1 | Out-Null
+  if ($LASTEXITCODE -eq 0) {
+    $suffix = (Get-Date).ToString("HHmm")
+    $proposed = "$RepoName-$suffix"
+    Write-Host "WARNING: repo '$RepoName' already exists on GitHub." -ForegroundColor Yellow
+    $choice = Read-Host "  [D]elete and recreate, [R]ename to '$proposed', [A]bort"
+    switch -Regex ($choice) {
+      '^[dD]' {
+        gh repo delete $RepoName --yes 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "gh repo delete failed (need delete_repo scope? run: gh auth refresh -s delete_repo)" -ForegroundColor Red
+          exit 1
+        }
+        Write-Host "  deleted $RepoName — will recreate at Step 7."
+      }
+      '^[rR]' { $RepoName = $proposed; Write-Host "  using $RepoName instead." }
+      default { Write-Host "  aborted." -ForegroundColor Red; exit 1 }
+    }
+  }
+}
+
+# Compute once; reused by Step 1 (astro.config patch), Step 2 visual prompt,
+# Step 5 (draft leak curl), Step 6 visual prompt, Step 7 (publish-verify URL).
+$script:RepoShort = ($RepoName -split '/')[-1]
 Write-Host "Repo:    $RepoName"
 
 # ── Step 1: clean fork ───────────────────────────────────────────────────────
@@ -148,7 +225,7 @@ Step -Id "1" -Title "clean fork (criterion #1 — install)" -Auto {
     # Rehearsal-only: patch astro.config.mjs's base path so the fork (whose
     # repo name won't be 'meshblog') deploys to the correct Pages subpath.
     # meshblog init doesn't do this yet — tracked as a follow-up.
-    $repoShort = ($RepoName -split '/')[-1]
+    $repoShort = $script:RepoShort
     $configPath = Join-Path $WorkDir "astro.config.mjs"
     if (Test-Path $configPath) {
       $c = Get-Content $configPath -Raw
@@ -167,6 +244,19 @@ Step -Id "1" -Title "clean fork (criterion #1 — install)" -Auto {
   }
 }
 
+# Resolve bundled-fixture path now that the clone exists. Defer from pre-Step-1
+# because the fixture-vault is bundled inside the repo, not on the operator's
+# filesystem until after degit runs.
+if ($script:VaultMode -eq "bundled-fixture") {
+  $VaultPath = Join-Path $WorkDir "test\e2e\fixture-vault"
+  if (-not (Test-Path $VaultPath)) {
+    Write-Host "Bundled fixture-vault not found at: $VaultPath" -ForegroundColor Red
+    Write-Host "The fork may be corrupted or upstream drifted. Pass -VaultPath explicitly." -ForegroundColor Red
+    exit 1
+  }
+  Write-Host "  Resolved bundled vault: $VaultPath" -ForegroundColor Yellow
+}
+
 # ── Step 2: /init with scripted input (criterion #1) ─────────────────────────
 # The init script prompts for vault path then repo name. Pipe both answers
 # via stdin. The `exit 0` on the dev spawn is unreachable because spawn is
@@ -175,7 +265,7 @@ Step -Id "2" -Title "/init two-prompt flow (criterion #1)" -Auto {
   Push-Location $WorkDir
   try {
     # Scripted stdin: vault path + repo name (short name, not owner/name)
-    $repoShort = ($RepoName -split '/')[-1]
+    $repoShort = $script:RepoShort
     $initInput = "$VaultPath`n$repoShort`n"
     # Write to temp file and pipe — PowerShell's here-string + `cmd /c` is
     # fragile with unicode paths; a temp file is robust.
@@ -201,7 +291,7 @@ Step -Id "2" -Title "/init two-prompt flow (criterion #1)" -Auto {
   } finally {
     Pop-Location
   }
-} -VisualPrompt "Open http://localhost:4321/$(($RepoName -split '/')[-1])/ in your browser. Do your real vault notes render (not the fixture seed)?"
+} -VisualPrompt "Open http://localhost:4321/${script:RepoShort}/ in your browser. Do your real vault notes render (not the fixture seed)?"
 
 # ── Step 3: keyless real-vault render (criterion #2) ─────────────────────────
 # Covered by the visual prompt on Step 2 (same URL). Assert via content sniff.
@@ -231,7 +321,7 @@ Step -Id "5" -Title "draft:true absent from landing page (criterion #4)" -Auto {
       return
     }
     $draftSlug = $drafts[0].BaseName
-    $repoShort = ($RepoName -split '/')[-1]
+    $repoShort = $script:RepoShort
     $landing = (curl.exe -s "http://localhost:4321/$repoShort/")
     if ($landing -match [regex]::Escape($draftSlug)) {
       throw "draft slug '$draftSlug' LEAKED to landing page"
@@ -247,28 +337,40 @@ Step -Id "5" -Title "draft:true absent from landing page (criterion #4)" -Auto {
 
 # ── Step 6: backlinks mode toggle (criterion #5) — visual only ───────────────
 Step -Id "6" -Title "/graph exposes Backlinks mode (criterion #5)" `
-  -VisualPrompt "Open http://localhost:4321/$(($RepoName -split '/')[-1])/graph/. Do you see three mode buttons: Notes, Concepts, Backlinks?"
+  -VisualPrompt "Open http://localhost:4321/${script:RepoShort}/graph/. Do you see three mode buttons: Notes, Concepts, Backlinks?"
 
-# ── Step 7: push → live (criterion #6) ───────────────────────────────────────
-if ($SkipPush) {
+# ── Steps 7 + 8: push + daily audit (criteria #6, #7) ────────────────────────
+# Both skipped together when -SkipPush is set. Single guard block to make the
+# "network-touching steps require -SkipPush = false" invariant obvious.
+function Skip-Step {
+  param([string]$Id, [string]$Title, [string]$Note)
   $script:Results += [pscustomobject]@{
-    Id = "7"; Title = "push → live 200 (criterion #6)";
-    Status = "SKIP"; Note = "-SkipPush flag set"; Time = (Get-Date).ToString("HH:mm:ss")
+    Id = $Id; Title = $Title; Status = "SKIP"; Note = $Note
+    Time = (Get-Date).ToString("HH:mm:ss")
   }
   Write-Host ""
-  Write-Host "═══ 7 — push → live 200 (SKIPPED per -SkipPush) ═══" -ForegroundColor DarkYellow
+  Write-Host "═══ $Id — $Title (SKIPPED: $Note) ═══" -ForegroundColor DarkYellow
+}
+
+if ($SkipPush) {
+  Skip-Step -Id "7" -Title "push → live 200 (criterion #6)" -Note "-SkipPush flag set"
+  Skip-Step -Id "8" -Title "daily audit manual trigger (criterion #7)" -Note "depends on step 7"
 } else {
   Step -Id "7" -Title "push → GH Pages → live 200 (criterion #6)" -Auto {
     Push-Location $WorkDir
     try {
-      gh repo create $RepoName --public --source . --push 2>&1 | Out-Null
+      $visibility = if ($Private) { "--private" } else { "--public" }
+      if ($Private) {
+        Write-Host "  WARNING: -Private requires GitHub Pro/Enterprise for GH Pages to work." -ForegroundColor Yellow
+      }
+      gh repo create $RepoName $visibility --source . --push 2>&1 | Out-Null
       if ($LASTEXITCODE -ne 0) { throw "gh repo create failed" }
       Write-Host "  repo created + pushed. Running publish-verify…"
       # publish-verify's default base URL points at the upstream meshblog;
       # override so the verifier actually checks the fork's Pages URL, not
       # our original site. Keeps this rehearsal honest.
       $forkUser = ($RepoName -split '/')[0]
-      $repoShort = ($RepoName -split '/')[-1]
+      $repoShort = $script:RepoShort
       $forkUrl = "https://$forkUser.github.io/$repoShort/"
       bun run publish-verify -- --base-url $forkUrl 2>&1 | Tee-Object -Variable publishOut | Out-Null
       if ($LASTEXITCODE -ne 0) { throw "publish-verify exited $LASTEXITCODE" }
@@ -277,31 +379,58 @@ if ($SkipPush) {
       Pop-Location
     }
   }
-}
 
-# ── Step 8: daily audit trigger (criterion #7) ───────────────────────────────
-if ($SkipPush) {
-  $script:Results += [pscustomobject]@{
-    Id = "8"; Title = "daily audit manual trigger (criterion #7)";
-    Status = "SKIP"; Note = "depends on step 7"; Time = (Get-Date).ToString("HH:mm:ss")
-  }
-  Write-Host "═══ 8 — daily audit (SKIPPED, depends on step 7) ═══" -ForegroundColor DarkYellow
-} else {
+  # Step 8 lives inside the same else branch as Step 7 so the -SkipPush
+  # guard above covers both; no separate if/else block.
+  #
+  # Poll for the auto-PR instead of asking the operator to wait 2 minutes
+  # and answer yes/no. Idempotency: capture $dispatchTime before the
+  # workflow run and filter by `created:>$dispatchTime`, so a re-run against
+  # a fork that already has stale "Daily audit report" PRs from a previous
+  # rehearsal doesn't produce a false PASS.
   Step -Id "8" -Title "daily audit manual trigger (criterion #7)" -Auto {
     Push-Location $WorkDir
     try {
+      $dispatchTime = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
       gh workflow run daily-audit.yml --repo $RepoName 2>&1 | Out-Null
       if ($LASTEXITCODE -ne 0) { throw "workflow dispatch failed" }
-      Write-Host "  workflow dispatched. Check Actions tab in 1-2 min for a 'Daily audit report' PR."
+      Write-Host "  workflow dispatched at $dispatchTime. Polling for auto-PR…"
+
+      $query = "Daily audit report in:title created:>$dispatchTime"
+      $deadline = (Get-Date).AddMinutes(3)
+      $prUrl = $null
+      while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 15
+        $prs = gh pr list --repo $RepoName --search $query --json number,url,createdAt 2>$null
+        if ($LASTEXITCODE -eq 0 -and $prs -and $prs -ne "[]") {
+          $parsed = $prs | ConvertFrom-Json
+          if ($parsed.Count -gt 0) {
+            $prUrl = $parsed[0].url
+            break
+          }
+        }
+        $elapsed = [int]((Get-Date) - (Get-Date $dispatchTime)).TotalSeconds
+        Write-Host "    still waiting (${elapsed}s elapsed)…"
+      }
+
+      if ($prUrl) {
+        Write-Host "  auto-PR detected: $prUrl" -ForegroundColor Green
+      } else {
+        throw "no 'Daily audit report' PR appeared within 3 minutes. Check https://github.com/$RepoName/actions for the workflow run log."
+      }
     } finally {
       Pop-Location
     }
-  } -VisualPrompt "Wait ~2 minutes, then check https://github.com/$RepoName/pulls. Did an auto-PR titled 'Daily audit report' appear?"
+  }
 }
 
 # ── Report ──────────────────────────────────────────────────────────────────
+# Always write inside the clone. Operators running via `iwr ... -OutFile`
+# from $HOME would otherwise find the report at $HOME\docs\rehearsals\ and
+# have to copy it into the fork to commit it. Using $WorkDir everywhere
+# keeps the mental model simple: "the report lives with the fork".
 $date = (Get-Date).ToString("yyyy-MM-dd")
-$reportDir = Join-Path $PWD "docs\rehearsals"
+$reportDir = Join-Path $WorkDir "docs\rehearsals"
 if (-not (Test-Path $reportDir)) { New-Item -ItemType Directory -Path $reportDir | Out-Null }
 $reportPath = Join-Path $reportDir "$date-windows.md"
 
@@ -313,11 +442,12 @@ $total = $script:Results.Count
 $lines = @()
 $lines += "# Windows rehearsal — $date"
 $lines += ""
-$lines += "- Operator:  $env:USERNAME"
-$lines += "- OS:        $((Get-CimInstance Win32_OperatingSystem).Caption)"
-$lines += "- Vault:     ``$VaultPath``"
-$lines += "- Repo:      ``$RepoName``"
-$lines += "- Summary:   $passCount PASS / $failCount FAIL / $skipCount SKIP ($total total)"
+$lines += "- Operator:   $env:USERNAME"
+$lines += "- OS:         $((Get-CimInstance Win32_OperatingSystem).Caption)"
+$lines += "- Vault:      ``$VaultPath``"
+$lines += "- Vault mode: $script:VaultMode"
+$lines += "- Repo:       ``$RepoName``"
+$lines += "- Summary:    $passCount PASS / $failCount FAIL / $skipCount SKIP ($total total)"
 $lines += ""
 $lines += "| # | Title | Status | Time | Note |"
 $lines += "|---|---|---|---|---|"
@@ -325,10 +455,17 @@ foreach ($r in $script:Results) {
   $lines += "| $($r.Id) | $($r.Title) | $($r.Status) | $($r.Time) | $($r.Note) |"
 }
 $lines += ""
+
+# Verdict line: distinguish a full acceptance run (user-provided vault) from
+# a smoke run (bundled fixture). The SEMI-SYNTHETIC suffix is load-bearing —
+# v1 closure requires at least one rerun with a real Obsidian vault.
+$syntheticNote = if ($script:VaultMode -eq "bundled-fixture") {
+  " (v1 acceptance evidence SEMI-SYNTHETIC — rerun with -VaultPath on a real Obsidian vault to complete)"
+} else { "" }
 if ($failCount -eq 0 -and $skipCount -eq 0) {
-  $lines += "**v1 acceptance complete.** All 7 criteria verified on Windows 11 Home."
+  $lines += "**v1 acceptance complete.** All 7 criteria verified on Windows 11 Home.$syntheticNote"
 } elseif ($failCount -eq 0) {
-  $lines += "Partial pass. $skipCount step(s) skipped — rerun without ``-SkipPush`` to cover #6 + #7."
+  $lines += "Partial pass. $skipCount step(s) skipped — rerun without ``-SkipPush`` to cover #6 + #7.$syntheticNote"
 } else {
   $lines += "**v1 acceptance BLOCKED.** $failCount step(s) failed. See CLAUDE.md Active Risks + docs/windows-rehearsal.md 'If something fails' for triage."
 }
@@ -336,5 +473,50 @@ if ($failCount -eq 0 -and $skipCount -eq 0) {
 Set-Content -Path $reportPath -Value $lines -Encoding UTF8
 Write-Host ""
 Write-Host "Report written: $reportPath" -ForegroundColor Green
+
+# ── Optional cleanup ────────────────────────────────────────────────────────
+if ($CleanupAfter) {
+  Write-Host ""
+  Write-Host "═══ Cleanup (-CleanupAfter) ═══" -ForegroundColor Cyan
+
+  # 1. Kill spawned dev server via PID file written by /init (commit e451845).
+  $pidFile = Join-Path $WorkDir ".init-dev.pid"
+  if (Test-Path $pidFile) {
+    $devPid = (Get-Content $pidFile -Raw).Trim()
+    try {
+      Stop-Process -Id $devPid -Force -ErrorAction Stop
+      Write-Host "  killed dev server (PID $devPid)"
+    } catch {
+      Write-Host "  dev server PID $devPid not running (already dead?)" -ForegroundColor Yellow
+    }
+  } else {
+    Write-Host "  no .init-dev.pid — skipping dev server kill" -ForegroundColor Yellow
+  }
+
+  # 2. Remove work dir. Report was already persisted to disk at $reportPath
+  # but $reportPath is inside $WorkDir, so copy it out before rm-rf.
+  $reportBackup = Join-Path $HOME "meshblog-rehearsal-$date-windows.md"
+  if (Test-Path $reportPath) {
+    Copy-Item -Path $reportPath -Destination $reportBackup -Force
+    Write-Host "  report preserved at $reportBackup"
+  }
+  Remove-Item -Recurse -Force $WorkDir
+  Write-Host "  removed $WorkDir"
+
+  # 3. Delete the fork repo — destructive, mandatory prompt.
+  if (-not $SkipPush) {
+    $confirm = Read-Host "  Delete fork repo '$RepoName' on GitHub? This is destructive. [y/N]"
+    if ($confirm -match '^[yY]') {
+      gh repo delete $RepoName --yes 2>&1 | Out-Null
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "  deleted $RepoName on GitHub"
+      } else {
+        Write-Host "  gh repo delete failed (missing 'delete_repo' scope? run: gh auth refresh -s delete_repo)" -ForegroundColor Red
+      }
+    } else {
+      Write-Host "  fork repo kept on GitHub — delete manually if needed"
+    }
+  }
+}
 
 if ($failCount -gt 0) { exit 1 }

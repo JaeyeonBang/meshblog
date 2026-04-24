@@ -10,18 +10,26 @@ Prereqs first (see below), then from any PowerShell window:
 
 ```powershell
 iwr https://raw.githubusercontent.com/JaeyeonBang/meshblog/main/scripts/windows-rehearsal.ps1 -OutFile rehearsal.ps1
+.\rehearsal.ps1
+```
+
+No Obsidian needed — the script uses the bundled `test/e2e/fixture-vault/` (30 adversarial notes) and marks the report SEMI-SYNTHETIC. For full v1 acceptance, pass your real vault:
+
+```powershell
 .\rehearsal.ps1 -VaultPath "C:\Users\me\Documents\ObsidianVault"
 ```
 
 Drives the 8 steps below — automates the mechanical parts (prereq check, clean fork, scripted `/init`, push, `publish-verify`, daily-audit trigger) and stops at 4 visual checkpoints where you confirm browser-visible results with `[y/N]`. Produces `docs/rehearsals/YYYY-MM-DD-windows.md` with PASS/FAIL per step.
 
 Flags:
-- `-VaultPath <path>` (required) — absolute path to your Obsidian vault
+- `-VaultPath <path>` (optional) — absolute path to your Obsidian vault. Omit to use the bundled fixture-vault (SEMI-SYNTHETIC marker applied to the report).
 - `-RepoName <owner/name>` (optional) — default `<you>/meshblog-rehearsal-YYYYMMDD`
 - `-WorkDir <path>` (optional) — default `$HOME\meshblog-rehearsal`
 - `-SkipPush` (optional) — skip criteria #6 + #7, no throwaway fork repo on GitHub
 
 The script is a convenience; the manual walkthrough below is still the source of truth and catches anything the script skips (CRLF in markdown, ACL on NTFS, PowerShell readline quirks).
+
+**v1 acceptance completion**: a SEMI-SYNTHETIC green run means the flow works, but real-vault evidence is still required. Before closing v1, do one more pass with `-VaultPath` pointing at an actual Obsidian vault that contains wikilinks + a `draft: true` note + an embedded image.
 
 ## Prerequisites
 
@@ -37,6 +45,8 @@ Install in this order on the target Windows machine:
    - At least one note with `draft: true` frontmatter (to exercise D3)
 
 ## Steps
+
+The URL in each step depends on your fork's repo name. Wherever you see `<fork-name>/` below, substitute the name you created the fork with (e.g., `meshblog-rehearsal-20260425/`). The automated script prints the exact URL at Step 2's visual prompt — these manual instructions are the fallback if you run the steps by hand.
 
 ### 1. Clean fork (criterion #1)
 
@@ -65,20 +75,20 @@ Then it should:
 - Print `[init] Copied vault contents into <path>\content\notes`
 - Print `[init] Watching <vault> …`
 - Build (keyless path — real notes, not fixture)
-- Open `http://localhost:4321/meshblog/` automatically (or say "Open this URL")
+- Open `http://localhost:4321/<fork-name>/` automatically (or say "Open this URL")
 
 **Capture**: screenshot of the page showing your actual vault notes.
 
 ### 3. Real vault keyless (criterion #2)
 
-Browser at `http://localhost:4321/meshblog/`. Confirm:
+Browser at `http://localhost:4321/<fork-name>/`. Confirm:
 - Your note titles are listed — not the fixture seed (look for "A Thread of Notes", which is a fixture-only title; it should NOT appear if your vault has notes).
 - Open one note — Q&A chips may say "no entities" (keyless degradation), but the note body must render.
 
 ### 4. Wikilink rendering (criterion #3)
 
 Open any note that has `[[target|alias]]`. Inspect HTML (F12):
-- The alias text must be inside `<a href="/meshblog/notes/target">alias</a>`, not plain text.
+- The alias text must be inside `<a href="/<fork-name>/notes/target">alias</a>`, not plain text.
 
 ### 5. Draft safety net (criterion #4)
 
@@ -88,7 +98,7 @@ In PowerShell:
 Get-Content content\notes\<your-draft-slug>.md | Select-String "draft:"
 # Should show `draft: true`
 
-curl.exe -s http://localhost:4321/meshblog/ | Select-String "<your-draft-slug>"
+curl.exe -s http://localhost:4321/<fork-name>/ | Select-String "<your-draft-slug>"
 # Should be empty — the draft must NOT appear on the landing page
 ```
 
@@ -96,7 +106,7 @@ Bonus: run `bun run audit-drafts` — should report 0 leaks on the local build (
 
 ### 6. Backlinks mode (criterion #5)
 
-Browser: `http://localhost:4321/meshblog/graph/`. Look for three mode buttons: **Notes**, **Concepts**, **Backlinks**. Click Backlinks — node count should be > 0 if your vault has wikilinks.
+Browser: `http://localhost:4321/<fork-name>/graph/`. Look for three mode buttons: **Notes**, **Concepts**, **Backlinks**. Click Backlinks — node count should be > 0 if your vault has wikilinks.
 
 ### 7. Push → deploy → live (criterion #6)
 
