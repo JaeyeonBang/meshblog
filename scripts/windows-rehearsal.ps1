@@ -173,6 +173,32 @@ if (-not $RepoName) {
   $today = (Get-Date).ToString("yyyyMMdd")
   $RepoName = "$ghUser/meshblog-rehearsal-$today"
 }
+
+# Same-day reruns against the default name conflict at Step 7's
+# `gh repo create` (409). Detect here so we can fail fast with a
+# useful suggestion instead of after ~45s of setup work.
+if (-not $SkipPush) {
+  gh repo view $RepoName 2>&1 | Out-Null
+  if ($LASTEXITCODE -eq 0) {
+    $suffix = (Get-Date).ToString("HHmm")
+    $proposed = "$RepoName-$suffix"
+    Write-Host "WARNING: repo '$RepoName' already exists on GitHub." -ForegroundColor Yellow
+    $choice = Read-Host "  [D]elete and recreate, [R]ename to '$proposed', [A]bort"
+    switch -Regex ($choice) {
+      '^[dD]' {
+        gh repo delete $RepoName --yes 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "gh repo delete failed (need delete_repo scope? run: gh auth refresh -s delete_repo)" -ForegroundColor Red
+          exit 1
+        }
+        Write-Host "  deleted $RepoName — will recreate at Step 7."
+      }
+      '^[rR]' { $RepoName = $proposed; Write-Host "  using $RepoName instead." }
+      default { Write-Host "  aborted." -ForegroundColor Red; exit 1 }
+    }
+  }
+}
+
 # Compute once; reused by Step 1 (astro.config patch), Step 2 visual prompt,
 # Step 5 (draft leak curl), Step 6 visual prompt, Step 7 (publish-verify URL).
 $script:RepoShort = ($RepoName -split '/')[-1]
@@ -313,14 +339,22 @@ Step -Id "5" -Title "draft:true absent from landing page (criterion #4)" -Auto {
 Step -Id "6" -Title "/graph exposes Backlinks mode (criterion #5)" `
   -VisualPrompt "Open http://localhost:4321/${script:RepoShort}/graph/. Do you see three mode buttons: Notes, Concepts, Backlinks?"
 
-# ── Step 7: push → live (criterion #6) ───────────────────────────────────────
-if ($SkipPush) {
+# ── Steps 7 + 8: push + daily audit (criteria #6, #7) ────────────────────────
+# Both skipped together when -SkipPush is set. Single guard block to make the
+# "network-touching steps require -SkipPush = false" invariant obvious.
+function Skip-Step {
+  param([string]$Id, [string]$Title, [string]$Note)
   $script:Results += [pscustomobject]@{
-    Id = "7"; Title = "push → live 200 (criterion #6)";
-    Status = "SKIP"; Note = "-SkipPush flag set"; Time = (Get-Date).ToString("HH:mm:ss")
+    Id = $Id; Title = $Title; Status = "SKIP"; Note = $Note
+    Time = (Get-Date).ToString("HH:mm:ss")
   }
   Write-Host ""
-  Write-Host "═══ 7 — push → live 200 (SKIPPED per -SkipPush) ═══" -ForegroundColor DarkYellow
+  Write-Host "═══ $Id — $Title (SKIPPED: $Note) ═══" -ForegroundColor DarkYellow
+}
+
+if ($SkipPush) {
+  Skip-Step -Id "7" -Title "push → live 200 (criterion #6)" -Note "-SkipPush flag set"
+  Skip-Step -Id "8" -Title "daily audit manual trigger (criterion #7)" -Note "depends on step 7"
 } else {
   Step -Id "7" -Title "push → GH Pages → live 200 (criterion #6)" -Auto {
     Push-Location $WorkDir
@@ -345,16 +379,10 @@ if ($SkipPush) {
       Pop-Location
     }
   }
-}
 
-# ── Step 8: daily audit trigger (criterion #7) ───────────────────────────────
-if ($SkipPush) {
-  $script:Results += [pscustomobject]@{
-    Id = "8"; Title = "daily audit manual trigger (criterion #7)";
-    Status = "SKIP"; Note = "depends on step 7"; Time = (Get-Date).ToString("HH:mm:ss")
-  }
-  Write-Host "═══ 8 — daily audit (SKIPPED, depends on step 7) ═══" -ForegroundColor DarkYellow
-} else {
+  # Step 8 lives inside the same else branch as Step 7 so the -SkipPush
+  # guard above covers both; no separate if/else block.
+  #
   # Poll for the auto-PR instead of asking the operator to wait 2 minutes
   # and answer yes/no. Idempotency: capture $dispatchTime before the
   # workflow run and filter by `created:>$dispatchTime`, so a re-run against
