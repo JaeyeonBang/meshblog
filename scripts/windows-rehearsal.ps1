@@ -30,6 +30,12 @@
   do not want to leave a dead fork repo on GitHub. Criteria #6 + #7 will be
   marked SKIPPED in the report.
 
+.PARAMETER Private
+  Create the fork repo as private instead of public. Requires GitHub Pro or
+  Enterprise for GH Pages to work on a private repo — without it, Step 7's
+  deploy will succeed on GitHub but the live URL stays 404 and publish-verify
+  fails. Prints a warning before creating.
+
 .EXAMPLE
   # Clone this script from main and run it in one line. No Obsidian needed
   # — uses the bundled fixture-vault.
@@ -53,7 +59,9 @@ param(
 
   [string]$WorkDir = (Join-Path $HOME "meshblog-rehearsal"),
 
-  [switch]$SkipPush
+  [switch]$SkipPush,
+
+  [switch]$Private
 )
 
 $ErrorActionPreference = "Stop"
@@ -310,7 +318,11 @@ if ($SkipPush) {
   Step -Id "7" -Title "push → GH Pages → live 200 (criterion #6)" -Auto {
     Push-Location $WorkDir
     try {
-      gh repo create $RepoName --public --source . --push 2>&1 | Out-Null
+      $visibility = if ($Private) { "--private" } else { "--public" }
+      if ($Private) {
+        Write-Host "  WARNING: -Private requires GitHub Pro/Enterprise for GH Pages to work." -ForegroundColor Yellow
+      }
+      gh repo create $RepoName $visibility --source . --push 2>&1 | Out-Null
       if ($LASTEXITCODE -ne 0) { throw "gh repo create failed" }
       Write-Host "  repo created + pushed. Running publish-verify…"
       # publish-verify's default base URL points at the upstream meshblog;
