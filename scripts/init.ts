@@ -154,13 +154,21 @@ export function countVaultMarkdown(dir: string): number {
  * readline interface's async iterator. Works under both TTY and piped stdin;
  * the `readline/promises` variant hangs on the second call under piped stdin
  * in Bun (empirically verified 2026-04-22).
+ *
+ * On stdin EOF (done=true), throws instead of returning "". Returning ""
+ * made promptVaultPath loop forever in scripted rehearsals when the temp
+ * answers file was truncated or cmd redirection ended early — the "Path
+ * cannot be empty" branch retried and got "" again, ad infinitum.
  */
 export function createAskFn(rl: ReadlineInterface): (prompt: string) => Promise<string> {
   const iter = rl[Symbol.asyncIterator]()
   return async (prompt: string): Promise<string> => {
     process.stdout.write(prompt)
     const { value, done } = await iter.next()
-    return done ? "" : String(value)
+    if (done) {
+      throw new Error("[init] stdin exhausted before prompt was answered")
+    }
+    return String(value)
   }
 }
 
