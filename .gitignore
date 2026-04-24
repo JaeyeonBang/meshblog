@@ -46,6 +46,9 @@ public/graph/
 # local Obsidian vault if symlinked inside repo
 content/.obsidian/
 
+# /init writes this after spawning the dev server; consumed for cleanup
+.init-dev.pid
+
 .gstack/
 
 # graphify: knowledge graph output (regenerable via `graphify update .`)

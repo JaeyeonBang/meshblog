@@ -435,6 +435,28 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
     })
     dev.unref()
 
+    // Write the PID so the orphaned dev server can be stopped without
+    // hunting through Task Manager. Windows especially — detached:true
+    // means no parent-child link, and `bun run dev` spawns nested
+    // processes, so we record the spawn-level PID and tell the operator
+    // how to kill it.
+    if (dev.pid !== undefined) {
+      const pidPath = path.join(REPO_ROOT, ".init-dev.pid")
+      try {
+        fs.writeFileSync(pidPath, String(dev.pid), "utf-8")
+        console.log(`[init] dev PID ${dev.pid} written to .init-dev.pid`)
+        if (process.platform === "win32") {
+          console.log(
+            "[init] To stop: Stop-Process -Id (Get-Content .init-dev.pid)",
+          )
+        } else {
+          console.log("[init] To stop: kill $(cat .init-dev.pid)")
+        }
+      } catch (err) {
+        console.error(`[init] WARNING: could not write .init-dev.pid: ${err}`)
+      }
+    }
+
     // Resolve the site's base path from astro.config.mjs. Forks with custom
     // repo names patch this field; old behavior hardcoded /meshblog/ and
     // printed a URL that 404'd. Fall back to /meshblog/ (original default)
