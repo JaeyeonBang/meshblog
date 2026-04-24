@@ -145,6 +145,9 @@ if (-not $RepoName) {
   $today = (Get-Date).ToString("yyyyMMdd")
   $RepoName = "$ghUser/meshblog-rehearsal-$today"
 }
+# Compute once; reused by Step 1 (astro.config patch), Step 2 visual prompt,
+# Step 5 (draft leak curl), Step 6 visual prompt, Step 7 (publish-verify URL).
+$script:RepoShort = ($RepoName -split '/')[-1]
 Write-Host "Repo:    $RepoName"
 
 # ── Step 1: clean fork ───────────────────────────────────────────────────────
@@ -168,7 +171,7 @@ Step -Id "1" -Title "clean fork (criterion #1 — install)" -Auto {
     # Rehearsal-only: patch astro.config.mjs's base path so the fork (whose
     # repo name won't be 'meshblog') deploys to the correct Pages subpath.
     # meshblog init doesn't do this yet — tracked as a follow-up.
-    $repoShort = ($RepoName -split '/')[-1]
+    $repoShort = $script:RepoShort
     $configPath = Join-Path $WorkDir "astro.config.mjs"
     if (Test-Path $configPath) {
       $c = Get-Content $configPath -Raw
@@ -208,7 +211,7 @@ Step -Id "2" -Title "/init two-prompt flow (criterion #1)" -Auto {
   Push-Location $WorkDir
   try {
     # Scripted stdin: vault path + repo name (short name, not owner/name)
-    $repoShort = ($RepoName -split '/')[-1]
+    $repoShort = $script:RepoShort
     $initInput = "$VaultPath`n$repoShort`n"
     # Write to temp file and pipe — PowerShell's here-string + `cmd /c` is
     # fragile with unicode paths; a temp file is robust.
@@ -234,7 +237,7 @@ Step -Id "2" -Title "/init two-prompt flow (criterion #1)" -Auto {
   } finally {
     Pop-Location
   }
-} -VisualPrompt "Open http://localhost:4321/$(($RepoName -split '/')[-1])/ in your browser. Do your real vault notes render (not the fixture seed)?"
+} -VisualPrompt "Open http://localhost:4321/${script:RepoShort}/ in your browser. Do your real vault notes render (not the fixture seed)?"
 
 # ── Step 3: keyless real-vault render (criterion #2) ─────────────────────────
 # Covered by the visual prompt on Step 2 (same URL). Assert via content sniff.
@@ -264,7 +267,7 @@ Step -Id "5" -Title "draft:true absent from landing page (criterion #4)" -Auto {
       return
     }
     $draftSlug = $drafts[0].BaseName
-    $repoShort = ($RepoName -split '/')[-1]
+    $repoShort = $script:RepoShort
     $landing = (curl.exe -s "http://localhost:4321/$repoShort/")
     if ($landing -match [regex]::Escape($draftSlug)) {
       throw "draft slug '$draftSlug' LEAKED to landing page"
@@ -280,7 +283,7 @@ Step -Id "5" -Title "draft:true absent from landing page (criterion #4)" -Auto {
 
 # ── Step 6: backlinks mode toggle (criterion #5) — visual only ───────────────
 Step -Id "6" -Title "/graph exposes Backlinks mode (criterion #5)" `
-  -VisualPrompt "Open http://localhost:4321/$(($RepoName -split '/')[-1])/graph/. Do you see three mode buttons: Notes, Concepts, Backlinks?"
+  -VisualPrompt "Open http://localhost:4321/${script:RepoShort}/graph/. Do you see three mode buttons: Notes, Concepts, Backlinks?"
 
 # ── Step 7: push → live (criterion #6) ───────────────────────────────────────
 if ($SkipPush) {
@@ -301,7 +304,7 @@ if ($SkipPush) {
       # override so the verifier actually checks the fork's Pages URL, not
       # our original site. Keeps this rehearsal honest.
       $forkUser = ($RepoName -split '/')[0]
-      $repoShort = ($RepoName -split '/')[-1]
+      $repoShort = $script:RepoShort
       $forkUrl = "https://$forkUser.github.io/$repoShort/"
       bun run publish-verify -- --base-url $forkUrl 2>&1 | Tee-Object -Variable publishOut | Out-Null
       if ($LASTEXITCODE -ne 0) { throw "publish-verify exited $LASTEXITCODE" }
@@ -333,8 +336,12 @@ if ($SkipPush) {
 }
 
 # ── Report ──────────────────────────────────────────────────────────────────
+# Always write inside the clone. Operators running via `iwr ... -OutFile`
+# from $HOME would otherwise find the report at $HOME\docs\rehearsals\ and
+# have to copy it into the fork to commit it. Using $WorkDir everywhere
+# keeps the mental model simple: "the report lives with the fork".
 $date = (Get-Date).ToString("yyyy-MM-dd")
-$reportDir = Join-Path $PWD "docs\rehearsals"
+$reportDir = Join-Path $WorkDir "docs\rehearsals"
 if (-not (Test-Path $reportDir)) { New-Item -ItemType Directory -Path $reportDir | Out-Null }
 $reportPath = Join-Path $reportDir "$date-windows.md"
 

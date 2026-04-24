@@ -46,6 +46,8 @@ Install in this order on the target Windows machine:
 
 ## Steps
 
+The URL in each step depends on your fork's repo name. Wherever you see `<fork-name>/` below, substitute the name you created the fork with (e.g., `meshblog-rehearsal-20260425/`). The automated script prints the exact URL at Step 2's visual prompt — these manual instructions are the fallback if you run the steps by hand.
+
 ### 1. Clean fork (criterion #1)
 
 ```powershell
@@ -73,20 +75,20 @@ Then it should:
 - Print `[init] Copied vault contents into <path>\content\notes`
 - Print `[init] Watching <vault> …`
 - Build (keyless path — real notes, not fixture)
-- Open `http://localhost:4321/meshblog/` automatically (or say "Open this URL")
+- Open `http://localhost:4321/<fork-name>/` automatically (or say "Open this URL")
 
 **Capture**: screenshot of the page showing your actual vault notes.
 
 ### 3. Real vault keyless (criterion #2)
 
-Browser at `http://localhost:4321/meshblog/`. Confirm:
+Browser at `http://localhost:4321/<fork-name>/`. Confirm:
 - Your note titles are listed — not the fixture seed (look for "A Thread of Notes", which is a fixture-only title; it should NOT appear if your vault has notes).
 - Open one note — Q&A chips may say "no entities" (keyless degradation), but the note body must render.
 
 ### 4. Wikilink rendering (criterion #3)
 
 Open any note that has `[[target|alias]]`. Inspect HTML (F12):
-- The alias text must be inside `<a href="/meshblog/notes/target">alias</a>`, not plain text.
+- The alias text must be inside `<a href="/<fork-name>/notes/target">alias</a>`, not plain text.
 
 ### 5. Draft safety net (criterion #4)
 
@@ -96,7 +98,7 @@ In PowerShell:
 Get-Content content\notes\<your-draft-slug>.md | Select-String "draft:"
 # Should show `draft: true`
 
-curl.exe -s http://localhost:4321/meshblog/ | Select-String "<your-draft-slug>"
+curl.exe -s http://localhost:4321/<fork-name>/ | Select-String "<your-draft-slug>"
 # Should be empty — the draft must NOT appear on the landing page
 ```
 
@@ -104,7 +106,7 @@ Bonus: run `bun run audit-drafts` — should report 0 leaks on the local build (
 
 ### 6. Backlinks mode (criterion #5)
 
-Browser: `http://localhost:4321/meshblog/graph/`. Look for three mode buttons: **Notes**, **Concepts**, **Backlinks**. Click Backlinks — node count should be > 0 if your vault has wikilinks.
+Browser: `http://localhost:4321/<fork-name>/graph/`. Look for three mode buttons: **Notes**, **Concepts**, **Backlinks**. Click Backlinks — node count should be > 0 if your vault has wikilinks.
 
 ### 7. Push → deploy → live (criterion #6)
 
