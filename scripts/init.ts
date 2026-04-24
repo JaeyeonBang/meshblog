@@ -27,6 +27,50 @@ const REPO_ROOT = path.resolve(import.meta.dirname, "..")
 const CONTENT_NOTES = path.join(REPO_ROOT, "content", "notes")
 const ENV_LOCAL = path.join(REPO_ROOT, ".env.local")
 const DEPLOY_YML = path.join(REPO_ROOT, ".github", "workflows", "deploy.yml")
+const ASTRO_CONFIG = path.join(REPO_ROOT, "astro.config.mjs")
+
+// ── Platform-scoped spawn options (test seam) ────────────────────────────────
+
+/**
+ * Dev server spawn options per platform.
+ *
+ * Windows puts parent + child in the same job object with `detached: false`,
+ * so when the parent `process.exit(0)`s (which /init does after print-and-spawn),
+ * the kernel kills the orphaned child immediately. `detached: true` creates a
+ * new console + process group, letting the child survive. `stdio: "ignore"`
+ * is required for new-console detachment on Windows — it gives up log streaming
+ * in exchange for the server actually staying up.
+ *
+ * On non-Windows, `detached: false` + `stdio: "inherit"` preserves the current
+ * behavior: dev logs stream to the operator's terminal.
+ */
+export function getDevSpawnOptions(
+  platform: NodeJS.Platform,
+): { detached: boolean; stdio: "inherit" | "ignore" } {
+  if (platform === "win32") {
+    return { detached: true, stdio: "ignore" }
+  }
+  return { detached: false, stdio: "inherit" }
+}
+
+// ── astro.config.mjs base parser (test seam) ──────────────────────────────────
+
+/**
+ * Extract the subpath from `base: '/foo'` or `base: "/foo"` in astro.config.mjs.
+ * Returns the slug without slashes, or null if the field is missing or expressed
+ * as anything other than an immediate string literal.
+ *
+ * Only matches when `base:` is directly followed by whitespace and a quoted
+ * string literal. Template literals, function calls, and env-based expressions
+ * (`process.env.BASE ?? '/default'`) return null. Accepted as-is because:
+ * (a) /init's caller always falls back to `/meshblog/` + a stderr warning
+ *     when this returns null, so downstream is safe,
+ * (b) full JS parsing here is scope creep for a one-shot read at init time.
+ */
+export function parseAstroBase(content: string): string | null {
+  const m = content.match(/base:\s*['"]\/([^'"]+)['"]/)
+  return m?.[1] ?? null
+}
 
 // ── Exported helper for unit tests ────────────────────────────────────────────
 
@@ -281,7 +325,21 @@ async function promptRepoName(ask: Ask): Promise<string | null> {
 
 // ── Main entry ────────────────────────────────────────────────────────────────
 
-async function main(): Promise<void> {
+/**
+ * Options for `runInit`. All fields optional — when omitted, the behavior
+ * matches the original interactive `/init` flow.
+ *
+ * Tests use `vaultPath` + `repoName` to bypass readline prompts, and
+ * `skipSpawn` to return before launching the dev server (no background
+ * processes to clean up).
+ */
+export interface RunInitOptions {
+  vaultPath?: string
+  repoName?: string | null
+  skipSpawn?: boolean
+}
+
+export async function runInit(opts: RunInitOptions = {}): Promise<void> {
   console.log("\n=== meshblog /init ===\n")
 
   const rl = createInterface({ input: process.stdin })
@@ -289,10 +347,11 @@ async function main(): Promise<void> {
 
   try {
     // 1. Vault path
-    const vaultPath = await promptVaultPath(ask)
+    const vaultPath = opts.vaultPath ?? (await promptVaultPath(ask))
 
     // 2. GitHub repo name
-    const repoName = await promptRepoName(ask)
+    const repoName =
+      opts.repoName !== undefined ? opts.repoName : await promptRepoName(ask)
 
     rl.close()
 
@@ -344,6 +403,11 @@ async function main(): Promise<void> {
       })
     }
 
+    if (opts.skipSpawn) {
+      console.log("\n[init] Done (skipSpawn mode — dev server not started).\n")
+      return
+    }
+
     // 7. Spawn dev server (non-blocking)
     console.log("\n[init] Starting dev server …")
     const dev = spawn("bun", ["run", "dev"], {
@@ -355,9 +419,17 @@ async function main(): Promise<void> {
     dev.unref()
 
     console.log("\n[init] Done. Open: http://localhost:4321/meshblog/\n")
-    process.exit(0)
   } catch (err) {
     rl.close()
+    throw err
+  }
+}
+
+async function main(): Promise<void> {
+  try {
+    await runInit()
+    process.exit(0)
+  } catch (err) {
     console.error("[init] Fatal error:", err)
     process.exit(1)
   }
