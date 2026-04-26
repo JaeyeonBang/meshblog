@@ -5,7 +5,7 @@
  *   #1 — no hex literals (all colours via tokens)
  *   #2 — hairline border (1px solid var(--ink))
  *   #4 — mono eyebrow for kind badge
- *   #5 — NO shadow (shadow-hard is .cmdk-only)
+ *   #5 — NO shadow (shadow-hard is reserved for .cmdk + .help only)
  *   #6 — radius ≤ 4px
  *
  * Mobile / touch: single tap → popover shown; second tap on same node → navigate.
