@@ -12,9 +12,9 @@ jobs:
       contents: read
       pull-requests: write  # only for the report PR body, no code writes
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
 
@@ -35,7 +35,7 @@ jobs:
         run: bun run audit-report -- --out audit-report.md
 
       # v1 contract: report-only. Artifact upload only — no source writes.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: daily-audit-report
           path: audit-report.md
