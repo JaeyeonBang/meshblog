@@ -43,6 +43,15 @@ export function useForceSimulation(
     /** When true, note nodes with categorySlug get data-cat for CSS coloring.
      *  False (default) in concept mode so all nodes stay B&W. */
     colorByCategory?: boolean
+    /** Override d3-force tuning for smaller-scale consumers (e.g. mini graph). */
+    simParams?: {
+      linkDistance?: number      // default 60
+      chargeStrength?: number    // default -120
+      collideRadius?: number     // default 10
+      scaleExtent?: [number, number]  // default [0.1, 8]
+    }
+    /** When false, skip the entrance stagger animation (set delay to 0ms). Default true. */
+    staggerEnabled?: boolean
   },
 ): void {
   useEffect(() => {
@@ -100,11 +109,11 @@ export function useForceSimulation(
         d3Force
           .forceLink<SimNode, SimLink>(links)
           .id(d => d.id)
-          .distance(60),
+          .distance(opts.simParams?.linkDistance ?? 60),
       )
-      .force('charge', d3Force.forceManyBody<SimNode>().strength(-120))
+      .force('charge', d3Force.forceManyBody<SimNode>().strength(opts.simParams?.chargeStrength ?? -120))
       .force('center', d3Force.forceCenter(width / 2, height / 2))
-      .force('collide', d3Force.forceCollide<SimNode>(10))
+      .force('collide', d3Force.forceCollide<SimNode>(opts.simParams?.collideRadius ?? 10))
       .stop()
 
     // Deterministic layout: run 60 ticks synchronously (Patch C3)
@@ -178,8 +187,10 @@ export function useForceSimulation(
       .attr('role', 'button')
       .attr('aria-label', d => labelOf(d))
       .style('cursor', 'pointer')
-      // Stagger entrance animation; cap at MAX_STAGGER_MS
+      // Stagger entrance animation; cap at MAX_STAGGER_MS.
+      // When staggerEnabled is explicitly false, skip the stagger (set to 0ms).
       .style('animation-delay', (_d, i) => {
+        if (opts.staggerEnabled === false) return '0ms'
         const delay = Math.min(i * STAGGER_STEP_MS, MAX_STAGGER_MS)
         return `${delay}ms`
       })
@@ -250,7 +261,7 @@ export function useForceSimulation(
     // --- Zoom ---
     const zoomBehavior = d3Zoom
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 8])
+      .scaleExtent(opts.simParams?.scaleExtent ?? [0.1, 8])
       .on('zoom', (event: d3Zoom.D3ZoomEvent<SVGSVGElement, unknown>) => {
         g.attr('transform', event.transform.toString())
       })

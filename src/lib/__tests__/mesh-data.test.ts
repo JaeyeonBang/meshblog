@@ -37,7 +37,7 @@ vi.mock('node:fs', () => ({
 }))
 
 // Import AFTER mocks are registered.
-import { getNoteMeshNodes } from '../mesh-data'
+import { getNoteMeshNodes, getNoteMeshLinks, _resetBacklinksCache } from '../mesh-data'
 
 // ── Helper: create an in-memory SQLite DB with the minimal schema ─────────────
 
@@ -90,6 +90,7 @@ function wb(p: string) {
 beforeEach(() => {
   __backlinkJson = null
   __mockDb = null
+  _resetBacklinksCache()
 })
 
 describe('getNoteMeshNodes', () => {
@@ -405,17 +406,17 @@ describe('getNoteMeshNodes', () => {
       db.close()
     })
 
-    it('caps entity neighbors at MAX_NEIGHBORS (5)', () => {
+    it('caps entity neighbors at MAX_NEIGHBORS (8)', () => {
       __backlinkJson = null
 
       const db = makeDb()
       insertNote(db, 'hub', 'hub', 'Hub Note')
-      for (let i = 1; i <= 7; i++) {
+      for (let i = 1; i <= 10; i++) {
         insertNote(db, `peer-${i}`, `peer-${i}`, `Peer ${i}`)
       }
       insertEntity(db, 1, 'shared-entity')
       insertNoteEntity(db, 'hub', 1)
-      for (let i = 1; i <= 7; i++) {
+      for (let i = 1; i <= 10; i++) {
         insertNoteEntity(db, `peer-${i}`, 1)
       }
 
@@ -427,8 +428,8 @@ describe('getNoteMeshNodes', () => {
         withBase: wb,
       })
 
-      // center + max 5 neighbors, even though 7 peers exist
-      expect(nodes).toHaveLength(6)
+      // center + max 8 neighbors, even though 10 peers exist
+      expect(nodes).toHaveLength(9)
       expect(nodes[0]).toMatchObject({ label: 'Hub Note', kind: 'selected' })
 
       db.close()
@@ -529,5 +530,62 @@ describe('getNoteMeshNodes', () => {
       expect(nodes).toHaveLength(1)
       expect(nodes[0]).toMatchObject({ label: 'Any Note', kind: 'selected' })
     })
+  })
+})
+
+describe('getNoteMeshLinks', () => {
+  // ── Case 1: wikilink edges between neighbors → returns those edges ──────────
+  it('returns inter-neighbor edges and filters out edges outside the neighbor set', () => {
+    __backlinkJson = JSON.stringify({
+      nodes: [
+        { id: 'A', title: 'A' },
+        { id: 'B', title: 'B' },
+        { id: 'C', title: 'C' },
+        { id: 'X', title: 'X' },
+        { id: 'Y', title: 'Y' },
+      ],
+      edges: [
+        { source: 'A', target: 'B' }, // both in neighbor set → include
+        { source: 'B', target: 'C' }, // both in neighbor set → include
+        { source: 'X', target: 'Y' }, // neither in neighbor set → exclude
+      ],
+    })
+
+    const links = getNoteMeshLinks(['A', 'B', 'C'])
+
+    expect(links).toHaveLength(2)
+    expect(links).toContainEqual({ source: 'A', target: 'B' })
+    expect(links).toContainEqual({ source: 'B', target: 'C' })
+    // X→Y must be filtered out
+    expect(links.find((l) => l.source === 'X' || l.target === 'Y')).toBeUndefined()
+  })
+
+  // ── Case 2: no inter-neighbor edges → returns [] ────────────────────────────
+  it('returns [] when no edges connect nodes within the neighbor set', () => {
+    __backlinkJson = JSON.stringify({
+      nodes: [
+        { id: 'A', title: 'A' },
+        { id: 'B', title: 'B' },
+        { id: 'C', title: 'C' },
+        { id: 'P', title: 'P' },
+        { id: 'Q', title: 'Q' },
+      ],
+      edges: [
+        { source: 'P', target: 'Q' }, // only between non-neighbor nodes
+      ],
+    })
+
+    const links = getNoteMeshLinks(['A', 'B', 'C'])
+
+    expect(links).toEqual([])
+  })
+
+  // ── Case 3: missing backlinks.json (loadJson returns null) → returns [] ─────
+  it('returns [] when backlinks.json is missing', () => {
+    __backlinkJson = null // existsSync returns false → loadJson returns null
+
+    const links = getNoteMeshLinks(['A', 'B', 'C'])
+
+    expect(links).toEqual([])
   })
 })

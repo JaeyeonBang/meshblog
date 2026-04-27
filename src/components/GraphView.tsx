@@ -408,6 +408,9 @@ export default function GraphView() {
     },
     directed: mode === 'backlinks',
     onHover: handleHover,
+    // Explicit defaults to make the regression-safe nature visible:
+    simParams: { linkDistance: 60, chargeStrength: -120, collideRadius: 10, scaleExtent: [0.1, 8] },
+    staggerEnabled: true,
   })
 
   // Derive popover props from hover state + manifest
