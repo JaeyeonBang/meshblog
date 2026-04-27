@@ -23,9 +23,12 @@
   display: block;
 }
 
+/* Notion-style code block: tracks prose tone via paper-2/ink (light mode = soft
+   off-white panel on white page; dark mode = darker panel on black page). Avoids
+   inverting only the code block, which read as broken in dark mode. */
 .prose pre {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--paper-2);
+  color: var(--ink);
   padding: var(--space-6) var(--space-6);
   border-radius: var(--r-md);
   margin: 1.6em 0;
@@ -33,7 +36,7 @@
   font-family: var(--f-mono);
   font-size: var(--fs-sm);
   line-height: 1.65;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--rule-soft);
   max-width: 100%;
   box-sizing: border-box;
 }
