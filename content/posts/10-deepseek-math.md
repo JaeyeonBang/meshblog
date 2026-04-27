@@ -2,6 +2,7 @@
 title: "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models"
 date: 2026-01-03
 tags: [RL, NLP, LLM, neural-network]
+category: ai
 image: "/meshblog/og/posts/10-deepseek-math.svg"
 ---
 [[paper link]](https://arxiv.org/abs/2402.03300)

@@ -2,6 +2,7 @@
 title: "Agentic Large Language Models, a survey, review: Reasoning"
 date: 2025-11-19
 tags: [AI Agent, NLP, LLM, ai-agent]
+category: ai
 image: "/meshblog/og/posts/04-agentic-llms-survey-reasoning.svg"
 ---
 [[paper link]](https://arxiv.org/abs/2503.23037)
