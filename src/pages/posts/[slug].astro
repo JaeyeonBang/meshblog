@@ -10,7 +10,7 @@ import PageQa from '../../components/ui/molecules/PageQa.astro'
 import RelatedGrid from '../../components/ui/molecules/RelatedGrid.astro'
 import Pager from '../../components/ui/molecules/Pager.astro'
 import TOC from '../../components/ui/molecules/TOC.astro'
-import MiniMesh from '../../components/ui/molecules/MiniMesh.astro'
+import MeshStrip from '../../components/ui/molecules/MeshStrip.astro'
 import { renderMarkdownToHtml } from '../../lib/markdown/render'
 import { buildNoteResolver } from '../../lib/markdown/wikilink-resolver'
 import {
@@ -138,7 +138,7 @@ const tocItems = extractToc(contentHtml).map((e) => ({
 }))
 
 // Per-post subgraph: center = this post, neighbors = up to 5 inbound/outbound links.
-// Returns [] for orphan posts — MiniMesh is hidden in that case.
+// Returns [] for orphan posts — MeshStrip is hidden in that case.
 const meshNodes = getNoteMeshNodes({
   noteId: post.id,
   noteTitle: post.title,
@@ -179,6 +179,10 @@ const meshNodes = getNoteMeshNodes({
 
       <HeroFigure label={`hero · ${post.slug}`} />
 
+      {meshNodes.length > 1 && (
+        <MeshStrip nodes={meshNodes} />
+      )}
+
       <div class="prose">
         <div set:html={ledeHtml} />
       </div>
@@ -213,11 +217,6 @@ const meshNodes = getNoteMeshNodes({
 
     <aside class="reader-aside">
       <TOC label="contents" items={tocItems} />
-      {meshNodes.length > 1 && (
-        <TOC label="related mesh" mesh={true}>
-          <MiniMesh nodes={meshNodes} size="sm" />
-        </TOC>
-      )}
       {/* TODO: restore "backlinks" when backlinks are aggregated */}
     </aside>
   </div>

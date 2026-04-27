@@ -9,14 +9,25 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { openReadonlyDb } from './pages/db'
+import { plainExcerpt } from './markdown/plain-excerpt'
+import { estimateReadingMinutes } from './reading-time'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
 export type MeshNode = {
   label: string
-  kind?: 'default' | 'hub' | 'concept' | 'selected' | 'note'
+  kind?: 'default' | 'hub' | 'concept' | 'selected' | 'note' | 'stub'
   href?: string
   // x/y are deliberately absent — MiniMesh will compute radial layout
+  // NEW optional fields — populated for neighbors only, not center node
+  /** ≤160 chars plain text, no HTML. Absent on center node. */
+  excerpt?: string
+  /** Count of inbound wikilink edges to this neighbor across the whole graph. Absent on center node. */
+  backlinks?: number
+  /** How this neighbor relates to the current article. Absent on center node. */
+  relationship?: 'backlink' | 'outbound' | 'entity'
+  /** Estimated reading time in integer minutes. Absent on center node. */
+  readingMinutes?: number
 }
 
 type GraphNode = {
@@ -53,6 +64,18 @@ function loadJson<T>(relPath: string): T | null {
 
 function graphDegreeOf(id: string, links: GraphJson['links']): number {
   return links.filter((l) => l.source === id || l.target === id).length
+}
+
+/**
+ * Build a Map<nodeId, inboundEdgeCount> from all edges in backlinks.json.
+ * Used to populate `backlinks` on neighbor nodes in O(E) — no per-node lookup.
+ */
+function buildInboundCountMap(edges: BacklinkEdge[]): Map<string, number> {
+  const map = new Map<string, number>()
+  for (const edge of edges) {
+    map.set(edge.target, (map.get(edge.target) ?? 0) + 1)
+  }
+  return map
 }
 
 // ── Home page: top-6 concept nodes by degree ───────────────────────────────
@@ -127,8 +150,15 @@ const MAX_NEIGHBORS = 5
  *    This delivers on meshblog's "automatic entity extraction creates links without
  *    user effort" claim.
  *
- * - Center node (index 0): the current note/post itself (no href — it IS the page)
- * - Neighbors (indices 1–MAX_NEIGHBORS): inbound/outbound or entity-related notes
+ * - Center node (index 0): the current note/post itself (no href — it IS the page).
+ *   Center node does NOT carry excerpt/backlinks/relationship/readingMinutes.
+ * - Neighbors (indices 1–MAX_NEIGHBORS): inbound/outbound or entity-related notes.
+ *   Neighbors carry the full popover metadata:
+ *   - `excerpt`: ≤160 chars plain text, from the neighbor's DB content
+ *   - `backlinks`: count of inbound wikilink edges to that neighbor (global, from backlinks.json)
+ *   - `relationship`: 'backlink' | 'outbound' | 'entity'
+ *   - `readingMinutes`: estimated integer minutes via estimateReadingMinutes()
+ *   - `kind`: 'stub' when content is empty/whitespace, otherwise 'note'
  *
  * Returns just [centerNode] (length=1) when neither source has neighbors — the
  * caller's `meshNodes.length > 1` guard hides MiniMesh gracefully.
@@ -147,13 +177,9 @@ export function getNoteMeshNodes(opts: {
   const wikineighbors = getWikilinkNeighbors(noteId)
 
   if (wikineighbors.length > 0) {
-    // Primary path has neighbors — use them directly.
+    // Primary path has neighbors — enrich them with popover metadata from DB.
     const centerNode: MeshNode = { label: noteTitle, kind: 'selected' as const }
-    const neighborNodes: MeshNode[] = wikineighbors.map((n) => ({
-      label: n.title,
-      kind: 'note' as const,
-      href: withBase(`/notes/${n.slug}`),
-    }))
+    const neighborNodes = enrichNeighborsFromDb(wikineighbors, withBase)
     return [centerNode, ...neighborNodes]
   }
 
@@ -201,23 +227,107 @@ function getWikilinkNeighbors(noteId: string): NeighborSource[] {
   return neighbors
 }
 
+// ── Internal: enrich wikilink neighbors with popover metadata ───────────────
+
+type NoteContentRow = { id: string; content: string }
+
+/**
+ * Given a list of NeighborSource entries from the wikilink path, fetch their
+ * content from SQLite in a single `WHERE id IN (…)` query (no N+1), then
+ * attach excerpt, readingMinutes, backlinks count, relationship, and stub kind.
+ *
+ * Returns the enriched MeshNode[] in the same order as `neighbors`.
+ */
+function enrichNeighborsFromDb(
+  neighbors: NeighborSource[],
+  withBase: (p: string) => string,
+): MeshNode[] {
+  // Load backlinks.json once to build the global inbound-count map.
+  const backlinksData = loadJson<BacklinksJson>('public/graph/backlinks.json')
+  const inboundMap = backlinksData
+    ? buildInboundCountMap(backlinksData.edges)
+    : new Map<string, number>()
+
+  // Attempt to fetch neighbor content from DB in a single query.
+  const contentMap = new Map<string, string>()
+  const db = openReadonlyDb()
+  if (db) {
+    try {
+      const slugs = neighbors.map((n) => n.slug)
+      // SQLite placeholders: one ? per slug
+      const placeholders = slugs.map(() => '?').join(', ')
+      const rows = db
+        .prepare<string[]>(`SELECT id, content FROM notes WHERE slug IN (${placeholders})`)
+        .all(...slugs) as NoteContentRow[]
+      for (const row of rows) {
+        contentMap.set(row.id, row.content)
+      }
+    } finally {
+      db.close()
+    }
+  }
+
+  return neighbors.map((n) => {
+    // Slug is used as the node id in backlinks.json (matches notes.slug / notes.id).
+    // Distinguish "row not found in DB" (don't downgrade to stub — DB may be null
+    // in tests or fixture-mode) from "row found with empty content" (true stub).
+    const hasRow = contentMap.has(n.slug)
+    const content = contentMap.get(n.slug) ?? ''
+    const excerpt = plainExcerpt(content, 160)
+    const isStub = hasRow && excerpt === ''
+    const readingMinutes = content.trim().length > 0
+      ? estimateReadingMinutes(content)
+      : undefined
+    const backlinkCount = inboundMap.get(n.slug)
+
+    return {
+      label: n.title,
+      kind: isStub ? ('stub' as const) : ('note' as const),
+      href: withBase(`/notes/${n.slug}`),
+      excerpt: isStub || excerpt === '' ? undefined : excerpt,
+      backlinks: backlinkCount,
+      relationship: n.sourceType,
+      readingMinutes,
+    }
+  })
+}
+
 // ── Internal: entity-overlap path ──────────────────────────────────────────
 
-type EntityNeighborRow = { id: string; slug: string; title: string; shared: number }
+type EntityNeighborRow = {
+  id: string
+  slug: string
+  title: string
+  shared: number
+  content: string
+}
 
 /**
  * Query SQLite for notes that share entities with `noteId`.
  * Uses a prepared statement for performance across 39 SSG calls.
  * Results are deterministic: ordered by (shared DESC, id ASC).
+ *
+ * Each neighbor node is enriched with popover metadata:
+ * - `excerpt`: ≤160 chars plain text from the note's content column
+ * - `backlinks`: inbound wikilink edge count from backlinks.json
+ * - `relationship`: always 'entity' for this path
+ * - `readingMinutes`: estimated integer minutes
+ * - `kind`: 'stub' when content is empty, otherwise 'note'
  */
 function getEntityNeighbors(noteId: string, withBase: (p: string) => string): MeshNode[] {
   const db = openReadonlyDb()
   if (!db) return []
 
+  // Load backlinks.json for the global inbound-count map.
+  const backlinksData = loadJson<BacklinksJson>('public/graph/backlinks.json')
+  const inboundMap = backlinksData
+    ? buildInboundCountMap(backlinksData.edges)
+    : new Map<string, number>()
+
   try {
     const rows = db
-      .prepare<[string, string, number]>(
-        `SELECT n.id, n.slug, n.title,
+      .prepare<[string, number]>(
+        `SELECT n.id, n.slug, n.title, n.content,
                 COUNT(ne2.entity_id) AS shared
          FROM note_entities ne1
          JOIN note_entities ne2 ON ne2.entity_id = ne1.entity_id
@@ -230,11 +340,24 @@ function getEntityNeighbors(noteId: string, withBase: (p: string) => string): Me
       )
       .all(noteId, MAX_NEIGHBORS) as EntityNeighborRow[]
 
-    return rows.map((row) => ({
-      label: row.title,
-      kind: 'note' as const,
-      href: withBase(`/notes/${row.slug}`),
-    }))
+    return rows.map((row) => {
+      const excerpt = plainExcerpt(row.content, 160)
+      const isStub = excerpt === ''
+      const readingMinutes = row.content.trim().length > 0
+        ? estimateReadingMinutes(row.content)
+        : undefined
+      const backlinkCount = inboundMap.get(row.slug)
+
+      return {
+        label: row.title,
+        kind: isStub ? ('stub' as const) : ('note' as const),
+        href: withBase(`/notes/${row.slug}`),
+        excerpt: isStub ? undefined : excerpt,
+        backlinks: backlinkCount,
+        relationship: 'entity' as const,
+        readingMinutes,
+      }
+    })
   } finally {
     db.close()
   }

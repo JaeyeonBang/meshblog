@@ -8,7 +8,7 @@ import PageQa from '../../components/ui/molecules/PageQa.astro'
 import RelatedGrid from '../../components/ui/molecules/RelatedGrid.astro'
 import Pager from '../../components/ui/molecules/Pager.astro'
 import TOC from '../../components/ui/molecules/TOC.astro'
-import MiniMesh from '../../components/ui/molecules/MiniMesh.astro'
+import MeshStrip from '../../components/ui/molecules/MeshStrip.astro'
 import { renderMarkdownToHtml } from '../../lib/markdown/render'
 import { buildNoteResolver } from '../../lib/markdown/wikilink-resolver'
 import {
@@ -138,7 +138,7 @@ const tocItems = extractToc(contentHtml).map((e) => ({
 }))
 
 // Per-note subgraph: center = this note, neighbors = up to 5 inbound/outbound links.
-// Returns [] for orphan notes — MiniMesh is hidden in that case.
+// Returns [] for orphan notes — MeshStrip is hidden in that case.
 const meshNodes = getNoteMeshNodes({
   noteId: note.id,
   noteTitle: note.title,
@@ -176,6 +176,10 @@ const meshNodes = getNoteMeshNodes({
           </div>
         )}
       </header>
+
+      {meshNodes.length > 1 && (
+        <MeshStrip nodes={meshNodes} />
+      )}
 
       <!-- Note variant: no HeroFigure, prose width 52ch -->
       <div class="prose note-prose">
@@ -229,11 +233,6 @@ const meshNodes = getNoteMeshNodes({
           <Tag>{tag}</Tag>
         ))}
       </TOC>
-      {meshNodes.length > 1 && (
-        <TOC label="position in mesh" mesh={true}>
-          <MiniMesh nodes={meshNodes} size="sm" />
-        </TOC>
-      )}
     </aside>
   </div>
 </Base>
