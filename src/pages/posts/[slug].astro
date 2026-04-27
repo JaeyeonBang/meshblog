@@ -219,7 +219,6 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
     </article>
 
     <aside class="reader-aside">
-      <TOC label="contents" items={tocItems} />
       {meshNodes.length > 1 && (
         <section aria-label="related mesh" class="related-mesh-section">
           <h3 class="mono-eyebrow">related</h3>
@@ -227,6 +226,7 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
           <a class="mesh-cta" href={withBase('/graph')}>전체 그래프 →</a>
         </section>
       )}
+      <TOC label="contents" items={tocItems} />
       {/* TODO: restore "backlinks" when backlinks are aggregated */}
     </aside>
   </div>
@@ -425,7 +425,7 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
 
   /* ── Related mesh sidebar section ──────────────────────────── */
   .related-mesh-section {
-    margin-top: 36px;
+    margin-bottom: 36px;
   }
 
   .related-mesh-section .mono-eyebrow {

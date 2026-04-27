@@ -49,6 +49,12 @@ export function useForceSimulation(
       chargeStrength?: number    // default -120
       collideRadius?: number     // default 10
       scaleExtent?: [number, number]  // default [0.1, 8]
+      /** Explicit canvas width to avoid clientWidth=0 race during client:visible
+       *  hydration. When provided, simulation places nodes within this width
+       *  instead of falling back to 800. Should match the SVG viewBox. */
+      canvasWidth?: number
+      /** Explicit canvas height. Pairs with canvasWidth. Defaults to clientHeight || 600. */
+      canvasHeight?: number
     }
     /** When false, skip the entrance stagger animation (set delay to 0ms). Default true. */
     staggerEnabled?: boolean
@@ -58,8 +64,8 @@ export function useForceSimulation(
     const svgEl = svgRef.current
     if (!svgEl || !graph || graph.nodes.length === 0) return
 
-    const width = svgEl.clientWidth || 800
-    const height = svgEl.clientHeight || 600
+    const width = opts.simParams?.canvasWidth ?? (svgEl.clientWidth || 800)
+    const height = opts.simParams?.canvasHeight ?? (svgEl.clientHeight || 600)
 
     // Clone nodes/links so d3 mutation doesn't bleed into React state
     const nodes: SimNode[] = graph.nodes.map(n => ({ ...n }))
