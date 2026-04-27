@@ -95,14 +95,19 @@ function categoryToGraphJson(
     const sorted = [...data.categories].sort(
       (a, b) => (b.noteCount + b.postCount) - (a.noteCount + a.postCount),
     )
-    const nodes: GraphNode[] = sorted.map(c => ({
-      id: c.id,
-      label: normalizeLabel(c.id, c.label),
-      type: 'category' as NodeKind,
-      level: 1 as const,
-      pagerank: (c.noteCount + c.postCount) / 100,
-      pinned: false,
-    }))
+    const nodes: GraphNode[] = sorted.map(c => {
+      const total = c.noteCount + c.postCount
+      const baseLabel = normalizeLabel(c.id, c.label)
+      return {
+        id: c.id,
+        // Suffix the count so the landing view reads as "AGENT · 5", not bare "AGENT".
+        label: total > 0 ? `${baseLabel} · ${total}` : baseLabel,
+        type: 'category' as NodeKind,
+        level: 1 as const,
+        pagerank: total / 100,
+        pinned: false,
+      }
+    })
     // Spine: chain categories so L1 shows a visible mesh skeleton.
     // weight = average of the two endpoint sizes / 5 (keeps line thin but real).
     const links = sorted.slice(0, -1).map((c, i) => {
@@ -369,6 +374,10 @@ export default function GraphView() {
 
   useForceSimulation(svgRef, graph, {
     colorByCategory: mode !== 'concept',
+    // Concept-mode: nodes have no categorySlug, but they DO have a cluster index
+    // from Louvain community detection. Map cluster → palette so concept view
+    // reads as graphify-style coloured communities instead of monolithic black.
+    colorByCluster: mode === 'concept',
     onNodeClick: (node: GraphNode) => {
       // L1 category node clicked in notes-mode — drill into L2 (preserve taxonomy drill-down)
       if (node.type === 'category' && categoryData) {
