@@ -1,10 +1,10 @@
-/* PostMeshGraph.module.css — scoped styles for the reader-aside mini graph
+/* PostMeshGraph.module.css — text-box force graph for the reader aside.
  *
  * Editorial invariants honoured:
- *   #1 — no hex literals (all colours via CSS custom properties / tokens)
+ *   #1 — no hex literals (all colours via tokens)
  *   #2 — hairline 1px border only
- *   #3 — hover-invert on neighbour circles + buttons
- *   #5 — NO box-shadow (shadow-hard is reserved for .cmdk + .help only)
+ *   #3 — hover-invert on neighbour boxes + buttons
+ *   #5 — NO box-shadow
  *   #6 — border-radius ≤ 4px
  */
 
@@ -22,10 +22,8 @@
   display: block;
   width: 100%;
   height: 100%;
-  /* Allow nodes near the edge of the viewBox to render outside the SVG box
-     without being clipped — important for force layouts that drift slightly. */
+  /* Allow boxes near the viewBox edge to render outside without clipping */
   overflow: visible;
-  /* Entrance fade-in (skipped under prefers-reduced-motion) */
   animation: postmesh-fadein 150ms ease-out;
 }
 
@@ -40,31 +38,51 @@
   to   { opacity: 1; }
 }
 
-/* ── Node styles ──────────────────────────────────────────────────────────── */
+/* ── Node box styles ──────────────────────────────────────────────────────── */
 
-/* Center node: type='concept' → data-kind="concept" → filled, larger (r=7 from hook) */
-.svg :global(.nodes circle[data-kind="concept"]) {
+/* All node groups */
+.svg :global(.nodes g.node) {
+  font-family: var(--f-mono);
+  letter-spacing: 0.02em;
+}
+
+/* Center node — filled */
+.svg :global(.nodes g.node[data-kind="center"] rect) {
   fill: var(--ink);
   stroke: var(--ink);
   stroke-width: 1;
 }
+.svg :global(.nodes g.node[data-kind="center"] text) {
+  fill: var(--paper);
+  font-weight: 500;
+  pointer-events: none;
+}
 
-/* Neighbour nodes: type='note' → data-kind="note" → outline only, hover-invert */
-.svg :global(.nodes circle[data-kind="note"]) {
+/* Neighbour nodes — outline only, hover-invert */
+.svg :global(.nodes g.node[data-kind="neighbor"] rect) {
   fill: var(--paper);
   stroke: var(--ink-3);
   stroke-width: 1;
   transition: fill 120ms ease-out, stroke 120ms ease-out;
 }
+.svg :global(.nodes g.node[data-kind="neighbor"] text) {
+  fill: var(--ink);
+  pointer-events: none;
+  transition: fill 120ms ease-out;
+}
 
-/* Hover-invert (invariant #3) — flip background ↔ foreground on hover */
-.svg :global(.nodes circle[data-kind="note"]:hover) {
+.svg :global(.nodes g.node[data-kind="neighbor"]:hover rect),
+.svg :global(.nodes g.node[data-kind="neighbor"]:focus rect) {
   fill: var(--ink);
   stroke: var(--ink);
 }
+.svg :global(.nodes g.node[data-kind="neighbor"]:hover text),
+.svg :global(.nodes g.node[data-kind="neighbor"]:focus text) {
+  fill: var(--paper);
+}
 
-/* Keyboard-focus ring (accessibility) */
-.svg :global(.nodes circle:focus-visible) {
+/* Keyboard-focus ring */
+.svg :global(.nodes g.node:focus-visible) {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
@@ -75,19 +93,14 @@
   stroke: var(--ink-4);
   stroke-width: 0.5;
   opacity: 0.7;
+  pointer-events: none;
 }
 
 .svg :global(.links line[data-edge-type="inter"]) {
   opacity: 0.4;
 }
 
-/* ── Label suppression (we use our own popover) ───────────────────────────── */
-
-.svg :global(.labels text) {
-  display: none;
-}
-
-/* ── Hover label popover ──────────────────────────────────────────────────── */
+/* ── Hover label popover (fixed position, viewport coords) ────────────────── */
 
 .label {
   position: fixed;
@@ -100,6 +113,9 @@
   letter-spacing: 0.05em;
   white-space: nowrap;
   z-index: 200;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .labelMeta {
@@ -187,8 +203,6 @@
   outline-offset: 2px;
 }
 
-/* In modal, the inner SVG fills the modal box; the wrap CSS doesn't apply
-   because we're rendering GraphCanvas directly inside .modalInner. */
 .modalInner > .svg {
   width: 100%;
   height: 100%;
