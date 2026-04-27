@@ -349,3 +349,17 @@ VALUES
    'What topics does this knowledge base cover?',
    'Type systems (TypeScript generics), databases (SQLite/WAL), AI/ML (RAG, embeddings, LLMs), graph algorithms (PageRank, Louvain), and writing practices for developers.',
    'seed-v1');
+
+-- ── graph_levels (5 note nodes: 2 L1, 2 L2, 1 L3) ────────────────────────────
+-- Simulates PageRank assignment: fixture-글쓰기-철학 is the lone leaf (L3).
+-- fixture-sqlite-patterns + fixture-ts-generics are hubs (L1).
+-- fixture-rag-overview + fixture-graph-algorithms are mid-tier (L2).
+-- level_pin overrides in notes table do not change graph_levels — export-graph
+-- writes both, but seed.sql sets them independently for testing.
+INSERT INTO graph_levels (graph_type, node_id, level, pagerank, pinned)
+VALUES
+  ('note', 'fixture-ts-generics',     1, 0.28, 0),
+  ('note', 'fixture-sqlite-patterns', 1, 0.25, 1),
+  ('note', 'fixture-rag-overview',    2, 0.18, 0),
+  ('note', 'fixture-graph-algorithms',2, 0.15, 1),
+  ('note', 'fixture-글쓰기-철학',     3, 0.05, 0);

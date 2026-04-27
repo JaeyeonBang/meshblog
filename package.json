@@ -33,6 +33,7 @@
     "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'",
     "init": "bun run scripts/init.ts",
     "new-post": "tsx scripts/new-post.ts",
+    "l3-visibility": "bun run scripts/l3-visibility.ts",
     "build-backlinks-if-exists": "[ -f scripts/build-backlinks.ts ] && tsx scripts/build-backlinks.ts || echo '[refresh] build-backlinks.ts not present yet, skipping'",
     "refresh": "bun run build-tokens && bun run build-index && bun run build-backlinks-if-exists && bun run preview",
     "pretest:e2e": "FIXTURE_ONLY=1 bun run build-index && bun run export-graph && bunx tsx tests/e2e/_seed.ts && bun run build",

@@ -11,6 +11,7 @@
 // Drives display prominence within the notes list; not used for inclusion/exclusion.
 
 import { openReadonlyDb } from './db'
+import { loadMeshblogConfig, getL3NoteSlugs, filterL3 } from '../config'
 
 export type NoteRow = {
   id: string
@@ -45,7 +46,55 @@ export function listNotes(): NoteRow[] {
          ORDER BY updated_at DESC`
       )
       .all(NOTES_FOLDER) as any[]
+    const parsed = rows.map(parseRow)
+    const { l3Visibility } = loadMeshblogConfig()
+    if (l3Visibility === 'full') return parsed
+    const l3 = getL3NoteSlugs(db)
+    return filterL3(parsed, l3Visibility, l3)
+  } finally {
+    db.close()
+  }
+}
+
+/**
+ * Returns ALL NoteRow objects regardless of l3Visibility mode.
+ * Used by getStaticPaths so keyword-only mode keeps L3 note props available
+ * for placeholder rendering (listNotes() filters them out in keyword-only/hidden).
+ */
+export function listAllNotesUnfiltered(): NoteRow[] {
+  const db = openReadonlyDb()
+  if (!db) return []
+  try {
+    const rows = db
+      .prepare(
+        `SELECT id, slug, title, content, tags, created_at, updated_at, level_pin, category_slug
+         FROM notes
+         WHERE folder_path = ?
+         ORDER BY updated_at DESC`
+      )
+      .all(NOTES_FOLDER) as any[]
     return rows.map(parseRow)
+  } finally {
+    db.close()
+  }
+}
+
+/**
+ * Returns ALL note slugs regardless of l3Visibility mode.
+ * Used by getStaticPaths so keyword-only mode keeps L3 routes (for placeholder rendering).
+ */
+export function listAllNoteSlugs(): Array<{ slug: string; folder_path: string }> {
+  const db = openReadonlyDb()
+  if (!db) return []
+  try {
+    return db
+      .prepare(
+        `SELECT slug, folder_path
+         FROM notes
+         WHERE folder_path = ?
+         ORDER BY updated_at DESC`
+      )
+      .all(NOTES_FOLDER) as Array<{ slug: string; folder_path: string }>
   } finally {
     db.close()
   }

@@ -10,6 +10,7 @@ dotenv.config({ path: ".env.local" })
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { createDb, queryMany, type Database } from "../src/lib/db/index.ts"
+import { loadMeshblogConfig, getL3NoteSlugs } from "../src/lib/config.ts"
 
 // Reuse the canonical regex from strip-wikilinks.ts (D2).
 // We need a fresh RegExp per call (lastIndex is stateful on /g regexes).
@@ -135,11 +136,19 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
   }
 
   // 4. Build backlinks.json — only resolved edges (target_id IS NOT NULL)
+  //    In 'hidden' mode, drop L3 nodes and any edges incident to them.
+  const { l3Visibility } = loadMeshblogConfig()
+  const l3Slugs = l3Visibility === "hidden" ? getL3NoteSlugs(db) : new Set<string>()
+
   const nodeSet = new Set<string>()
   const edges: BacklinksJson["edges"] = []
 
   for (const row of rows) {
     if (row.target_id === null) continue
+    // hidden mode: skip any edge that touches an L3 node
+    if (l3Visibility === "hidden" && (l3Slugs.has(row.source_id) || l3Slugs.has(row.target_id))) {
+      continue
+    }
     nodeSet.add(row.source_id)
     nodeSet.add(row.target_id)
     const edge: BacklinksJson["edges"][number] = {

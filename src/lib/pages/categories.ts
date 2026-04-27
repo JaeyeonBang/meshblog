@@ -9,6 +9,7 @@
 // categories table.
 
 import { openReadonlyDb } from './db'
+import { loadMeshblogConfig, getL3NoteSlugs, filterL3 } from '../config'
 
 export type CategoryRow = {
   slug: string
@@ -91,7 +92,11 @@ export function listNotesByCategory(slug: string): NoteRow[] {
          ORDER BY updated_at DESC`
       )
       .all(slug) as any[]
-    return rows.map(parseNoteRow)
+    const parsed = rows.map(parseNoteRow)
+    const { l3Visibility } = loadMeshblogConfig()
+    if (l3Visibility === 'full') return parsed
+    const l3 = getL3NoteSlugs(db)
+    return filterL3(parsed, l3Visibility, l3)
   } finally {
     db.close()
   }
