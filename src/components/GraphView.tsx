@@ -294,7 +294,26 @@ export default function GraphView() {
         if (loadingEl) loadingEl.setAttribute('aria-hidden', 'true')
 
         if (nextStatus === 'empty') {
-          if (emptyEl) emptyEl.setAttribute('aria-hidden', 'false')
+          if (emptyEl) {
+            emptyEl.setAttribute('aria-hidden', 'false')
+            // Mode-specific empty copy. Backlinks gets a discoverable hint
+            // because it's the most likely mode to be empty for fork users
+            // who haven't yet added [[wikilinks]] between notes.
+            const eyebrow = document.getElementById('graphEmptyEyebrow')
+            const body = document.getElementById('graphEmptyBody')
+            if (eyebrow && body) {
+              if (mode === 'backlinks') {
+                eyebrow.textContent = 'no backlinks yet'
+                body.textContent = 'Add [[wikilinks]] between your notes to populate this view.'
+              } else if (mode === 'concept') {
+                eyebrow.textContent = 'no concepts yet'
+                body.textContent = 'Run the full build with OPENAI_API_KEY to extract concepts.'
+              } else {
+                eyebrow.textContent = 'no nodes'
+                body.textContent = 'Add notes to see the graph.'
+              }
+            }
+          }
         } else {
           if (emptyEl) emptyEl.setAttribute('aria-hidden', 'true')
         }

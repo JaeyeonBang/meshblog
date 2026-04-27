@@ -36,10 +36,13 @@ import { withBase } from '../lib/url'
           <p class="empty-body">그래프 불러오는 중 · fetching mesh…</p>
         </div>
 
-        <!-- empty-state shown when graph has no nodes -->
+        <!-- empty-state shown when graph has no nodes.
+             Headline + body are mutated by GraphView.tsx based on the current mode
+             so the message is helpful (e.g. "add [[wikilinks]] to populate" in
+             backlinks mode) instead of a generic "no nodes". -->
         <div class="empty-state" id="graphEmptyState" aria-hidden="true">
-          <p class="empty-eyebrow">no nodes</p>
-          <p class="empty-body">Add notes to see the graph.</p>
+          <p class="empty-eyebrow" id="graphEmptyEyebrow">no nodes</p>
+          <p class="empty-body" id="graphEmptyBody">Add notes to see the graph.</p>
         </div>
 
         <!-- error-state: shown when data fetch fails -->

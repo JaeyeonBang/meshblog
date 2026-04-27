@@ -91,13 +91,20 @@
   outline-offset: 1px;
 }
 
-/* 6×6 colored dot */
+/* Colored dot — 7px desktop, 9px on mobile for finger-friendly cross-highlight */
 .dot {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+@media (max-width: 780px) {
+  .dot {
+    width: 9px;
+    height: 9px;
+  }
 }
 
 .dot[data-cat="engineering"] { background: var(--cat-engineering); }
