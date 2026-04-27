@@ -17,22 +17,22 @@
   --focus-ring: oklch(45% 0.18 265);
 
   /* ── type families ────────────────────────────────────────────────────── */
-  --f-disp:  'Fraunces', 'Noto Serif KR', 'Pretendard', Georgia, serif;
-  --f-serif: 'Fraunces', 'Noto Serif KR', 'Pretendard', Georgia, serif;
+  --f-disp:  'Fraunces', 'Pretendard', Georgia, serif;
+  --f-serif: 'Fraunces', 'Pretendard', Georgia, serif;
   --f-sans:  'Pretendard', -apple-system, system-ui, sans-serif;
   --f-mono:  'JetBrains Mono', ui-monospace, Menlo, monospace;
 
   /* ── type scale ───────────────────────────────────────────────────────── */
-  --fs-xs:   11px;
-  --fs-sm:   13px;
-  --fs-base: 15px;
-  --fs-md:   16px;
-  --fs-lg:   18px;
-  --fs-xl:   20px;
-  --fs-2xl:  22px;
-  --fs-3xl:  28px;
-  --fs-4xl:  34px;
-  --fs-5xl:  48px;
+  --fs-xs:   12px;
+  --fs-sm:   14px;
+  --fs-base: 17px;
+  --fs-md:   18px;
+  --fs-lg:   20px;
+  --fs-xl:   22px;
+  --fs-2xl:  25px;
+  --fs-3xl:  31px;
+  --fs-4xl:  38px;
+  --fs-5xl:  54px;
   --fs-hero:     clamp(44px, 6vw, 82px);
   --fs-article:  clamp(38px, 5vw, 64px);
   --fs-notfound: 160px;
