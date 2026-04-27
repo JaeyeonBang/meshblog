@@ -69,7 +69,9 @@ type SizeMode = {
   canvas: number
   fontSize: number          // px
   charPx: number            // approx mono char width at fontSize
-  maxChars: number          // truncate label to this many chars
+  maxCharsPerLine: number   // wrap point per line
+  maxLines: number          // hard cap on lines (overflow → ellipsis on last line)
+  lineHeight: number        // line-height multiplier
   padX: number              // rect horizontal padding around text
   padY: number              // rect vertical padding around text
   linkDistance: number
@@ -80,22 +82,26 @@ const COMPACT_MODE: SizeMode = {
   canvas: COMPACT_SIZE,
   fontSize: 10,
   charPx: 5.6,
-  maxChars: 11,
+  maxCharsPerLine: 12,
+  maxLines: 2,
+  lineHeight: 1.2,
   padX: 6,
   padY: 4,
-  linkDistance: 70,
-  chargeStrength: -260,
+  linkDistance: 80,
+  chargeStrength: -340,
 }
 
 const EXPANDED_MODE: SizeMode = {
   canvas: EXPANDED_SIZE,
   fontSize: 13,
   charPx: 7.2,
-  maxChars: 22,
+  maxCharsPerLine: 22,
+  maxLines: 2,
+  lineHeight: 1.25,
   padX: 10,
   padY: 6,
-  linkDistance: 160,
-  chargeStrength: -800,
+  linkDistance: 180,
+  chargeStrength: -900,
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -110,18 +116,66 @@ function deriveId(node: MeshNode, isCentre: boolean): string {
   return node.label
 }
 
-function truncate(s: string, max: number): string {
-  if (s.length <= max) return s
-  return s.slice(0, Math.max(1, max - 1)).trimEnd() + '…'
+/**
+ * Wrap a label into up to `maxLines` lines of at most `maxCharsPerLine` chars each.
+ * Word-boundary aware (prefers spaces); falls back to hard break for long
+ * single tokens or scripts without spaces (e.g. Korean).
+ * Final line ellipsizes if content overflows.
+ */
+function wrapLabel(s: string, maxCharsPerLine: number, maxLines: number): string[] {
+  const trimmed = s.trim()
+  if (!trimmed) return ['']
+  if (trimmed.length <= maxCharsPerLine) return [trimmed]
+
+  const lines: string[] = []
+  let remaining = trimmed
+
+  for (let line = 0; line < maxLines; line++) {
+    if (remaining.length <= maxCharsPerLine) {
+      lines.push(remaining)
+      return lines
+    }
+
+    // Search backward from maxCharsPerLine for a word boundary. Only accept
+    // word breaks that fill at least 60% of the line — otherwise the line
+    // looks awkwardly short ("RAG:" alone, etc.) and a hard break reads better.
+    let breakAt = -1
+    const minBreak = Math.max(1, Math.floor(maxCharsPerLine * 0.6))
+    for (let i = Math.min(maxCharsPerLine, remaining.length - 1); i >= minBreak; i--) {
+      if (remaining[i] === ' ') {
+        breakAt = i
+        break
+      }
+    }
+    if (breakAt < 0) breakAt = maxCharsPerLine
+
+    if (line === maxLines - 1) {
+      // Last allowed line — ellipsize if content remains beyond breakAt
+      const slice = remaining.slice(0, breakAt).trimEnd()
+      if (remaining.length > breakAt) {
+        const cut = Math.max(1, slice.length - 1)
+        lines.push(slice.slice(0, cut) + '…')
+      } else {
+        lines.push(slice)
+      }
+      return lines
+    }
+
+    lines.push(remaining.slice(0, breakAt).trimEnd())
+    remaining = remaining.slice(breakAt).trimStart()
+  }
+
+  return lines
 }
 
-function estimateBoxWidth(label: string, mode: SizeMode): number {
-  const text = truncate(label, mode.maxChars)
-  return text.length * mode.charPx + mode.padX * 2
+function estimateBoxWidth(lines: string[], mode: SizeMode): number {
+  const longest = lines.reduce((m, l) => Math.max(m, l.length), 0)
+  return longest * mode.charPx + mode.padX * 2
 }
 
-function boxHeight(mode: SizeMode): number {
-  return mode.fontSize + mode.padY * 2
+function estimateBoxHeight(lines: string[], mode: SizeMode): number {
+  const lh = mode.fontSize * mode.lineHeight
+  return lines.length * lh + mode.padY * 2
 }
 
 // ── Inner canvas (re-mounts when canvasSize changes via parent's key prop) ──
@@ -171,12 +225,15 @@ function GraphCanvas({
       if (s && t) simLinks.push({ source: s, target: t, type: 'inter' })
     }
 
-    // Per-node box dimensions
+    // Per-node wrapped label + box dimensions
+    const wrapped = new Map<string, string[]>()
     const dims = new Map<string, { w: number; h: number }>()
     for (const n of simNodes) {
+      const lines = wrapLabel(n.label, mode.maxCharsPerLine, mode.maxLines)
+      wrapped.set(n.id, lines)
       dims.set(n.id, {
-        w: estimateBoxWidth(n.label, mode),
-        h: boxHeight(mode),
+        w: estimateBoxWidth(lines, mode),
+        h: estimateBoxHeight(lines, mode),
       })
     }
 
@@ -249,13 +306,28 @@ function GraphCanvas({
       .attr('rx', 2)
       .attr('ry', 2)
 
-    // Text label — truncated to fit the box
-    nodeSel
+    // Text label — wrapped to up to mode.maxLines lines via <tspan>s
+    const lh = mode.fontSize * mode.lineHeight
+    const textSel = nodeSel
       .append('text')
       .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'central')
       .attr('font-size', mode.fontSize)
-      .text(d => truncate(d.label, mode.maxChars))
+
+    textSel.each(function (d: SimNode) {
+      const lines = wrapped.get(d.id) ?? [d.label]
+      // Vertically centre the line block: first line baseline sits above center
+      // by (totalHeight/2 - lineHeight). Use dy on subsequent tspans for line spacing.
+      const totalH = lines.length * lh
+      const firstY = -totalH / 2 + lh * 0.78  // 0.78 ≈ baseline offset within line box
+      const sel = d3Selection.select<SVGTextElement, SimNode>(this as SVGTextElement)
+      lines.forEach((line, i) => {
+        sel
+          .append('tspan')
+          .attr('x', 0)
+          .attr('y', firstY + i * lh)
+          .text(line)
+      })
+    })
 
     // Accessibility tooltip
     nodeSel.append('title').text(d => d.label)
