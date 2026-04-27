@@ -217,15 +217,15 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
     </article>
 
     <aside class="reader-aside">
-      {tocItems.length > 0 && (
-        <TOC label="contents" items={tocItems} />
-      )}
       {meshNodes.length > 1 && (
         <section aria-label="related mesh" class="related-mesh-section">
           <h3 class="mono-eyebrow">related</h3>
           <PostMeshGraph nodes={meshNodes} links={meshLinks} client:visible />
           <a class="mesh-cta" href={withBase('/graph')}>전체 그래프 →</a>
         </section>
+      )}
+      {tocItems.length > 0 && (
+        <TOC label="contents" items={tocItems} />
       )}
       {backlinks.length > 0 && (
         <section aria-label="backlinks" class="backlinks-section">
