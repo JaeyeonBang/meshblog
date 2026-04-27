@@ -68,8 +68,9 @@ const EXPANDED_SIZE = 720
 type SizeMode = {
   canvas: number
   fontSize: number          // px
-  charPx: number            // approx mono char width at fontSize
-  maxCharsPerLine: number   // wrap point per line
+  /** Max line width measured in em-units (1em = fontSize). Pretendard is
+   *  proportional, so use em widths instead of fixed char counts. */
+  maxLineEm: number
   maxLines: number          // hard cap on lines (overflow → ellipsis on last line)
   lineHeight: number        // line-height multiplier
   padX: number              // rect horizontal padding around text
@@ -81,27 +82,25 @@ type SizeMode = {
 const COMPACT_MODE: SizeMode = {
   canvas: COMPACT_SIZE,
   fontSize: 10,
-  charPx: 5.6,
-  maxCharsPerLine: 12,
+  maxLineEm: 7.2,           // ~72px wide line (excl. padding)
   maxLines: 2,
-  lineHeight: 1.2,
-  padX: 6,
-  padY: 4,
-  linkDistance: 80,
-  chargeStrength: -340,
+  lineHeight: 1.25,
+  padX: 10,                 // up from 6 — extra horizontal breathing room
+  padY: 5,
+  linkDistance: 90,
+  chargeStrength: -380,
 }
 
 const EXPANDED_MODE: SizeMode = {
   canvas: EXPANDED_SIZE,
   fontSize: 13,
-  charPx: 7.2,
-  maxCharsPerLine: 22,
+  maxLineEm: 14,            // ~182px wide line
   maxLines: 2,
-  lineHeight: 1.25,
-  padX: 10,
-  padY: 6,
-  linkDistance: 180,
-  chargeStrength: -900,
+  lineHeight: 1.3,
+  padX: 16,                 // up from 10
+  padY: 7,
+  linkDistance: 200,
+  chargeStrength: -1000,
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -117,46 +116,86 @@ function deriveId(node: MeshNode, isCentre: boolean): string {
 }
 
 /**
- * Wrap a label into up to `maxLines` lines of at most `maxCharsPerLine` chars each.
- * Word-boundary aware (prefers spaces); falls back to hard break for long
- * single tokens or scripts without spaces (e.g. Korean).
- * Final line ellipsizes if content overflows.
+ * Approximate em-width per character for Pretendard SemiBold.
+ * CJK code points (Hangul, CJK Unified, full-width forms) ≈ 1.0em.
+ * Latin/digit/punctuation ≈ 0.55em (Pretendard is fairly narrow).
  */
-function wrapLabel(s: string, maxCharsPerLine: number, maxLines: number): string[] {
+function emWidthOfChar(ch: string): number {
+  const code = ch.charCodeAt(0)
+  if (
+    (code >= 0x3000 && code <= 0x9fff) ||  // CJK symbols + Unified Ideographs
+    (code >= 0xac00 && code <= 0xd7af) ||  // Hangul syllables
+    (code >= 0xff00 && code <= 0xffef)     // Half-/full-width forms
+  ) {
+    return 1.0
+  }
+  return 0.55
+}
+
+function emWidth(s: string): number {
+  let w = 0
+  for (const ch of s) w += emWidthOfChar(ch)
+  return w
+}
+
+/**
+ * Wrap a label into up to `maxLines` lines, each at most `maxLineEm` wide.
+ * Word-boundary aware (prefers spaces) when the resulting line fills ≥60% of
+ * the budget; falls back to hard break otherwise. Last line ellipsizes if
+ * content overflows the line cap.
+ */
+function wrapLabel(s: string, maxLineEm: number, maxLines: number): string[] {
   const trimmed = s.trim()
   if (!trimmed) return ['']
-  if (trimmed.length <= maxCharsPerLine) return [trimmed]
+  if (emWidth(trimmed) <= maxLineEm) return [trimmed]
 
   const lines: string[] = []
   let remaining = trimmed
 
   for (let line = 0; line < maxLines; line++) {
-    if (remaining.length <= maxCharsPerLine) {
+    if (emWidth(remaining) <= maxLineEm) {
       lines.push(remaining)
       return lines
     }
 
-    // Search backward from maxCharsPerLine for a word boundary. Only accept
-    // word breaks that fill at least 60% of the line — otherwise the line
-    // looks awkwardly short ("RAG:" alone, etc.) and a hard break reads better.
-    let breakAt = -1
-    const minBreak = Math.max(1, Math.floor(maxCharsPerLine * 0.6))
-    for (let i = Math.min(maxCharsPerLine, remaining.length - 1); i >= minBreak; i--) {
-      if (remaining[i] === ' ') {
-        breakAt = i
+    // Greedy fill: walk chars until the budget is exceeded; remember the last
+    // space position along the way to support a clean word break.
+    let acc = 0
+    let cutIdx = remaining.length
+    let lastSpaceIdx = -1
+    let lastSpaceAcc = 0
+
+    for (let i = 0; i < remaining.length; i++) {
+      const ch = remaining[i] ?? ''
+      const cw = emWidthOfChar(ch)
+      if (acc + cw > maxLineEm) {
+        cutIdx = i
         break
       }
+      if (ch === ' ') {
+        lastSpaceIdx = i
+        lastSpaceAcc = acc
+      }
+      acc += cw
     }
-    if (breakAt < 0) breakAt = maxCharsPerLine
+
+    // Prefer a word break when it gives ≥60% line fill.
+    let breakAt = cutIdx
+    if (lastSpaceIdx >= 0 && lastSpaceAcc >= maxLineEm * 0.6) {
+      breakAt = lastSpaceIdx
+    }
 
     if (line === maxLines - 1) {
-      // Last allowed line — ellipsize if content remains beyond breakAt
-      const slice = remaining.slice(0, breakAt).trimEnd()
+      // Last allowed line — ellipsize if more remains.
+      let lineText = remaining.slice(0, breakAt).trimEnd()
       if (remaining.length > breakAt) {
-        const cut = Math.max(1, slice.length - 1)
-        lines.push(slice.slice(0, cut) + '…')
+        // Trim from the end until "lineText…" fits within budget.
+        while (lineText.length > 1 && emWidth(lineText) + emWidthOfChar('…') > maxLineEm) {
+          lineText = lineText.slice(0, -1).trimEnd()
+        }
+        lines.push(lineText + '…')
       } else {
-        lines.push(slice)
+        lines.push(lineText)
       }
       return lines
     }
@@ -169,8 +208,8 @@ function wrapLabel(s: string, maxCharsPerLine: number, maxLines: number): string
 }
 
 function estimateBoxWidth(lines: string[], mode: SizeMode): number {
-  const longest = lines.reduce((m, l) => Math.max(m, l.length), 0)
-  return longest * mode.charPx + mode.padX * 2
+  const longestEm = lines.reduce((m, l) => Math.max(m, emWidth(l)), 0)
+  return longestEm * mode.fontSize + mode.padX * 2
 }
 
 function estimateBoxHeight(lines: string[], mode: SizeMode): number {
@@ -229,7 +268,7 @@ function GraphCanvas({
     const wrapped = new Map<string, string[]>()
     const dims = new Map<string, { w: number; h: number }>()
     for (const n of simNodes) {
-      const lines = wrapLabel(n.label, mode.maxCharsPerLine, mode.maxLines)
+      const lines = wrapLabel(n.label, mode.maxLineEm, mode.maxLines)
       wrapped.set(n.id, lines)
       dims.set(n.id, {
         w: estimateBoxWidth(lines, mode),

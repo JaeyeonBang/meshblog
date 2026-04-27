@@ -40,10 +40,10 @@
 
 /* ── Node box styles ──────────────────────────────────────────────────────── */
 
-/* All node groups */
+/* All node groups — Pretendard SemiBold (loaded via Google Fonts in Base.astro) */
 .svg :global(.nodes g.node) {
-  font-family: var(--f-mono);
-  letter-spacing: 0.02em;
+  font-family: var(--f-sans);
+  font-weight: 600;
 }
 
 /* Center node — filled */
@@ -54,7 +54,6 @@
 }
 .svg :global(.nodes g.node[data-kind="center"] text) {
   fill: var(--paper);
-  font-weight: 500;
   pointer-events: none;
 }
 
