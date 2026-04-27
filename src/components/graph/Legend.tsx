@@ -15,6 +15,7 @@
 
 import { useState } from 'react'
 import styles from './Legend.module.css'
+import { paletteIndexFor } from './categoryPalette'
 
 export interface LegendCategory {
   slug: string
@@ -59,6 +60,7 @@ export function Legend({ categories, visible }: LegendProps) {
             <span
               className={styles.dot}
               data-cat={cat.slug}
+              data-cat-idx={paletteIndexFor(cat.slug) === -1 ? undefined : String(paletteIndexFor(cat.slug))}
               aria-hidden="true"
             />
             <span className={styles.itemLabel}>

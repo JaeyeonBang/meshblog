@@ -87,7 +87,11 @@ function categoryToGraphJson(
 ): GraphJson {
   if (level === 1 || !categorySlug) {
     // L1: one node per category — pagerank drives circle radius
-    const nodes: GraphNode[] = data.categories.map(c => ({
+    // Sort descending by total count so spine flows largest→smallest
+    const sorted = [...data.categories].sort(
+      (a, b) => (b.noteCount + b.postCount) - (a.noteCount + a.postCount),
+    )
+    const nodes: GraphNode[] = sorted.map(c => ({
       id: c.id,
       label: c.label,
       type: 'category' as NodeKind,
@@ -95,7 +99,14 @@ function categoryToGraphJson(
       pagerank: (c.noteCount + c.postCount) / 100,
       pinned: false,
     }))
-    return { nodes, links: [] }
+    // Spine: chain categories so L1 shows a visible mesh skeleton.
+    // weight = average of the two endpoint sizes / 5 (keeps line thin but real).
+    const links = sorted.slice(0, -1).map((c, i) => {
+      const next = sorted[i + 1]
+      const avgSize = ((c.noteCount + c.postCount) + (next.noteCount + next.postCount)) / 2
+      return { source: c.id, target: next.id, weight: Math.max(1, avgSize / 5) }
+    })
+    return { nodes, links }
   }
 
   if (level === 2) {

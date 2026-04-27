@@ -85,6 +85,18 @@
   --cat-design: oklch(62% 0.13 340);
   --cat-personal: oklch(67% 0.11 135);
   --cat-fallback: oklch(55% 0.00 0);
+  --cat-c0: oklch(64% 0.13 0);
+  --cat-c1: oklch(64% 0.13 30);
+  --cat-c2: oklch(64% 0.13 60);
+  --cat-c3: oklch(64% 0.13 90);
+  --cat-c4: oklch(64% 0.13 120);
+  --cat-c5: oklch(64% 0.13 150);
+  --cat-c6: oklch(64% 0.13 180);
+  --cat-c7: oklch(64% 0.13 210);
+  --cat-c8: oklch(64% 0.13 240);
+  --cat-c9: oklch(64% 0.13 270);
+  --cat-c10: oklch(64% 0.13 300);
+  --cat-c11: oklch(64% 0.13 330);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -107,6 +119,18 @@
     --cat-design: oklch(70% 0.12 340);
     --cat-personal: oklch(75% 0.10 135);
     --cat-fallback: oklch(65% 0.00 0);
+    --cat-c0: oklch(72% 0.13 0);
+    --cat-c1: oklch(72% 0.13 30);
+    --cat-c2: oklch(72% 0.13 60);
+    --cat-c3: oklch(72% 0.13 90);
+    --cat-c4: oklch(72% 0.13 120);
+    --cat-c5: oklch(72% 0.13 150);
+    --cat-c6: oklch(72% 0.13 180);
+    --cat-c7: oklch(72% 0.13 210);
+    --cat-c8: oklch(72% 0.13 240);
+    --cat-c9: oklch(72% 0.13 270);
+    --cat-c10: oklch(72% 0.13 300);
+    --cat-c11: oklch(72% 0.13 330);
   }
 }
 
@@ -129,6 +153,18 @@
     --cat-design: oklch(70% 0.12 340);
     --cat-personal: oklch(75% 0.10 135);
     --cat-fallback: oklch(65% 0.00 0);
+    --cat-c0: oklch(72% 0.13 0);
+    --cat-c1: oklch(72% 0.13 30);
+    --cat-c2: oklch(72% 0.13 60);
+    --cat-c3: oklch(72% 0.13 90);
+    --cat-c4: oklch(72% 0.13 120);
+    --cat-c5: oklch(72% 0.13 150);
+    --cat-c6: oklch(72% 0.13 180);
+    --cat-c7: oklch(72% 0.13 210);
+    --cat-c8: oklch(72% 0.13 240);
+    --cat-c9: oklch(72% 0.13 270);
+    --cat-c10: oklch(72% 0.13 300);
+    --cat-c11: oklch(72% 0.13 330);
 }
 
 [data-theme="light"] {
@@ -150,4 +186,16 @@
     --cat-design: oklch(62% 0.13 340);
     --cat-personal: oklch(67% 0.11 135);
     --cat-fallback: oklch(55% 0.00 0);
+    --cat-c0: oklch(64% 0.13 0);
+    --cat-c1: oklch(64% 0.13 30);
+    --cat-c2: oklch(64% 0.13 60);
+    --cat-c3: oklch(64% 0.13 90);
+    --cat-c4: oklch(64% 0.13 120);
+    --cat-c5: oklch(64% 0.13 150);
+    --cat-c6: oklch(64% 0.13 180);
+    --cat-c7: oklch(64% 0.13 210);
+    --cat-c8: oklch(64% 0.13 240);
+    --cat-c9: oklch(64% 0.13 270);
+    --cat-c10: oklch(64% 0.13 300);
+    --cat-c11: oklch(64% 0.13 330);
 }

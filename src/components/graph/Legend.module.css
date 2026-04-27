@@ -90,6 +90,20 @@
 .dot[data-cat="personal"]    { background: var(--cat-personal); }
 .dot[data-cat="fallback"]    { background: var(--cat-fallback); }
 
+/* Dynamic palette: slug hashed to 0–11 via DJB2 mod 12 */
+.dot[data-cat-idx="0"]  { background: var(--cat-c0); }
+.dot[data-cat-idx="1"]  { background: var(--cat-c1); }
+.dot[data-cat-idx="2"]  { background: var(--cat-c2); }
+.dot[data-cat-idx="3"]  { background: var(--cat-c3); }
+.dot[data-cat-idx="4"]  { background: var(--cat-c4); }
+.dot[data-cat-idx="5"]  { background: var(--cat-c5); }
+.dot[data-cat-idx="6"]  { background: var(--cat-c6); }
+.dot[data-cat-idx="7"]  { background: var(--cat-c7); }
+.dot[data-cat-idx="8"]  { background: var(--cat-c8); }
+.dot[data-cat-idx="9"]  { background: var(--cat-c9); }
+.dot[data-cat-idx="10"] { background: var(--cat-c10); }
+.dot[data-cat-idx="11"] { background: var(--cat-c11); }
+
 .itemLabel {
   font-family: var(--f-mono);
   font-size: 10px;

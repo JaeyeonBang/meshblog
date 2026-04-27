@@ -7,7 +7,7 @@
  * Skipped when dist/ does not exist (composes with build-smoke running first).
  *
  * Budgets:
- *   - Total gzipped JS: ≤ 100 KB
+ *   - Total gzipped JS: ≤ 105 KB
  *   - No single JS file: > 80 KB gzipped
  */
 import { describe, it, expect } from "vitest"
@@ -20,7 +20,7 @@ const REPO_ROOT = join(import.meta.dirname, "..")
 const DIST = join(REPO_ROOT, "dist")
 const ASTRO_DIR = join(DIST, "_astro")
 
-const TOTAL_BUDGET_BYTES = 100 * 1024 // 100 KB
+const TOTAL_BUDGET_BYTES = 105 * 1024 // 105 KB (graph-viz upgrade: +5KB headroom for palette + edge interactions)
 const SINGLE_FILE_BUDGET_BYTES = 80 * 1024 // 80 KB
 
 describe.skipIf(!existsSync(DIST))("bundle size", () => {
@@ -31,7 +31,7 @@ describe.skipIf(!existsSync(DIST))("bundle size", () => {
     console.log(`Found ${files.length} JS files in dist/_astro/`)
   })
 
-  it("total gzipped JS ≤ 100 KB", async () => {
+  it("total gzipped JS ≤ 105 KB", async () => {
     const files = (await readdir(ASTRO_DIR)).filter((f) => f.endsWith(".js"))
 
     let totalGzipped = 0
