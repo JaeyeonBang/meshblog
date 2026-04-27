@@ -259,11 +259,10 @@ const links = [
     .spacer {
       flex: 1 1 auto;
     }
-    /* Shrink search button to icon-only: hide text + kbd shortcut */
+    /* Shrink search button to icon-only: hide its label (which contains ⌘K).
+       The help button's "?" kbd stays visible so it reads as text, not an
+       empty square next to the theme/search icons. */
     .btn-sm .btn-search-label {
-      display: none;
-    }
-    .kbd {
       display: none;
     }
     /* Nav links drop to row 2, full width, scrollable */

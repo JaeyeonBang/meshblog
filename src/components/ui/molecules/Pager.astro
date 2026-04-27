@@ -12,7 +12,7 @@ const { prev, next } = Astro.props;
 ---
 <nav class="pager" aria-label="Article navigation">
   {prev ? (
-    <a class="pager-link" href={prev.href}>
+    <a class="pager-link" data-pager="prev" href={prev.href}>
       <div class="dir">← previous · {prev.number}</div>
       <div class="t">{prev.title}</div>
     </a>
@@ -20,7 +20,7 @@ const { prev, next } = Astro.props;
     <span class="pager-link pager-link--empty" aria-hidden="true"></span>
   )}
   {next ? (
-    <a class="pager-link next" href={next.href}>
+    <a class="pager-link next" data-pager="next" href={next.href}>
       <div class="dir">next · {next.number} →</div>
       <div class="t">{next.title}</div>
     </a>
@@ -28,6 +28,40 @@ const { prev, next } = Astro.props;
     <span class="pager-link next pager-link--empty" aria-hidden="true"></span>
   )}
 </nav>
+
+<script>
+  // Attach exactly once per page-load lifecycle. The listener queries the DOM
+  // each keystroke, so it picks up the current page's pager links automatically
+  // across Astro view-transitions without needing reattachment.
+  (function setupPagerKeyboardNav() {
+    const FLAG = '__meshblogPagerKbNav';
+    if ((window as any)[FLAG]) return;
+    (window as any)[FLAG] = true;
+
+    function isTypingTarget(target: EventTarget | null): boolean {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+      if (target.isContentEditable) return true;
+      return false;
+    }
+
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+      let dir: 'prev' | 'next' | null = null;
+      if (e.key === 'j' || e.key === 'ArrowLeft') dir = 'prev';
+      else if (e.key === 'k' || e.key === 'ArrowRight') dir = 'next';
+      if (!dir) return;
+      const link = document.querySelector<HTMLAnchorElement>(
+        `a.pager-link[data-pager="${dir}"]`
+      );
+      if (!link) return;
+      e.preventDefault();
+      window.location.href = link.href;
+    });
+  })();
+</script>
 
 <style>
   .pager {
