@@ -41,7 +41,6 @@ fonts:
   serif:      "Fraunces"
   sans:       "Pretendard"
   mono:       "JetBrains Mono"
-  korean-serif: "Noto Serif KR"
 scale:
   radius:
     xs:   0
@@ -50,16 +49,16 @@ scale:
     pill: 999
   space: [4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 96]
   type:
-    xs:   11
-    sm:   13
-    base: 15
-    md:   16
-    lg:   18
-    xl:   20
-    2xl:  22
-    3xl:  28
-    4xl:  34
-    5xl:  48
+    xs:   12
+    sm:   14
+    base: 17
+    md:   18
+    lg:   20
+    xl:   22
+    2xl:  25
+    3xl:  31
+    4xl:  38
+    5xl:  54
 motion:
   ease:     "cubic-bezier(.22,1,.36,1)"
   dur-fast: "140ms"

@@ -1,6 +1,6 @@
 /* Fraunces + JetBrains Mono via Google Fonts CDN.
    TODO(foundation): self-host woff2 subsets to public/fonts/. */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400;1,9..144,500&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400;1,9..144,500&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 
 /* meshblog fonts.css
  * Self-hosted Pretendard — dynamic unicode-range subset (92 chunks, weight 400 only).
