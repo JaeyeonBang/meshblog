@@ -70,8 +70,7 @@ const [center, ...neighbors] = nodes
               href={node.href}
               class:list={['neighbor-label', isStub && 'neighbor-label--stub']}
               data-mesh-trigger
-              aria-expanded="false"
-              aria-controls={popoverId}
+              aria-describedby={popoverId}
             >
               {node.label}
             </a>
@@ -79,8 +78,7 @@ const [center, ...neighbors] = nodes
             <span
               class:list={['neighbor-label', isStub && 'neighbor-label--stub']}
               data-mesh-trigger
-              aria-expanded="false"
-              aria-controls={popoverId}
+              aria-describedby={popoverId}
               tabindex="0"
             >
               {node.label}
@@ -308,18 +306,28 @@ const [center, ...neighbors] = nodes
       }
 
       function getPopover(trigger: HTMLElement): HTMLElement | null {
-        const id = trigger.getAttribute('aria-controls')
+        const id = trigger.getAttribute('aria-describedby')
         if (!id) return null
         return document.getElementById(id)
       }
 
-      /** Reposition popover below trigger; flip to above if viewport-bottom overflow. */
+      /**
+       * Reposition popover relative to its trigger.
+       * Priority order:
+       *   1. Vertical flip: open above trigger when too close to viewport bottom.
+       *   2. Horizontal flip: anchor to right edge of trigger when left-anchored
+       *      popover would overflow the right side of the viewport.
+       * The CSS max-width cap handles the residual case where even right-edge
+       * anchoring overflows (very narrow viewport with a wide popover).
+       */
       function positionPopover(trigger: HTMLElement, popover: HTMLElement) {
-        // Reset to default (below trigger)
+        // Reset all inline offsets to defaults before measuring.
         popover.style.top    = ''
         popover.style.bottom = ''
         popover.style.left   = '0'
+        popover.style.right  = ''
 
+        // ── 1. Vertical flip ────────────────────────────────────────────
         const tRect = trigger.getBoundingClientRect()
         const pHeight = popover.offsetHeight || 200
         const spaceBelow = window.innerHeight - tRect.bottom
@@ -336,6 +344,19 @@ const [center, ...neighbors] = nodes
           popover.style.marginTop = 'var(--space-2)'
           popover.style.marginBottom = '0'
         }
+
+        // ── 2. Horizontal flip ───────────────────────────────────────────
+        // Re-measure after vertical placement so offsetWidth is stable.
+        const pWidth = popover.offsetWidth || 300
+        const viewportWidth = window.innerWidth
+        const MARGIN = 8
+
+        if (tRect.left + pWidth > viewportWidth - MARGIN) {
+          // Popover would overflow right edge — anchor to trigger's right side instead.
+          popover.style.left  = 'auto'
+          popover.style.right = '0'
+        }
+        // Otherwise the default left:'0' set above is already correct.
       }
 
       function showPopover(trigger: HTMLElement) {
@@ -350,9 +371,13 @@ const [center, ...neighbors] = nodes
         activePopover  = popover
         activeTrigger  = trigger
 
-        trigger.setAttribute('aria-expanded', 'true')
         positionPopover(trigger, popover)
         popover.classList.add('is-visible')
+        // Expose the popover content to assistive tech via aria-describedby
+        // only while it's actually visible. Otherwise, screen readers would
+        // announce the full title+excerpt+meta on every Tab onto the trigger,
+        // even when the user hasn't asked to preview.
+        popover.setAttribute('aria-hidden', 'false')
 
         // Attach Esc listener (only while a popover is open)
         if (!escListener) {
@@ -367,9 +392,11 @@ const [center, ...neighbors] = nodes
         }
       }
 
-      function hidePopoverNow(popover: HTMLElement, trigger: HTMLElement | null) {
+      function hidePopoverNow(popover: HTMLElement, _trigger: HTMLElement | null) {
         popover.classList.remove('is-visible')
-        trigger?.setAttribute('aria-expanded', 'false')
+        // Re-hide from AT so a still-focused but no-longer-visible trigger
+        // doesn't re-announce the popover content.
+        popover.setAttribute('aria-hidden', 'true')
         activePopover = null
         activeTrigger = null
         if (escListener) {
@@ -396,7 +423,7 @@ const [center, ...neighbors] = nodes
 
       function expandMobile(trigger: HTMLElement) {
         if (!mobileBox) return
-        const id = trigger.getAttribute('aria-controls')
+        const id = trigger.getAttribute('aria-describedby')
         const source = id ? document.getElementById(id) : null
         if (!source) { collapseMobile(); return }
 
@@ -405,6 +432,9 @@ const [center, ...neighbors] = nodes
         clone.removeAttribute('id')
         clone.removeAttribute('role')
         clone.removeAttribute('aria-label')
+        // Inline-expand card is visible and read in normal flow — drop the
+        // tooltip's default aria-hidden so AT users get the same content.
+        clone.removeAttribute('aria-hidden')
         clone.style.cssText = ''        // clear inline position styles
         clone.classList.remove('is-visible')
         // Remove the absolute-positioning class; display inline
@@ -429,7 +459,6 @@ const [center, ...neighbors] = nodes
         mobileBox.innerHTML = ''
         mobileBox.appendChild(clone)
         mobileBox.hidden = false
-        trigger.setAttribute('aria-expanded', 'true')
         activeTrigger = trigger
       }
 
@@ -437,7 +466,6 @@ const [center, ...neighbors] = nodes
         if (!mobileBox) return
         mobileBox.hidden = true
         mobileBox.innerHTML = ''
-        activeTrigger?.setAttribute('aria-expanded', 'false')
         activeTrigger = null
       }
 
