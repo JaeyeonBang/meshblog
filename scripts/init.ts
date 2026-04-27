@@ -67,11 +67,45 @@ export function getDevSpawnOptions(
  * (a) /init's caller always falls back to `/meshblog/` + a stderr warning
  *     when this returns null, so downstream is safe,
  * (b) full JS parsing here is scope creep for a one-shot read at init time.
+ *
+ * Trailing slashes in the literal (`base: '/meshblog/'`) are stripped from
+ * the return value. Without this, resolveAstroBase would emit URLs like
+ * `http://localhost:4321/meshblog//` (double slash) — technically 200s under
+ * Astro's dev server but looks broken and breaks downstream string concat.
  */
 export function parseAstroBase(content: string): string | null {
-  const m = content.match(/base:\s*['"]\/([^'"]+)['"]/)
-  return m?.[1] ?? null
+  const m = content.match(/base:\s*['"]\/([^'"]*?)\/?['"]/)
+  const slug = m?.[1]
+  return slug ? slug : null
 }
+
+// ── Keyless build pipeline ────────────────────────────────────────────────────
+
+/**
+ * Ordered list of commands runInit executes for a non-empty vault. Exported
+ * so tests can lock the order as a contract — the plan flagged that
+ * build-backlinks + build-og used to be missing and fork users got an empty
+ * /graph Backlinks mode + broken OG previews as a result.
+ *
+ * Matches package.json's `refresh` script order. Each tuple is
+ * [human-readable-label, shell-command].
+ *
+ * - build-tokens: design.md → src/styles/tokens.css (stale CSS otherwise)
+ * - build-index: markdown → SQLite (--skip-embed --skip-concepts keyless)
+ * - build-backlinks: wikilinks → public/graph/backlinks.json (empty
+ *   Backlinks mode on /graph otherwise)
+ * - export-graph: SQLite → public/graph/{notes,concepts}.json
+ * - build-og: OG images for link previews (missing otherwise)
+ * - astro build: final static site
+ */
+export const KEYLESS_PIPELINE: ReadonlyArray<readonly [string, string]> = [
+  ["build-tokens", "bun run build-tokens"],
+  ["build-index", "bun run build-index -- --skip-embed --skip-concepts"],
+  ["build-backlinks", "bun run build-backlinks"],
+  ["export-graph", "bun run export-graph"],
+  ["build-og", "bun run build-og"],
+  ["astro build", "bunx astro build"],
+] as const
 
 // ── Exported helper for unit tests ────────────────────────────────────────────
 
@@ -154,13 +188,21 @@ export function countVaultMarkdown(dir: string): number {
  * readline interface's async iterator. Works under both TTY and piped stdin;
  * the `readline/promises` variant hangs on the second call under piped stdin
  * in Bun (empirically verified 2026-04-22).
+ *
+ * On stdin EOF (done=true), throws instead of returning "". Returning ""
+ * made promptVaultPath loop forever in scripted rehearsals when the temp
+ * answers file was truncated or cmd redirection ended early — the "Path
+ * cannot be empty" branch retried and got "" again, ad infinitum.
  */
 export function createAskFn(rl: ReadlineInterface): (prompt: string) => Promise<string> {
   const iter = rl[Symbol.asyncIterator]()
   return async (prompt: string): Promise<string> => {
     process.stdout.write(prompt)
     const { value, done } = await iter.next()
-    return done ? "" : String(value)
+    if (done) {
+      throw new Error("[init] stdin exhausted before prompt was answered")
+    }
+    return String(value)
   }
 }
 
@@ -386,27 +428,8 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
         env: { ...process.env },
       })
     } else {
-      // Pipeline mirrors package.json's `refresh` script so forks produce
-      // the same artifacts CI does on `main` pushes:
-      //   tokens → index → backlinks → graph → og → astro build
-      //
-      // - build-tokens: design.md → src/styles/tokens.css (stale CSS otherwise)
-      // - build-index: markdown → SQLite (--skip-embed --skip-concepts keyless)
-      // - build-backlinks: wikilinks → public/graph/backlinks.json (empty
-      //   Backlinks mode on /graph otherwise)
-      // - export-graph: SQLite → public/graph/{notes,concepts}.json
-      // - build-og: OG images for link previews (missing otherwise)
-      // - astro build: final static site
       console.log("[init] Running keyless build pipeline …")
-      const pipeline: Array<[string, string]> = [
-        ["build-tokens", "bun run build-tokens"],
-        ["build-index", "bun run build-index -- --skip-embed --skip-concepts"],
-        ["build-backlinks", "bun run build-backlinks"],
-        ["export-graph", "bun run export-graph"],
-        ["build-og", "bun run build-og"],
-        ["astro build", "bunx astro build"],
-      ]
-      for (const [label, cmd] of pipeline) {
+      for (const [label, cmd] of KEYLESS_PIPELINE) {
         console.log(`[init] ${label} …`)
         execSync(cmd, {
           cwd: REPO_ROOT,
