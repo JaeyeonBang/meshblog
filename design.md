@@ -22,6 +22,20 @@ darkColors:
   paper:     "oklch(0% 0 0)"
   paper-2:   "oklch(22% 0 0)"
   rule-soft: "oklch(29% 0 0)"
+categorical:
+  cat-engineering: "oklch(64% 0.14 250)"
+  cat-ai:          "oklch(66% 0.15 195)"
+  cat-writing:     "oklch(68% 0.12 60)"
+  cat-design:      "oklch(62% 0.13 340)"
+  cat-personal:    "oklch(67% 0.11 135)"
+  cat-fallback:    "oklch(55% 0.00 0)"
+darkCategorical:
+  cat-engineering: "oklch(72% 0.13 250)"
+  cat-ai:          "oklch(74% 0.13 195)"
+  cat-writing:     "oklch(76% 0.11 60)"
+  cat-design:      "oklch(70% 0.12 340)"
+  cat-personal:    "oklch(75% 0.10 135)"
+  cat-fallback:    "oklch(65% 0.00 0)"
 fonts:
   display:    "Fraunces"
   serif:      "Fraunces"

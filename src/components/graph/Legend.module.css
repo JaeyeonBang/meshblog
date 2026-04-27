@@ -1,0 +1,154 @@
+/* Legend.module.css — category color legend for the graph canvas
+ *
+ * Editorial invariants honoured:
+ *   #1 — no hex literals (all colours via tokens)
+ *   #2 — hairline 1px border only
+ *   #4 — mono eyebrow on labels
+ *   #5 — NO box-shadow
+ *   #6 — radius ≤ 4px
+ *
+ * Placement: absolute bottom-right inside .root (the canvas container).
+ * Mobile (<780px): collapsible drawer, default closed.
+ */
+
+/* ── Panel ────────────────────────────────────────────────────────── */
+
+.panel {
+  position: absolute;
+  bottom: var(--space-3);
+  right: var(--space-3);
+  z-index: 20;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  padding: var(--space-2) var(--space-3);
+  /* Pointer events active so user can read it without accidental drag */
+  pointer-events: none;
+  /* Entrance: brief fade-in */
+  animation: legend-appear var(--dur-fast) var(--ease) both;
+}
+
+@keyframes legend-appear {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
+
+/* ── Header row (label + optional toggle on mobile) ─────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.title {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  line-height: 1;
+}
+
+/* ── Category rows ────────────────────────────────────────────────── */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 6×6 colored dot */
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot[data-cat="engineering"] { background: var(--cat-engineering); }
+.dot[data-cat="ai"]          { background: var(--cat-ai); }
+.dot[data-cat="writing"]     { background: var(--cat-writing); }
+.dot[data-cat="design"]      { background: var(--cat-design); }
+.dot[data-cat="personal"]    { background: var(--cat-personal); }
+.dot[data-cat="fallback"]    { background: var(--cat-fallback); }
+
+.itemLabel {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ── Mobile: collapsible drawer ──────────────────────────────────── */
+
+@media (max-width: 780px) {
+  .panel {
+    /* On mobile, pointer-events on so the toggle button works */
+    pointer-events: auto;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* Toggle button: same styling as graph control buttons */
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .toggle:hover {
+    color: var(--ink);
+  }
+
+  .toggle:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Hide full list by default on mobile; shown when expanded */
+  .list {
+    display: none;
+    margin-top: var(--space-2);
+  }
+
+  .list.expanded {
+    display: flex;
+  }
+}
+
+/* On desktop: toggle button not needed */
+@media (min-width: 781px) {
+  .toggle {
+    display: none;
+  }
+}

@@ -27,6 +27,7 @@ type NodeAttrs = {
   level?: number
   pagerank?: number
   pinned?: boolean
+  categorySlug?: string
 }
 
 type GraphJson = {
@@ -39,13 +40,15 @@ type GraphJson = {
 export function buildNoteGraph(db: Database.Database): Graph {
   const g = new Graph({ type: "undirected", allowSelfLoops: false })
 
-  const notes = queryMany<{ id: string; title: string }>(
+  const notes = queryMany<{ id: string; title: string; category_slug: string | null }>(
     db,
-    "SELECT id, title FROM notes WHERE graph_status='done'",
+    "SELECT id, title, category_slug FROM notes WHERE graph_status='done'",
     [],
   )
   for (const n of notes) {
-    g.addNode(n.id, { label: n.title, type: "note" })
+    const attrs: NodeAttrs = { label: n.title, type: "note" }
+    if (n.category_slug) attrs.categorySlug = n.category_slug
+    g.addNode(n.id, attrs)
   }
 
   if (notes.length < 2) return g
@@ -129,6 +132,7 @@ export function addCrossEdgesToConceptGraph(
     concept_id: string
     note_id: string
     note_title: string
+    note_category_slug: string | null
     entity_count: number
   }>(
     db,
@@ -136,6 +140,7 @@ export function addCrossEdgesToConceptGraph(
        ce.concept_id,
        ne.note_id,
        n.title AS note_title,
+       n.category_slug AS note_category_slug,
        COUNT(DISTINCT ce.entity_id) AS entity_count
      FROM concept_entities ce
      JOIN note_entities ne ON ne.entity_id = ce.entity_id
@@ -171,7 +176,9 @@ export function addCrossEdgesToConceptGraph(
     for (const row of edges) {
       // Add note node if not present
       if (!g.hasNode(row.note_id)) {
-        g.addNode(row.note_id, { label: row.note_title, type: "note" })
+        const noteAttrs: NodeAttrs = { label: row.note_title, type: "note" }
+        if (row.note_category_slug) noteAttrs.categorySlug = row.note_category_slug
+        g.addNode(row.note_id, noteAttrs)
         addedNoteNodes.add(row.note_id)
       }
 

@@ -48,13 +48,15 @@ for (const section of ['colors', 'fonts', 'scale', 'motion', 'rules', 'shadows',
   requireField(d, section);
 }
 
-const colors   = d.colors   as Record<string, string>;
-const fonts    = d.fonts    as Record<string, string>;
-const scale    = d.scale    as { radius: Record<string, number>; space: number[]; type: Record<string, number> };
-const motion   = d.motion   as Record<string, string>;
-const shadows  = d.shadows  as Record<string, string>;
-const layout   = d.layout   as Record<string, string>;
-const tracking = (d.tracking ?? {}) as Record<string, string>;
+const colors          = d.colors          as Record<string, string>;
+const fonts           = d.fonts           as Record<string, string>;
+const scale           = d.scale           as { radius: Record<string, number>; space: number[]; type: Record<string, number> };
+const motion          = d.motion          as Record<string, string>;
+const shadows         = d.shadows         as Record<string, string>;
+const layout          = d.layout          as Record<string, string>;
+const tracking        = (d.tracking ?? {}) as Record<string, string>;
+const categorical     = (d.categorical ?? {}) as Record<string, string>;
+const darkCategorical = (d.darkCategorical ?? {}) as Record<string, string>;
 
 // Validate sub-fields
 if (!colors.ink)       die('colors.ink missing');
@@ -256,7 +258,15 @@ ${Object.keys(tracking).length > 0 ? `
   --track-eyebrow: ${tracking.eyebrow ?? '0.2em'};   /* free-standing eyebrow labels */
   --track-badge:   ${tracking.badge   ?? '0.14em'};  /* pill badges */
   --track-nav:     ${tracking.nav     ?? '0.1em'};   /* TopBar nav-link (documented exception) */` : ''}
+${Object.keys(categorical).length > 0 ? `
+  /* ── categorical (graph nodes per category) ──────────────────────────── */
+${Object.entries(categorical).map(([k, v]) => `  --${k}: ${v};`).join('\n')}` : ''}
 }`;
+
+const darkCategoricalVars = Object.keys(darkCategorical).length > 0
+  ? `\n    /* ── categorical (graph nodes per category — dark) ──────────────────── */\n` +
+    Object.entries(darkCategorical).map(([k, v]) => `    --${k}: ${v};`).join('\n')
+  : '';
 
 const darkColorVars = `\
     /* ── color (dark — ink↔paper inverted) ──────────────────────────────── */
@@ -269,7 +279,7 @@ const darkColorVars = `\
     --paper-2:   ${darkPaper2};
     --rule:      ${darkInk};
     --rule-soft: ${darkRuleSoft};
-    --accent:    var(--ink);`;
+    --accent:    var(--ink);${darkCategoricalVars}`;
 
 const lightColorVars = `\
     /* ── color (light — forced light on dark-OS users) ──────────────────── */

@@ -40,6 +40,9 @@ export function useForceSimulation(
     onNodeClick?: (n: GraphNode) => void
     directed?: boolean
     onHover?: (state: HoverState) => void
+    /** When true, note nodes with categorySlug get data-cat for CSS coloring.
+     *  False (default) in concept mode so all nodes stay B&W. */
+    colorByCategory?: boolean
   },
 ): void {
   useEffect(() => {
@@ -166,6 +169,9 @@ export function useForceSimulation(
       .attr('data-kind', d => kindOf(d))
       // data-cluster: set from Louvain output when present; absent = no attr (backward compat)
       .attr('data-cluster', d => d.cluster != null ? String(d.cluster % 10) : null)
+      // data-cat: set only when colorByCategory is enabled AND node is a note with categorySlug.
+      // Disabled in concept mode so all nodes in that view stay B&W.
+      .attr('data-cat', d => opts.colorByCategory && d.type === 'note' && d.categorySlug ? d.categorySlug : null)
       .attr('cx', d => d.x ?? 0)
       .attr('cy', d => d.y ?? 0)
       .attr('tabindex', 0)
