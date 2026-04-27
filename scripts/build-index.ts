@@ -21,7 +21,47 @@ const CONTENT_DIRS = ["content/posts", "content/notes"]
 // Future notes can override this by adding `category: <slug>` to their frontmatter.
 // Extend this map as new content domains appear in the vault.
 const TAG_TO_CATEGORY: Record<string, string> = {
-  // engineering / dev
+  // ── nlp ─ transformer / language model architecture
+  nlp: "nlp",
+  transformer: "nlp",
+  attention: "nlp",
+  "self-attention": "nlp",
+  "multi-head": "nlp",
+  "positional-encoding": "nlp",
+  seq2seq: "nlp",
+  rnn: "nlp",
+  "encoder-decoder": "nlp",
+  "masked-attention": "nlp",
+  // ── rl ─ reinforcement learning
+  rl: "rl",
+  ppo: "rl",
+  "deep-rl": "rl",
+  rlhf: "rl",
+  rlpr: "rl",
+  // ── agent ─ agentic systems / LLM agents
+  agent: "agent",
+  "ai-agent": "agent",
+  "agent-ai": "agent",
+  "ai agent": "agent",
+  agentic: "agent",
+  // ── fine-tuning / efficient adaptation
+  "fine-tuning": "fine-tuning",
+  finetuning: "fine-tuning",
+  lora: "fine-tuning",
+  peft: "fine-tuning",
+  // ── paper-review / survey
+  "paper-review": "paper",
+  paper: "paper",
+  survey: "paper",
+  // ── generic ML/AI (fallback for the umbrella)
+  rag: "ai",
+  llm: "ai",
+  embeddings: "ai",
+  openai: "ai",
+  "machine-learning": "ai",
+  "deep-learning": "ai",
+  "neural-network": "ai",
+  // ── engineering / dev
   typescript: "engineering",
   generics: "engineering",
   "type-system": "engineering",
@@ -32,20 +72,15 @@ const TAG_TO_CATEGORY: Record<string, string> = {
   algorithms: "engineering",
   graphology: "engineering",
   pagerank: "engineering",
-  // ai / ml
-  rag: "ai",
-  llm: "ai",
-  embeddings: "ai",
-  openai: "ai",
-  // writing / knowledge
+  // ── writing / knowledge
   writing: "writing",
   글쓰기: "writing",
   문서화: "writing",
   지식관리: "writing",
-  // design / product
+  // ── design / product
   design: "design",
   product: "product",
-  // ops / devops
+  // ── ops / devops
   ops: "ops",
   ci: "ops",
   deploy: "ops",

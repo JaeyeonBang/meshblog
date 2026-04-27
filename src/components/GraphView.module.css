@@ -111,9 +111,26 @@
 .svg :global(.nodes circle[data-cat="personal"])    { fill: var(--cat-personal);    stroke: var(--cat-personal); }
 .svg :global(.nodes circle[data-cat="fallback"])    { fill: var(--cat-fallback);    stroke: var(--cat-fallback); }
 
+/* Dynamic palette: any slug hashed into one of 12 OKLCH slots (cat-c0..cat-c11).
+ * These rules fire for slugs not covered by the semantic aliases above.
+ * Specificity matches the data-cat rules (one attribute selector). */
+.svg :global(.nodes circle[data-cat-idx="0"])  { fill: var(--cat-c0);  stroke: var(--cat-c0); }
+.svg :global(.nodes circle[data-cat-idx="1"])  { fill: var(--cat-c1);  stroke: var(--cat-c1); }
+.svg :global(.nodes circle[data-cat-idx="2"])  { fill: var(--cat-c2);  stroke: var(--cat-c2); }
+.svg :global(.nodes circle[data-cat-idx="3"])  { fill: var(--cat-c3);  stroke: var(--cat-c3); }
+.svg :global(.nodes circle[data-cat-idx="4"])  { fill: var(--cat-c4);  stroke: var(--cat-c4); }
+.svg :global(.nodes circle[data-cat-idx="5"])  { fill: var(--cat-c5);  stroke: var(--cat-c5); }
+.svg :global(.nodes circle[data-cat-idx="6"])  { fill: var(--cat-c6);  stroke: var(--cat-c6); }
+.svg :global(.nodes circle[data-cat-idx="7"])  { fill: var(--cat-c7);  stroke: var(--cat-c7); }
+.svg :global(.nodes circle[data-cat-idx="8"])  { fill: var(--cat-c8);  stroke: var(--cat-c8); }
+.svg :global(.nodes circle[data-cat-idx="9"])  { fill: var(--cat-c9);  stroke: var(--cat-c9); }
+.svg :global(.nodes circle[data-cat-idx="10"]) { fill: var(--cat-c10); stroke: var(--cat-c10); }
+.svg :global(.nodes circle[data-cat-idx="11"]) { fill: var(--cat-c11); stroke: var(--cat-c11); }
+
 /* Selected / hover: override category color with --ink for clarity */
 .svg :global(.nodes circle.selected),
-.svg :global(.nodes circle[data-cat]:hover) {
+.svg :global(.nodes circle[data-cat]:hover),
+.svg :global(.nodes circle[data-cat-idx]:hover) {
   fill: var(--ink);
   stroke: var(--ink);
 }
@@ -121,16 +138,29 @@
 /* ── Edge hairlines ──────────────────────────────────────────────── */
 
 .svg :global(.links line) {
-  stroke: var(--ink);
-  stroke-opacity: 0.3;
-  stroke-width: 0.25px;
+  stroke: var(--ink-3);
+  stroke-opacity: 0.55;
+  stroke-width: 1px;
+  transition: stroke-opacity 120ms var(--ease), stroke-width 120ms var(--ease), stroke 120ms var(--ease);
 }
 
 /* Cross-type edges (concept→note 'mentions'): dashed texture, subordinate
- * to concept↔concept edges. No colour change — invariant #1. */
+ * to concept↔concept edges. Slightly lighter — invariant #1. */
 .svg :global(.links line[data-edge-type="mentions"]) {
+  stroke: var(--ink-4);
   stroke-dasharray: 3 2;
-  stroke-opacity: 0.6;
+  stroke-opacity: 0.5;
+}
+
+/* Edge hover states: incident edges pop; non-incident edges dim */
+.svg :global(.links line.edge--active) {
+  stroke: var(--ink);
+  stroke-opacity: 1;
+  stroke-width: 1.6px;
+}
+
+.svg :global(.links line.edge--dim) {
+  stroke-opacity: 0.12;
 }
 
 /* ── Node hover ──────────────────────────────────────────────────── */

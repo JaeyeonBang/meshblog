@@ -5,6 +5,7 @@ import * as d3Selection from 'd3-selection'
 import * as d3Zoom from 'd3-zoom'
 import * as d3Drag from 'd3-drag'
 import type { GraphNode, GraphLink, GraphJson } from './types'
+import { paletteIndexFor } from './categoryPalette'
 
 type SimNode = GraphNode & d3Force.SimulationNodeDatum
 type SimLink = { source: SimNode; target: SimNode; weight: number; type?: string }
@@ -147,7 +148,7 @@ export function useForceSimulation(
         .append('polygon')
         .attr('points', '0 0, 8 3, 0 6')
         .attr('fill', 'currentColor')
-        .attr('opacity', 0.5)
+        .attr('opacity', 0.85)
     }
 
     const g = svg.append('g').attr('class', 'graph-container')
@@ -159,7 +160,7 @@ export function useForceSimulation(
       .selectAll<SVGLineElement, SimLink>('line')
       .data(links)
       .join('line')
-      .attr('stroke-width', d => Math.max(0.5, d.weight))
+      .attr('stroke-width', d => Math.max(0.8, Math.sqrt(d.weight) * 1.0))
       .attr('x1', d => d.source.x ?? 0)
       .attr('y1', d => d.source.y ?? 0)
       .attr('x2', d => d.target.x ?? 0)
@@ -187,6 +188,13 @@ export function useForceSimulation(
       // data-cat: set only when colorByCategory is enabled AND node is a note with categorySlug.
       // Disabled in concept mode so all nodes in that view stay B&W.
       .attr('data-cat', d => opts.colorByCategory && d.type === 'note' && d.categorySlug ? d.categorySlug : null)
+      // data-cat-idx: palette bucket index (0–11) for dynamic slug coloring via hash.
+      // Set alongside data-cat so CSS can match either the semantic name or the palette slot.
+      .attr('data-cat-idx', d => {
+        if (!opts.colorByCategory || d.type !== 'note' || !d.categorySlug) return null
+        const idx = paletteIndexFor(d.categorySlug)
+        return idx === -1 ? null : String(idx)
+      })
       .attr('cx', d => d.x ?? 0)
       .attr('cy', d => d.y ?? 0)
       .attr('tabindex', 0)
@@ -236,10 +244,30 @@ export function useForceSimulation(
         .classed('label--dim', false)
     }
 
+    /** Highlight edges incident on hovered node; dim the rest */
+    function applyEdgeFocus(nodeId: string): void {
+      linkSel.each(function (d) {
+        const src = typeof d.source === 'object' ? (d.source as SimNode).id : d.source
+        const tgt = typeof d.target === 'object' ? (d.target as SimNode).id : d.target
+        const isIncident = src === nodeId || tgt === nodeId
+        d3Selection.select(this)
+          .classed('edge--active', isIncident)
+          .classed('edge--dim', !isIncident)
+      })
+    }
+
+    /** Restore all edges to default style */
+    function clearEdgeFocus(): void {
+      linkSel
+        .classed('edge--active', false)
+        .classed('edge--dim', false)
+    }
+
     nodeSel
       .on('mouseenter', (event: MouseEvent, d: SimNode) => {
         const idx = nodeSel.nodes().indexOf(event.currentTarget as SVGCircleElement)
         if (idx !== -1) applyFocus(idx)
+        applyEdgeFocus(d.id)
         opts.onHover?.({ node: d, x: event.clientX, y: event.clientY })
       })
       .on('mousemove', (event: MouseEvent, d: SimNode) => {
@@ -247,17 +275,20 @@ export function useForceSimulation(
       })
       .on('mouseleave', () => {
         clearFocus()
+        clearEdgeFocus()
         opts.onHover?.(null)
       })
       .on('focus', (event: FocusEvent, d: SimNode) => {
         const idx = nodeSel.nodes().indexOf(event.currentTarget as SVGCircleElement)
         if (idx !== -1) applyFocus(idx)
+        applyEdgeFocus(d.id)
         // Position popover near the circle's bounding box for keyboard users
         const rect = (event.currentTarget as SVGCircleElement).getBoundingClientRect()
         opts.onHover?.({ node: d, x: rect.right, y: rect.top })
       })
       .on('blur', () => {
         clearFocus()
+        clearEdgeFocus()
         opts.onHover?.(null)
       })
 
