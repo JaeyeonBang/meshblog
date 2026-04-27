@@ -52,6 +52,8 @@ content/.obsidian/
 
 .gstack/
 
-# graphify: knowledge graph output (regenerable via `graphify update .`)
-graphify-out/
+# graphify: keep the knowledge-graph artifacts so other clones can navigate
+# the same graph state without rebuilding. The per-machine extraction cache
+# stays ignored — `graphify update .` repopulates it on demand.
+graphify-out/cache/
 CLAUDE.md.pre-graphify.bak
