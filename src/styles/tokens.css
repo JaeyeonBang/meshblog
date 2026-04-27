@@ -143,4 +143,11 @@
     --rule:      oklch(0% 0 0);
     --rule-soft: oklch(88% 0.004 85);
     --accent:    var(--ink);
+    /* ── categorical (graph nodes per category — light) ─────────────────── */
+    --cat-engineering: oklch(64% 0.14 250);
+    --cat-ai: oklch(66% 0.15 195);
+    --cat-writing: oklch(68% 0.12 60);
+    --cat-design: oklch(62% 0.13 340);
+    --cat-personal: oklch(67% 0.11 135);
+    --cat-fallback: oklch(55% 0.00 0);
 }

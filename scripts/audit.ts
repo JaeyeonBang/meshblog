@@ -8,8 +8,13 @@
 
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
+import { fileURLToPath } from 'url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+// On Windows, `new URL(...).pathname` returns `/C:/foo` — joining that with
+// `'src'` produces `C:\C:\foo\src`. fileURLToPath strips the leading slash
+// and normalises separators, matching the pattern already used elsewhere
+// in the codebase (e.g. src/pages/notes/[slug].astro).
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC = join(ROOT, 'src');
 
 // ── helpers ──────────────────────────────────────────────────────────────────

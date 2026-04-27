@@ -29,7 +29,7 @@
     "audit-drafts": "tsx scripts/audit-drafts.ts",
     "publish-verify": "tsx scripts/publish-verify.ts",
     "build-all": "bun run build-index && bun run generate-qa && bun run export-graph && bun run export-category-graph && bun run cluster-communities && bun run build-manifest && bun run build-tokens && bun run build",
-    "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run build-backlinks && bun run export-graph && ([ -f scripts/export-category-graph.ts ] && bun run export-category-graph || true) && bun run cluster-communities && bun run build",
+    "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run build-backlinks && bun run export-graph && ([ -f scripts/export-category-graph.ts ] && bun run export-category-graph || true) && bun run cluster-communities && bun run build-manifest && bun run build",
     "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'",
     "init": "bun run scripts/init.ts",
     "new-post": "tsx scripts/new-post.ts",
