@@ -97,6 +97,27 @@
   opacity: 1;
 }
 
+/* ── Category fill colors (notes mode only) ─────────────────────── */
+/*
+ * Applied via data-cat attribute, set only on note-type nodes.
+ * Concept and category nodes never receive data-cat — they stay B&W.
+ * Hover/selected overrides below restore --ink fill for all nodes.
+ */
+
+.svg :global(.nodes circle[data-cat="engineering"]) { fill: var(--cat-engineering); stroke: var(--cat-engineering); }
+.svg :global(.nodes circle[data-cat="ai"])          { fill: var(--cat-ai);          stroke: var(--cat-ai); }
+.svg :global(.nodes circle[data-cat="writing"])     { fill: var(--cat-writing);     stroke: var(--cat-writing); }
+.svg :global(.nodes circle[data-cat="design"])      { fill: var(--cat-design);      stroke: var(--cat-design); }
+.svg :global(.nodes circle[data-cat="personal"])    { fill: var(--cat-personal);    stroke: var(--cat-personal); }
+.svg :global(.nodes circle[data-cat="fallback"])    { fill: var(--cat-fallback);    stroke: var(--cat-fallback); }
+
+/* Selected / hover: override category color with --ink for clarity */
+.svg :global(.nodes circle.selected),
+.svg :global(.nodes circle[data-cat]:hover) {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+
 /* ── Edge hairlines ──────────────────────────────────────────────── */
 
 .svg :global(.links line) {

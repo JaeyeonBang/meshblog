@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import type { GraphJson, Manifest, GraphNode, NodeKind } from './graph/types'
 import { useForceSimulation } from './graph/useForceSimulation'
 import type { HoverState } from './graph/useForceSimulation'
 import { HoverCard } from './graph/HoverCard'
+import { Legend } from './graph/Legend'
+import type { LegendCategory } from './graph/Legend'
 import { withBase } from '../lib/url'
 import styles from './GraphView.module.css'
 
 /** Shape of public/graph/backlinks.json (mirrors BacklinksJson from build-backlinks.ts) */
 type BacklinksJson = {
-  nodes: Array<{ id: string; title: string }>
+  nodes: Array<{ id: string; title: string; categorySlug?: string }>
   edges: Array<{ source: string; target: string; alias?: string }>
 }
 
@@ -61,6 +63,7 @@ function backlinksToGraphJson(bl: BacklinksJson): GraphJson {
       level: 3 as const,
       pagerank: 0,
       pinned: false,
+      ...(n.categorySlug ? { categorySlug: n.categorySlug } : {}),
     })),
     links: bl.edges.map(e => ({
       source: e.source,
@@ -104,6 +107,7 @@ function categoryToGraphJson(
       level: 2 as const,
       pagerank: 0,
       pinned: false,
+      categorySlug: p.categorySlug,
     }))
     return { nodes, links: [] }
   }
@@ -117,6 +121,7 @@ function categoryToGraphJson(
     level: 3 as const,
     pagerank: 0,
     pinned: false,
+    categorySlug: n.categorySlug,
   }))
   return { nodes, links: [] }
 }
@@ -348,6 +353,7 @@ export default function GraphView() {
   }, [])
 
   useForceSimulation(svgRef, graph, {
+    colorByCategory: mode !== 'concept',
     onNodeClick: (node: GraphNode) => {
       // L1 category node clicked in notes-mode — drill into L2 (preserve taxonomy drill-down)
       if (node.type === 'category' && categoryData) {
@@ -408,6 +414,30 @@ export default function GraphView() {
   const hoveredEntry = hoverState ? manifest[hoverState.node.id] : null
   const hoverExcerpt = hoveredEntry?.excerpt ?? null
   const hoverHref = hoveredEntry ? withBase(hoveredEntry.href) : null
+
+  // Derive legend categories from currently visible graph nodes (notes mode only)
+  const legendCategories = useMemo<LegendCategory[]>(() => {
+    if (!graph || mode === 'concept') return []
+    const counts = new Map<string, number>()
+    for (const node of graph.nodes) {
+      if (node.type !== 'note') continue
+      const slug = node.categorySlug ?? 'fallback'
+      counts.set(slug, (counts.get(slug) ?? 0) + 1)
+    }
+    // Use categoryData label if available; otherwise title-case the slug
+    const labelOf = (slug: string): string => {
+      if (categoryData) {
+        const cat = categoryData.categories.find(c => c.id === slug)
+        if (cat) return cat.label
+      }
+      return slug.charAt(0).toUpperCase() + slug.slice(1)
+    }
+    return [...counts.entries()].map(([slug, count]) => ({
+      slug,
+      label: labelOf(slug),
+      count,
+    }))
+  }, [graph, mode, categoryData])
 
   // For concept nodes: count cross-edges (type='mentions') to give a reference count fallback
   const hoverRefCount = (() => {
@@ -471,6 +501,12 @@ export default function GraphView() {
         excerpt={hoverExcerpt}
         href={hoverHref}
         refCount={hoverRefCount}
+      />
+
+      {/* Category color legend — hidden in concept mode */}
+      <Legend
+        categories={legendCategories}
+        visible={mode !== 'concept' && status === 'ready'}
       />
 
       {/* Stats */}

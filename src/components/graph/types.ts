@@ -16,6 +16,11 @@ export type GraphNode = {
    *  was built before cluster-communities ran — nodes without it fall back
    *  to data-kind styling only. */
   cluster?: number
+  /** Category slug for per-category color fill (e.g. 'engineering', 'ai',
+   *  'writing', 'design', 'personal'). Present on note-type nodes only;
+   *  absent on concept/category nodes (those stay B&W). Nodes with an
+   *  unrecognised slug fall back to --cat-fallback. */
+  categorySlug?: string
   x?: number
   y?: number
   vx?: number

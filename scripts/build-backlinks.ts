@@ -22,10 +22,10 @@ const GRAPH_DIR = "public/graph"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-export type NoteStub = { id: string; title: string; content: string }
+export type NoteStub = { id: string; title: string; content: string; category_slug?: string | null }
 
 export type BacklinksJson = {
-  nodes: Array<{ id: string; title: string }>
+  nodes: Array<{ id: string; title: string; categorySlug?: string }>
   edges: Array<{ source: string; target: string; alias?: string }>
 }
 
@@ -59,7 +59,7 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
   // 1. Load all notes if not provided
   const allNotes: NoteStub[] =
     opts.notes ??
-    queryMany<NoteStub>(db, "SELECT id, title, content FROM notes", [])
+    queryMany<NoteStub>(db, "SELECT id, title, content, category_slug FROM notes", [])
 
   const slugMap = buildSlugMap(allNotes)
 
@@ -150,13 +150,19 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
     edges.push(edge)
   }
 
-  // Build title map from allNotes
+  // Build title + category maps from allNotes
   const titleMap = new Map(allNotes.map((n) => [n.id, n.title]))
+  const categoryMap = new Map(allNotes.map((n) => [n.id, n.category_slug ?? undefined]))
 
-  const nodes: BacklinksJson["nodes"] = [...nodeSet].map((id) => ({
-    id,
-    title: titleMap.get(id) ?? id,
-  }))
+  const nodes: BacklinksJson["nodes"] = [...nodeSet].map((id) => {
+    const node: BacklinksJson["nodes"][number] = {
+      id,
+      title: titleMap.get(id) ?? id,
+    }
+    const slug = categoryMap.get(id)
+    if (slug) node.categorySlug = slug
+    return node
+  })
 
   const json: BacklinksJson = { nodes, edges }
 
