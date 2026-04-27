@@ -12,6 +12,10 @@ type SimLink = { source: SimNode; target: SimNode; weight: number; type?: string
 
 /** Base radius per node kind */
 function nodeRadius(node: SimNode): number {
+  if (node.type === 'category') {
+    // L1 category hubs: floor 14px, scale by sqrt(pagerank) for visual heft on landing.
+    return Math.max(14, Math.sqrt(node.pagerank * 1000) * 1.4)
+  }
   const base = node.type === 'concept' ? 7 : 5
   return Math.max(base, Math.sqrt(node.pagerank * 1000))
 }
@@ -107,7 +111,36 @@ export function useForceSimulation(
       return `${d.label}  ·  ← ${inD}  ·  → ${outD}`
     }
 
+    // Sparse L1: when most nodes are categories and there are few of them, the
+    // standard force-directed layout collapses them onto a thin chain. Pre-seed
+    // a circular arrangement around the centroid so the landing view reads as
+    // a constellation, not a horizon line. Only triggered for sparse category-mode.
+    const isSparseCategoryView =
+      nodes.length > 0 &&
+      nodes.length <= 6 &&
+      nodes.every(n => n.type === 'category')
+    if (isSparseCategoryView) {
+      const cx = width / 2
+      const cy = height / 2
+      const radius = Math.min(width, height) * 0.28
+      nodes.forEach((n, i) => {
+        const angle = (i / nodes.length) * Math.PI * 2 - Math.PI / 2 // start at 12 o'clock
+        n.x = cx + Math.cos(angle) * radius
+        n.y = cy + Math.sin(angle) * radius
+      })
+    }
+
     // --- Simulation ---
+    const linkDistance = isSparseCategoryView
+      ? Math.min(width, height) * 0.32
+      : (opts.simParams?.linkDistance ?? 60)
+    const chargeStrength = isSparseCategoryView
+      ? -800
+      : (opts.simParams?.chargeStrength ?? -120)
+    const collideRadius = isSparseCategoryView
+      ? 32
+      : (opts.simParams?.collideRadius ?? 10)
+
     const simulation = d3Force
       .forceSimulation<SimNode>(nodes)
       .alphaDecay(0.02)
@@ -116,11 +149,11 @@ export function useForceSimulation(
         d3Force
           .forceLink<SimNode, SimLink>(links)
           .id(d => d.id)
-          .distance(opts.simParams?.linkDistance ?? 60),
+          .distance(linkDistance),
       )
-      .force('charge', d3Force.forceManyBody<SimNode>().strength(opts.simParams?.chargeStrength ?? -120))
+      .force('charge', d3Force.forceManyBody<SimNode>().strength(chargeStrength))
       .force('center', d3Force.forceCenter(width / 2, height / 2))
-      .force('collide', d3Force.forceCollide<SimNode>(opts.simParams?.collideRadius ?? 10))
+      .force('collide', d3Force.forceCollide<SimNode>(collideRadius))
       .stop()
 
     // Deterministic layout: run 60 ticks synchronously (Patch C3)
