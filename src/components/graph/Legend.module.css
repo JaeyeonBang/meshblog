@@ -72,6 +72,23 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  /* Re-enable pointer events: panel itself is pointer-events:none on desktop,
+     but rows must be hoverable so cross-highlight fires. */
+  pointer-events: auto;
+  cursor: default;
+  padding: 1px 3px;
+  border-radius: 2px;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.item:hover,
+.item:focus-visible {
+  background: var(--paper-2);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
 }
 
 /* 6×6 colored dot */

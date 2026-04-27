@@ -160,7 +160,9 @@ export function useForceSimulation(
       .selectAll<SVGLineElement, SimLink>('line')
       .data(links)
       .join('line')
-      .attr('stroke-width', d => Math.max(0.8, Math.sqrt(d.weight) * 1.0))
+      // Edge thickness: 1.0px floor + sqrt(weight) so weight=1 → ~1.0, weight=4 → ~2.0,
+      // weight=9 → ~2.6. Wider spread than the previous formula so hub edges read.
+      .attr('stroke-width', d => Math.max(1.0, 0.7 + Math.sqrt(d.weight) * 0.65))
       .attr('x1', d => d.source.x ?? 0)
       .attr('y1', d => d.source.y ?? 0)
       .attr('x2', d => d.target.x ?? 0)
