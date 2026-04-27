@@ -95,11 +95,23 @@ function deriveCategoryFromTags(tags: string[]): string | null {
   return null
 }
 
-/** Convert a kebab-case slug to a display name (title-case, hyphens → spaces). */
+/** Acronyms that render in ALL-CAPS in the legend instead of title-case. */
+const ACRONYMS = new Set([
+  "ai", "ml", "rl", "nlp", "llm", "rag", "rnn", "cnn", "gpu", "cpu",
+  "api", "css", "js", "ts", "ui", "ux", "ci", "cd", "qa", "seo",
+  "rlhf", "ppo", "lora", "peft",
+])
+
+/** Convert a kebab-case slug to a display name.
+ *  Acronyms render UPPERCASE; everything else title-cases. */
 function slugToName(slug: string): string {
   return slug
     .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((w) => {
+      const lower = w.toLowerCase()
+      if (ACRONYMS.has(lower)) return lower.toUpperCase()
+      return w.charAt(0).toUpperCase() + w.slice(1)
+    })
     .join(" ")
 }
 

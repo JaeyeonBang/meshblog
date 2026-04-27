@@ -5,6 +5,7 @@ import type { HoverState } from './graph/useForceSimulation'
 import { HoverCard } from './graph/HoverCard'
 import { Legend } from './graph/Legend'
 import type { LegendCategory } from './graph/Legend'
+import { normalizeLabel, slugToLabel } from './graph/labelFormat'
 import { withBase } from '../lib/url'
 import styles from './GraphView.module.css'
 
@@ -80,6 +81,9 @@ function backlinksToGraphJson(bl: BacklinksJson): GraphJson {
  * - level=3: notes in the selected category (type='note')
  * Falls back to L1 when categorySlug is missing for L2/L3.
  */
+// Inline import-binding for normalizeLabel happens at top of file.
+// Used by L1 below to render acronym-preserving labels (e.g. "RL" not "Rl").
+
 function categoryToGraphJson(
   data: CategoryGraphJson,
   level: Level,
@@ -93,7 +97,7 @@ function categoryToGraphJson(
     )
     const nodes: GraphNode[] = sorted.map(c => ({
       id: c.id,
-      label: c.label,
+      label: normalizeLabel(c.id, c.label),
       type: 'category' as NodeKind,
       level: 1 as const,
       pagerank: (c.noteCount + c.postCount) / 100,
@@ -373,7 +377,7 @@ export default function GraphView() {
           window.dispatchEvent(new CustomEvent('graph:setCategory', {
             detail: {
               slug: cat.id,
-              label: cat.label,
+              label: normalizeLabel(cat.id, cat.label),
               noteCount: cat.noteCount,
               postCount: cat.postCount,
             },
@@ -438,13 +442,14 @@ export default function GraphView() {
       const slug = node.categorySlug ?? 'fallback'
       counts.set(slug, (counts.get(slug) ?? 0) + 1)
     }
-    // Use categoryData label if available; otherwise title-case the slug
+    // Use categoryData label when present (normalized for acronym preservation);
+    // otherwise format the slug directly.
     const labelOf = (slug: string): string => {
       if (categoryData) {
         const cat = categoryData.categories.find(c => c.id === slug)
-        if (cat) return cat.label
+        if (cat) return normalizeLabel(slug, cat.label)
       }
-      return slug.charAt(0).toUpperCase() + slug.slice(1)
+      return slugToLabel(slug)
     }
     return [...counts.entries()].map(([slug, count]) => ({
       slug,

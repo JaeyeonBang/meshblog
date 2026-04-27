@@ -163,6 +163,18 @@
   stroke-opacity: 0.12;
 }
 
+/* ── Legend hover cross-highlight ────────────────────────────────────
+   Hover a Legend swatch → matching nodes lift, others fade.
+   Pointer events stay live on dimmed nodes so popovers still open. */
+.svg :global(.nodes circle.node--cat-active) {
+  stroke-width: 2.5px;
+  opacity: 1;
+}
+
+.svg :global(.nodes circle.node--cat-dim) {
+  opacity: 0.18;
+}
+
 /* ── Node hover ──────────────────────────────────────────────────── */
 
 .svg :global(.nodes circle:hover) {
