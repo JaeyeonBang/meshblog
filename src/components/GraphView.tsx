@@ -46,12 +46,37 @@ type TaxonomyPath = {
  */
 type TapState = { nodeId: string; ts: number } | null
 
+/** Returns {mode, level} for the initial render.
+ *  When neither ?mode= nor ?level= is in the URL, defaults to mode='note' + level=3
+ *  so a fresh visitor lands on the rich note-mesh view (L3) instead of the sparse L1.
+ *  If ?mode= is present without ?level=, level falls back to 1 (existing behaviour).
+ *  Bookmarked URLs that include ?level= are honoured exactly.
+ */
+function getInitialState(): { mode: Mode; level: Level } {
+  if (typeof window === 'undefined') return { mode: 'note', level: 3 }
+  const params = new URLSearchParams(window.location.search)
+  const modeParam = params.get('mode')
+  const levelParam = params.get('level')
+
+  const mode: Mode =
+    modeParam === 'concept'   ? 'concept'   :
+    modeParam === 'backlinks' ? 'backlinks' :
+                                'note'
+
+  let level: Level = 1
+  if (levelParam !== null) {
+    const n = Number(levelParam)
+    level = n === 2 || n === 3 ? (n as Level) : 1
+  } else if (modeParam === null) {
+    // Fresh load — no params at all: default to L3 for a richer first paint.
+    level = 3
+  }
+
+  return { mode, level }
+}
+
 function getInitialMode(): Mode {
-  if (typeof window === 'undefined') return 'note'
-  const p = new URLSearchParams(window.location.search).get('mode')
-  if (p === 'concept') return 'concept'
-  if (p === 'backlinks') return 'backlinks'
-  return 'note'
+  return getInitialState().mode
 }
 
 /** Convert BacklinksJson into the GraphJson shape used by useForceSimulation */
@@ -70,6 +95,7 @@ function backlinksToGraphJson(bl: BacklinksJson): GraphJson {
       source: e.source,
       target: e.target,
       weight: 1,
+      ...(e.alias !== undefined ? { alias: e.alias } : {}),
     })),
   }
 }
@@ -147,9 +173,7 @@ function categoryToGraphJson(
 }
 
 function getInitialLevel(): Level {
-  if (typeof window === 'undefined') return 1
-  const p = Number(new URLSearchParams(window.location.search).get('level') ?? '1')
-  return p === 2 || p === 3 ? (p as Level) : 1
+  return getInitialState().level
 }
 
 export default function GraphView() {
@@ -548,6 +572,8 @@ export default function GraphView() {
         excerpt={hoverExcerpt}
         href={hoverHref}
         refCount={hoverRefCount}
+        degreeInfo={hoverState?.degree}
+        incidentEdges={hoverState?.incident}
       />
 
       {/* Category color legend — hidden in concept mode */}

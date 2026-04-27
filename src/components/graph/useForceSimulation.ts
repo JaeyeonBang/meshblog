@@ -4,11 +4,11 @@ import * as d3Force from 'd3-force'
 import * as d3Selection from 'd3-selection'
 import * as d3Zoom from 'd3-zoom'
 import * as d3Drag from 'd3-drag'
-import type { GraphNode, GraphLink, GraphJson } from './types'
+import type { GraphNode, GraphLink, GraphJson, IncidentEdge, IncidentEdgeList } from './types'
 import { paletteIndexFor } from './categoryPalette'
 
 type SimNode = GraphNode & d3Force.SimulationNodeDatum
-type SimLink = { source: SimNode; target: SimNode; weight: number; type?: string }
+type SimLink = { source: SimNode; target: SimNode; weight: number; type?: string; alias?: string }
 
 /** Base radius per node kind */
 function nodeRadius(node: SimNode): number {
@@ -36,6 +36,8 @@ export type HoverState = {
   node: GraphNode
   x: number
   y: number
+  degree?: { in: number; out: number }
+  incident?: IncidentEdgeList
 } | null
 
 export function useForceSimulation(
@@ -86,20 +88,36 @@ export function useForceSimulation(
         const s = linkMap.get(sourceId)
         const t = linkMap.get(targetId)
         if (!s || !t) return null
-        return { source: s, target: t, weight: l.weight, type: l.type }
+        return { source: s, target: t, weight: l.weight, type: l.type, alias: l.alias }
       })
       .filter((l): l is SimLink => l !== null)
 
-    // In directed (backlinks) mode every node looks identical otherwise —
-    // flatten pagerank → 0, same level, same type. Compute degree maps so
-    // hubs get bigger circles and leaf nodes read as muted stubs.
+    // Always build degree maps — used for backlink radius in directed mode and
+    // for the HoverState degree/incident payload in all modes.
     const inDegree = new Map<string, number>()
     const outDegree = new Map<string, number>()
-    if (opts.directed) {
+    for (const l of links) {
+      outDegree.set(l.source.id, (outDegree.get(l.source.id) ?? 0) + 1)
+      inDegree.set(l.target.id, (inDegree.get(l.target.id) ?? 0) + 1)
+    }
+
+    /** Returns the incident edges for a given node, sorted inbound-first then alpha.
+     *  Capped at 5 items; totalCount reflects the full count. */
+    function incidentEdgesFor(nodeId: string): IncidentEdgeList {
+      const all: IncidentEdge[] = []
       for (const l of links) {
-        outDegree.set(l.source.id, (outDegree.get(l.source.id) ?? 0) + 1)
-        inDegree.set(l.target.id, (inDegree.get(l.target.id) ?? 0) + 1)
+        if (l.target.id === nodeId) {
+          all.push({ direction: 'in', label: l.source.label, alias: l.alias })
+        } else if (l.source.id === nodeId) {
+          all.push({ direction: 'out', label: l.target.label, alias: l.alias })
+        }
       }
+      // Sort: inbound first, then alphabetical by label
+      all.sort((a, b) => {
+        if (a.direction !== b.direction) return a.direction === 'in' ? -1 : 1
+        return a.label.localeCompare(b.label)
+      })
+      return { items: all.slice(0, 5), totalCount: all.length }
     }
     const radiusOf = (d: SimNode) =>
       opts.directed ? backlinkRadius(inDegree.get(d.id) ?? 0) : nodeRadius(d)
@@ -314,9 +332,18 @@ export function useForceSimulation(
         const idx = nodeSel.nodes().indexOf(event.currentTarget as SVGCircleElement)
         if (idx !== -1) applyFocus(idx)
         applyEdgeFocus(d.id)
-        opts.onHover?.({ node: d, x: event.clientX, y: event.clientY })
+        const inD = inDegree.get(d.id) ?? 0
+        const outD = outDegree.get(d.id) ?? 0
+        opts.onHover?.({
+          node: d,
+          x: event.clientX,
+          y: event.clientY,
+          degree: { in: inD, out: outD },
+          incident: incidentEdgesFor(d.id),
+        })
       })
       .on('mousemove', (event: MouseEvent, d: SimNode) => {
+        // Pass position update only — degree/incident unchanged during move
         opts.onHover?.({ node: d, x: event.clientX, y: event.clientY })
       })
       .on('mouseleave', () => {
@@ -330,7 +357,15 @@ export function useForceSimulation(
         applyEdgeFocus(d.id)
         // Position popover near the circle's bounding box for keyboard users
         const rect = (event.currentTarget as SVGCircleElement).getBoundingClientRect()
-        opts.onHover?.({ node: d, x: rect.right, y: rect.top })
+        const inD = inDegree.get(d.id) ?? 0
+        const outD = outDegree.get(d.id) ?? 0
+        opts.onHover?.({
+          node: d,
+          x: rect.right,
+          y: rect.top,
+          degree: { in: inD, out: outD },
+          incident: incidentEdgesFor(d.id),
+        })
       })
       .on('blur', () => {
         clearFocus()

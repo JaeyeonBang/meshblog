@@ -35,6 +35,21 @@ export type GraphLink = {
   weight: number
   /** Edge type — 'mentions' for concept→note cross-edges; absent for same-type edges */
   type?: string
+  /** Wikilink display text (backlinks mode only). Preserved from BacklinksJson.edges.alias. */
+  alias?: string
+}
+
+/** A single incident edge from the perspective of the hovered node. */
+export type IncidentEdge = {
+  direction: 'in' | 'out'
+  label: string
+  alias?: string
+}
+
+/** Incident-edge list with overflow metadata, for HoverCard rendering. */
+export type IncidentEdgeList = {
+  items: IncidentEdge[]
+  totalCount: number
 }
 
 export type GraphJson = {
