@@ -7,6 +7,22 @@
  *
  * Props are intentionally flat — no sub-objects — so Wave 2's caller
  * can spread a single mesh-data node object.
+ *
+ * ARIA pattern — role="tooltip":
+ *   This panel is a transient, read-only supplementary preview with NO
+ *   interactive content. The correct WAI-ARIA pattern for such an element
+ *   is role="tooltip" (ARIA 1.1 §5.4), with the trigger pointing to it via
+ *   aria-describedby rather than aria-controls/aria-expanded (which belong
+ *   to disclosure widgets and dialogs).
+ *
+ *   Using role="dialog" with aria-modal="false" was incorrect because screen
+ *   readers (NVDA, VoiceOver) treat dialogs as distinct regions and may move
+ *   the virtual cursor into them — disruptive for a non-interactive preview.
+ *
+ *   aria-label is retained on the tooltip element itself because WAI-ARIA
+ *   allows tooltips to carry their own accessible name, and it provides a
+ *   useful label when the tooltip is discovered via accessibility tree
+ *   inspection — separate from the aria-describedby path the trigger uses.
  */
 interface Props {
   /** The note/concept title rendered at the top of the popover. */
@@ -58,9 +74,8 @@ if (readingMinutes !== undefined) metaParts.push(`${Math.max(1, readingMinutes)}
 <div
   id={id}
   class="mesh-popover"
-  role="dialog"
+  role="tooltip"
   aria-label={ariaLabel ?? `Note preview: ${title}`}
-  aria-modal="false"
 >
   <p class="popover-title">{title}</p>
 

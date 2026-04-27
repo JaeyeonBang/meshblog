@@ -145,6 +145,156 @@ describe('getNoteMeshNodes', () => {
       expect(nodes[0]).toMatchObject({ label: 'Note X', kind: 'selected' })
       expect(nodes[1]).toMatchObject({ label: 'Note Y', kind: 'note', href: '/meshblog/notes/note-y' })
     })
+
+    // ── New tests: enrichNeighborsFromDb code paths ───────────────────────────
+
+    it('enriches wikilink neighbors with excerpt + readingMinutes when DB has content', () => {
+      const body = 'This is the body of note B. '.repeat(10) // ~280 chars
+      __backlinkJson = JSON.stringify({
+        nodes: [
+          { id: 'note-a', title: 'Note A' },
+          { id: 'note-b', title: 'Note B' },
+        ],
+        edges: [
+          { source: 'note-b', target: 'note-a' }, // inbound to note-a
+        ],
+      })
+      const db = makeDb()
+      insertNote(db, 'note-b', 'note-b', 'Note B', body)
+      __mockDb = db
+
+      const nodes = getNoteMeshNodes({
+        noteId: 'note-a',
+        noteTitle: 'Note A',
+        withBase: wb,
+      })
+
+      expect(nodes).toHaveLength(2)
+      const neighbor = nodes[1]
+      expect(neighbor.kind).toBe('note')
+      expect(typeof neighbor.excerpt).toBe('string')
+      expect(neighbor.excerpt!.length).toBeGreaterThan(0)
+      expect(neighbor.excerpt!.length).toBeLessThanOrEqual(160)
+      expect(typeof neighbor.readingMinutes).toBe('number')
+      expect(neighbor.readingMinutes!).toBeGreaterThan(0)
+
+      db.close()
+    })
+
+    it('marks neighbor as kind="stub" when DB row exists with empty content', () => {
+      __backlinkJson = JSON.stringify({
+        nodes: [
+          { id: 'note-a', title: 'Note A' },
+          { id: 'note-c', title: 'Note C' },
+        ],
+        edges: [
+          { source: 'note-c', target: 'note-a' }, // inbound to note-a
+        ],
+      })
+      const db = makeDb()
+      insertNote(db, 'note-c', 'note-c', 'Note C', '') // empty content → stub
+      __mockDb = db
+
+      const nodes = getNoteMeshNodes({
+        noteId: 'note-a',
+        noteTitle: 'Note A',
+        withBase: wb,
+      })
+
+      expect(nodes).toHaveLength(2)
+      const neighbor = nodes[1]
+      expect(neighbor.kind).toBe('stub')
+      expect(neighbor.excerpt).toBeUndefined()
+
+      db.close()
+    })
+
+    it('falls back to kind="note" when DB row missing (graceful for fixture-mode/test envs)', () => {
+      __backlinkJson = JSON.stringify({
+        nodes: [
+          { id: 'note-a', title: 'Note A' },
+          { id: 'note-d', title: 'Note D' },
+        ],
+        edges: [
+          { source: 'note-d', target: 'note-a' },
+        ],
+      })
+      // DB exists but note-d row is absent — simulates fixture mode missing the note
+      const db = makeDb()
+      // note-d intentionally NOT inserted
+      __mockDb = db
+
+      const nodes = getNoteMeshNodes({
+        noteId: 'note-a',
+        noteTitle: 'Note A',
+        withBase: wb,
+      })
+
+      expect(nodes).toHaveLength(2)
+      const neighbor = nodes[1]
+      expect(neighbor.kind).toBe('note') // no row → not a stub
+      expect(neighbor.excerpt).toBeUndefined()
+
+      db.close()
+    })
+
+    it('populates backlinks count from inboundMap', () => {
+      __backlinkJson = JSON.stringify({
+        nodes: [
+          { id: 'note-a', title: 'Note A' },
+          { id: 'note-b', title: 'Note B' },
+          { id: 'note-e', title: 'Note E' },
+          { id: 'note-f', title: 'Note F' },
+        ],
+        edges: [
+          { source: 'note-b', target: 'note-a' }, // note-b is a neighbor of note-a
+          { source: 'note-e', target: 'note-b' }, // inbound to note-b
+          { source: 'note-f', target: 'note-b' }, // inbound to note-b → 2 total
+        ],
+      })
+      const db = makeDb()
+      insertNote(db, 'note-b', 'note-b', 'Note B', 'Content of note B.')
+      __mockDb = db
+
+      const nodes = getNoteMeshNodes({
+        noteId: 'note-a',
+        noteTitle: 'Note A',
+        withBase: wb,
+      })
+
+      expect(nodes).toHaveLength(2)
+      const neighbor = nodes[1]
+      expect(neighbor.backlinks).toBe(2)
+
+      db.close()
+    })
+
+    it('relationship is "backlink" for inbound edges and "outbound" for outbound edges', () => {
+      __backlinkJson = JSON.stringify({
+        nodes: [
+          { id: 'center', title: 'Center' },
+          { id: 'src-note', title: 'Source Note' },  // points AT center → backlink
+          { id: 'dst-note', title: 'Dest Note' },    // center points to it → outbound
+        ],
+        edges: [
+          { source: 'src-note', target: 'center' },  // inbound
+          { source: 'center',   target: 'dst-note' }, // outbound
+        ],
+      })
+      __mockDb = null
+
+      const nodes = getNoteMeshNodes({
+        noteId: 'center',
+        noteTitle: 'Center',
+        withBase: wb,
+      })
+
+      expect(nodes).toHaveLength(3)
+      const backlinker = nodes.find((n) => n.label === 'Source Note')!
+      const outbounder = nodes.find((n) => n.label === 'Dest Note')!
+      expect(backlinker.relationship).toBe('backlink')
+      expect(outbounder.relationship).toBe('outbound')
+    })
   })
 
   // ── Case B: no wikilinks, entities shared → fallback returns neighbors ─────
@@ -244,6 +394,36 @@ describe('getNoteMeshNodes', () => {
       // Tie-break: 'alpha' < 'zebra' lexicographically
       expect(nodes[1]).toMatchObject({ label: 'Alpha' })
       expect(nodes[2]).toMatchObject({ label: 'Zebra' })
+
+      db.close()
+    })
+
+    it('entity-path neighbors include excerpt and readingMinutes when content is non-empty', () => {
+      // insertNote uses `Body of ${title}.` as default content — confirms enrichment.
+      __backlinkJson = null
+
+      const db = makeDb()
+      insertNote(db, 'hub-note', 'hub-note', 'Hub Note')
+      insertNote(db, 'peer-note', 'peer-note', 'Peer Note') // content = 'Body of Peer Note.'
+
+      insertEntity(db, 1, 'shared-ent')
+      insertNoteEntity(db, 'hub-note',  1)
+      insertNoteEntity(db, 'peer-note', 1)
+
+      __mockDb = db
+
+      const nodes = getNoteMeshNodes({
+        noteId: 'hub-note',
+        noteTitle: 'Hub Note',
+        withBase: wb,
+      })
+
+      expect(nodes).toHaveLength(2)
+      const neighbor = nodes[1]
+      expect(neighbor.relationship).toBe('entity')
+      expect(typeof neighbor.excerpt).toBe('string')
+      expect(neighbor.excerpt!.length).toBeGreaterThan(0)
+      expect(typeof neighbor.readingMinutes).toBe('number')
 
       db.close()
     })
