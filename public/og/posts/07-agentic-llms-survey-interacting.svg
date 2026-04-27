@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" width="1600" height="700">
+  <rect width="1600" height="700" fill="#fff"/>
+  <line x1="533" y1="40" x2="533" y2="660" stroke="#111" stroke-width="1"/>
+  <line x1="40" y1="40" x2="1560" y2="40" stroke="#111" stroke-width="3"/>
+  <line x1="40" y1="660" x2="1560" y2="660" stroke="#111" stroke-width="1"/>
+
+  <!-- LEFT PANEL -->
+  <text x="60" y="90" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#111" letter-spacing="4">POSTS · 07</text>
+  <line x1="60" y1="102" x2="180" y2="102" stroke="#1abdc7" stroke-width="3"/>
+  <text x="60" y="165" font-family="'Pretendard', sans-serif" font-size="36" fill="#111" font-weight="700">Agentic Large</text>
+  <text x="60" y="211" font-family="'Pretendard', sans-serif" font-size="36" fill="#111" font-weight="700">Language Models,</text>
+  <text x="60" y="257" font-family="'Pretendard', sans-serif" font-size="32" fill="#111" font-weight="700">a survey — Interacting</text>
+  <text x="60" y="330" font-family="'Pretendard', monospace, sans-serif" font-size="13" fill="#1abdc7" letter-spacing="2">AI AGENT · LLM · MULTI-AGENT</text>
+  <text x="60" y="640" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" letter-spacing="2">2025-11-25</text>
+
+  <!-- RIGHT PANEL: network graph nodes -->
+  <g clip-path="url(#rp07)">
+    <clipPath id="rp07"><rect x="533" y="40" width="1027" height="620"/></clipPath>
+    <!-- connection lines -->
+    <line x1="900" y1="350" x2="1100" y2="200" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="900" y1="350" x2="1100" y2="500" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="900" y1="350" x2="700" y2="200" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <line x1="900" y1="350" x2="700" y2="500" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <line x1="1100" y1="200" x2="1300" y2="280" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="1100" y1="500" x2="1300" y2="420" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="200" x2="600" y2="130" stroke="#1abdc7" stroke-width="1" opacity="0.3"/>
+    <line x1="700" y1="500" x2="600" y2="570" stroke="#1abdc7" stroke-width="1" opacity="0.3"/>
+    <line x1="1100" y1="200" x2="1100" y2="500" stroke="#111" stroke-width="1" opacity="0.1"/>
+    <line x1="700" y1="200" x2="700" y2="500" stroke="#1abdc7" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="200" x2="1100" y2="200" stroke="#111" stroke-width="1" opacity="0.1"/>
+    <line x1="700" y1="500" x2="1100" y2="500" stroke="#111" stroke-width="1" opacity="0.1"/>
+    <!-- center node -->
+    <circle cx="900" cy="350" r="50" fill="#1abdc7" opacity="0.2" stroke="#1abdc7" stroke-width="3"/>
+    <circle cx="900" cy="350" r="14" fill="#1abdc7"/>
+    <!-- satellite nodes -->
+    <circle cx="1100" cy="200" r="35" fill="none" stroke="#111" stroke-width="2"/>
+    <circle cx="1100" cy="200" r="10" fill="#111"/>
+    <circle cx="1100" cy="500" r="35" fill="none" stroke="#111" stroke-width="2"/>
+    <circle cx="1100" cy="500" r="10" fill="#111"/>
+    <circle cx="700" cy="200" r="35" fill="none" stroke="#1abdc7" stroke-width="2"/>
+    <circle cx="700" cy="200" r="10" fill="#1abdc7"/>
+    <circle cx="700" cy="500" r="35" fill="none" stroke="#1abdc7" stroke-width="2"/>
+    <circle cx="700" cy="500" r="10" fill="#1abdc7"/>
+    <!-- outer nodes -->
+    <circle cx="1300" cy="280" r="20" fill="none" stroke="#111" stroke-width="1"/>
+    <circle cx="1300" cy="420" r="20" fill="none" stroke="#111" stroke-width="1"/>
+    <circle cx="600" cy="130" r="20" fill="none" stroke="#1abdc7" stroke-width="1"/>
+    <circle cx="600" cy="570" r="20" fill="none" stroke="#1abdc7" stroke-width="1"/>
+  </g>
+</svg>

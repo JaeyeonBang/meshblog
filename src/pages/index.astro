@@ -5,7 +5,7 @@ import NoteRow from '../components/ui/molecules/NoteRow.astro'
 import SectionBreak from '../components/ui/molecules/SectionBreak.astro'
 import TOC from '../components/ui/molecules/TOC.astro'
 import QaCard from '../components/ui/molecules/QaCard.astro'
-import MiniMesh from '../components/ui/molecules/MiniMesh.astro'
+import PostMeshGraph from '../components/PostMeshGraph'
 import CategoryList from '../components/ui/molecules/CategoryList.astro'
 import Button from '../components/ui/atoms/Button.astro'
 import QAChips from '../components/QAChips.tsx'
@@ -41,8 +41,10 @@ function getNoteBadge(note: { created_at: string; updated_at: string }): 'new' |
 
 // Live concept mesh nodes — top-6 by degree from public/graph/concept-l2.json.
 // Falls back to note-l2.json, then to static fixture when both are empty (new vault).
-// MiniMesh computes radial layout when nodes lack x/y.
+// Node[0] acts as center in PostMeshGraph (hub); nodes[1..] are neighbors.
 const meshNodes = getHomeMeshNodes(withBase)
+// Home page has no slug-keyed wikilinks between concept nodes — pass empty links.
+const meshLinks: Array<{ source: string; target: string }> = []
 ---
 
 <Base
@@ -120,7 +122,7 @@ const meshNodes = getHomeMeshNodes(withBase)
       </TOC>
 
       <TOC label="concept mesh">
-        <MiniMesh nodes={meshNodes} size="md" />
+        <PostMeshGraph nodes={meshNodes} links={meshLinks} client:idle />
         <p class="mesh-caption"><span class="mesh-caption__tag">Concept mesh</span> <span class="mesh-caption__body">· 자주 등장하는 개념들이 서로를 끌어당긴다</span></p>
         <div class="mesh-cta">
           <Button href={withBase('/graph')}>전체 그래프 →</Button>

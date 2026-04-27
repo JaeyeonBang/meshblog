@@ -2,6 +2,7 @@
 title: "Seq2Seq — Encoder-Decoder 구조와 시퀀스 변환의 시작"
 date: 2025-11-21
 tags: [seq2seq, rnn, encoder-decoder, attention, machine-learning, deep-learning]
+image: "/meshblog/og/posts/05-seq2seq.svg"
 ---
 
 # Seq2Seq — Encoder-Decoder 구조와 시퀀스 변환의 시작

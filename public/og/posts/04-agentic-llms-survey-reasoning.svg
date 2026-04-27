@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" width="1600" height="700">
+  <rect width="1600" height="700" fill="#fff"/>
+  <line x1="533" y1="40" x2="533" y2="660" stroke="#111" stroke-width="1"/>
+  <line x1="40" y1="40" x2="1560" y2="40" stroke="#111" stroke-width="3"/>
+  <line x1="40" y1="660" x2="1560" y2="660" stroke="#111" stroke-width="1"/>
+
+  <!-- LEFT PANEL -->
+  <text x="60" y="90" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#111" letter-spacing="4">POSTS · 04</text>
+  <line x1="60" y1="102" x2="180" y2="102" stroke="#1abdc7" stroke-width="3"/>
+  <text x="60" y="165" font-family="'Pretendard', sans-serif" font-size="36" fill="#111" font-weight="700">Agentic Large</text>
+  <text x="60" y="211" font-family="'Pretendard', sans-serif" font-size="36" fill="#111" font-weight="700">Language Models,</text>
+  <text x="60" y="257" font-family="'Pretendard', sans-serif" font-size="36" fill="#111" font-weight="700">a survey — Reasoning</text>
+  <text x="60" y="330" font-family="'Pretendard', monospace, sans-serif" font-size="13" fill="#1abdc7" letter-spacing="2">AI AGENT · LLM · REASONING</text>
+  <text x="60" y="640" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" letter-spacing="2">2025-11-19</text>
+
+  <!-- RIGHT PANEL: stepping blocks / staircase pattern -->
+  <g clip-path="url(#rp04)">
+    <clipPath id="rp04"><rect x="533" y="40" width="1027" height="620"/></clipPath>
+    <!-- vertical grid lines -->
+    <line x1="630" y1="40" x2="630" y2="660" stroke="#111" stroke-width="1" opacity="0.08"/>
+    <line x1="730" y1="40" x2="730" y2="660" stroke="#111" stroke-width="1" opacity="0.08"/>
+    <line x1="830" y1="40" x2="830" y2="660" stroke="#111" stroke-width="1" opacity="0.08"/>
+    <line x1="930" y1="40" x2="930" y2="660" stroke="#111" stroke-width="1" opacity="0.08"/>
+    <line x1="1030" y1="40" x2="1030" y2="660" stroke="#111" stroke-width="1" opacity="0.08"/>
+    <line x1="1130" y1="40" x2="1130" y2="660" stroke="#111" stroke-width="1" opacity="0.08"/>
+    <line x1="1230" y1="40" x2="1230" y2="660" stroke="#111" stroke-width="1" opacity="0.08"/>
+    <line x1="1330" y1="40" x2="1330" y2="660" stroke="#111" stroke-width="1" opacity="0.08"/>
+    <line x1="1430" y1="40" x2="1430" y2="660" stroke="#111" stroke-width="1" opacity="0.08"/>
+    <!-- staircase bars -->
+    <rect x="590" y="540" width="80" height="80" fill="#1abdc7" opacity="0.15"/>
+    <rect x="690" y="460" width="80" height="160" fill="#1abdc7" opacity="0.2"/>
+    <rect x="790" y="380" width="80" height="240" fill="#1abdc7" opacity="0.25"/>
+    <rect x="890" y="300" width="80" height="320" fill="#1abdc7" opacity="0.3"/>
+    <rect x="990" y="220" width="80" height="400" fill="#1abdc7" opacity="0.35"/>
+    <rect x="1090" y="140" width="80" height="480" fill="#1abdc7" opacity="0.4"/>
+    <!-- outline versions -->
+    <rect x="590" y="540" width="80" height="80" fill="none" stroke="#111" stroke-width="1"/>
+    <rect x="690" y="460" width="80" height="160" fill="none" stroke="#111" stroke-width="1"/>
+    <rect x="790" y="380" width="80" height="240" fill="none" stroke="#111" stroke-width="1"/>
+    <rect x="890" y="300" width="80" height="320" fill="none" stroke="#111" stroke-width="1"/>
+    <rect x="990" y="220" width="80" height="400" fill="none" stroke="#111" stroke-width="1"/>
+    <rect x="1090" y="140" width="80" height="480" fill="none" stroke="#1abdc7" stroke-width="3"/>
+    <!-- connecting line top -->
+    <polyline points="630,540 730,460 830,380 930,300 1030,220 1130,140" fill="none" stroke="#1abdc7" stroke-width="2"/>
+  </g>
+</svg>

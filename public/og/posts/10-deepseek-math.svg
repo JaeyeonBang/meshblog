@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" width="1600" height="700">
+  <rect width="1600" height="700" fill="#fff"/>
+  <line x1="533" y1="40" x2="533" y2="660" stroke="#111" stroke-width="1"/>
+  <line x1="40" y1="40" x2="1560" y2="40" stroke="#111" stroke-width="3"/>
+  <line x1="40" y1="660" x2="1560" y2="660" stroke="#111" stroke-width="1"/>
+
+  <!-- LEFT PANEL -->
+  <text x="60" y="90" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#111" letter-spacing="4">POSTS · 10</text>
+  <line x1="60" y1="102" x2="180" y2="102" stroke="#1abdc7" stroke-width="3"/>
+  <text x="60" y="162" font-family="'Pretendard', sans-serif" font-size="34" fill="#111" font-weight="700">DeepSeekMath</text>
+  <text x="60" y="206" font-family="'Pretendard', sans-serif" font-size="26" fill="#111" font-weight="700">Pushing the Limits of</text>
+  <text x="60" y="242" font-family="'Pretendard', sans-serif" font-size="26" fill="#111" font-weight="700">Mathematical Reasoning</text>
+  <text x="60" y="278" font-family="'Pretendard', sans-serif" font-size="26" fill="#111" font-weight="700">in Open Language Models</text>
+  <text x="60" y="335" font-family="'Pretendard', monospace, sans-serif" font-size="13" fill="#1abdc7" letter-spacing="2">RL · MATH · GRPO · DEEPSEEK</text>
+  <text x="60" y="640" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" letter-spacing="2">2026-01-03</text>
+
+  <!-- RIGHT PANEL: sine wave / formula style -->
+  <g clip-path="url(#rp10)">
+    <clipPath id="rp10"><rect x="533" y="40" width="1027" height="620"/></clipPath>
+    <!-- horizontal axis -->
+    <line x1="580" y1="350" x2="1540" y2="350" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <!-- sine wave approximation using polyline -->
+    <polyline points="
+      580,350 620,280 680,210 740,280 800,350 860,280 920,210 980,280 1040,350 1100,280 1160,210 1220,280 1280,350 1340,280 1400,210 1460,280 1520,350
+    " fill="none" stroke="#1abdc7" stroke-width="3"/>
+    <!-- shadow/fill -->
+    <polyline points="
+      580,350 620,280 680,210 740,280 800,350 860,280 920,210 980,280 1040,350 1100,280 1160,210 1220,280 1280,350 1340,280 1400,210 1460,280 1520,350 1520,500 580,500
+    " fill="#1abdc7" opacity="0.06"/>
+    <!-- math formula -->
+    <text x="1060" y="500" font-family="'Pretendard', monospace, sans-serif" font-size="22" fill="#111" text-anchor="middle" opacity="0.5">r = GRPO(π, D_math)</text>
+    <!-- decorative vertical tick marks -->
+    <line x1="680" y1="200" x2="680" y2="360" stroke="#111" stroke-width="1" stroke-dasharray="3,3" opacity="0.2"/>
+    <line x1="920" y1="200" x2="920" y2="360" stroke="#111" stroke-width="1" stroke-dasharray="3,3" opacity="0.2"/>
+    <line x1="1160" y1="200" x2="1160" y2="360" stroke="#111" stroke-width="1" stroke-dasharray="3,3" opacity="0.2"/>
+    <line x1="1400" y1="200" x2="1400" y2="360" stroke="#111" stroke-width="1" stroke-dasharray="3,3" opacity="0.2"/>
+    <!-- peaks -->
+    <circle cx="680" cy="210" r="6" fill="#1abdc7"/>
+    <circle cx="920" cy="210" r="6" fill="#1abdc7"/>
+    <circle cx="1160" cy="210" r="6" fill="#1abdc7"/>
+    <circle cx="1400" cy="210" r="6" fill="#1abdc7"/>
+  </g>
+</svg>

@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" width="1600" height="700">
+  <rect width="1600" height="700" fill="#fff"/>
+  <line x1="533" y1="40" x2="533" y2="660" stroke="#111" stroke-width="1"/>
+  <line x1="40" y1="40" x2="1560" y2="40" stroke="#111" stroke-width="3"/>
+  <line x1="40" y1="660" x2="1560" y2="660" stroke="#111" stroke-width="1"/>
+
+  <!-- LEFT PANEL -->
+  <text x="60" y="90" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#111" letter-spacing="4">POSTS · 12</text>
+  <line x1="60" y1="102" x2="180" y2="102" stroke="#1abdc7" stroke-width="3"/>
+  <text x="60" y="162" font-family="'Pretendard', sans-serif" font-size="34" fill="#111" font-weight="700">트랜스포머(Transformer)</text>
+  <text x="60" y="206" font-family="'Pretendard', sans-serif" font-size="30" fill="#111" font-weight="700">완벽 이해</text>
+  <text x="60" y="246" font-family="'Pretendard', sans-serif" font-size="20" fill="#888" font-weight="400">Self-Attention · Multi-Head</text>
+  <text x="60" y="274" font-family="'Pretendard', sans-serif" font-size="20" fill="#888" font-weight="400">Positional Encoding</text>
+  <text x="60" y="335" font-family="'Pretendard', monospace, sans-serif" font-size="13" fill="#1abdc7" letter-spacing="2">TRANSFORMER · SELF-ATTENTION</text>
+  <text x="60" y="640" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" letter-spacing="2">2025-10-05</text>
+
+  <!-- RIGHT PANEL: attention matrix heatmap -->
+  <g clip-path="url(#rp12)">
+    <clipPath id="rp12"><rect x="533" y="40" width="1027" height="620"/></clipPath>
+    <!-- attention grid 7x7 -->
+    <!-- row 1 -->
+    <rect x="700" y="130" width="70" height="70" fill="#1abdc7" opacity="0.9"/>
+    <rect x="770" y="130" width="70" height="70" fill="#1abdc7" opacity="0.2"/>
+    <rect x="840" y="130" width="70" height="70" fill="#1abdc7" opacity="0.4"/>
+    <rect x="910" y="130" width="70" height="70" fill="#1abdc7" opacity="0.1"/>
+    <rect x="980" y="130" width="70" height="70" fill="#1abdc7" opacity="0.3"/>
+    <rect x="1050" y="130" width="70" height="70" fill="#1abdc7" opacity="0.15"/>
+    <rect x="1120" y="130" width="70" height="70" fill="#1abdc7" opacity="0.05"/>
+    <!-- row 2 -->
+    <rect x="700" y="200" width="70" height="70" fill="#1abdc7" opacity="0.2"/>
+    <rect x="770" y="200" width="70" height="70" fill="#1abdc7" opacity="0.85"/>
+    <rect x="840" y="200" width="70" height="70" fill="#1abdc7" opacity="0.15"/>
+    <rect x="910" y="200" width="70" height="70" fill="#1abdc7" opacity="0.35"/>
+    <rect x="980" y="200" width="70" height="70" fill="#1abdc7" opacity="0.1"/>
+    <rect x="1050" y="200" width="70" height="70" fill="#1abdc7" opacity="0.4"/>
+    <rect x="1120" y="200" width="70" height="70" fill="#1abdc7" opacity="0.2"/>
+    <!-- row 3 -->
+    <rect x="700" y="270" width="70" height="70" fill="#1abdc7" opacity="0.3"/>
+    <rect x="770" y="270" width="70" height="70" fill="#1abdc7" opacity="0.1"/>
+    <rect x="840" y="270" width="70" height="70" fill="#1abdc7" opacity="0.8"/>
+    <rect x="910" y="270" width="70" height="70" fill="#1abdc7" opacity="0.25"/>
+    <rect x="980" y="270" width="70" height="70" fill="#1abdc7" opacity="0.5"/>
+    <rect x="1050" y="270" width="70" height="70" fill="#1abdc7" opacity="0.1"/>
+    <rect x="1120" y="270" width="70" height="70" fill="#1abdc7" opacity="0.3"/>
+    <!-- row 4 -->
+    <rect x="700" y="340" width="70" height="70" fill="#1abdc7" opacity="0.1"/>
+    <rect x="770" y="340" width="70" height="70" fill="#1abdc7" opacity="0.3"/>
+    <rect x="840" y="340" width="70" height="70" fill="#1abdc7" opacity="0.2"/>
+    <rect x="910" y="340" width="70" height="70" fill="#1abdc7" opacity="0.75"/>
+    <rect x="980" y="340" width="70" height="70" fill="#1abdc7" opacity="0.15"/>
+    <rect x="1050" y="340" width="70" height="70" fill="#1abdc7" opacity="0.35"/>
+    <rect x="1120" y="340" width="70" height="70" fill="#1abdc7" opacity="0.1"/>
+    <!-- row 5 -->
+    <rect x="700" y="410" width="70" height="70" fill="#1abdc7" opacity="0.25"/>
+    <rect x="770" y="410" width="70" height="70" fill="#1abdc7" opacity="0.4"/>
+    <rect x="840" y="410" width="70" height="70" fill="#1abdc7" opacity="0.1"/>
+    <rect x="910" y="410" width="70" height="70" fill="#1abdc7" opacity="0.2"/>
+    <rect x="980" y="410" width="70" height="70" fill="#1abdc7" opacity="0.7"/>
+    <rect x="1050" y="410" width="70" height="70" fill="#1abdc7" opacity="0.3"/>
+    <rect x="1120" y="410" width="70" height="70" fill="#1abdc7" opacity="0.15"/>
+    <!-- row 6 -->
+    <rect x="700" y="480" width="70" height="70" fill="#1abdc7" opacity="0.15"/>
+    <rect x="770" y="480" width="70" height="70" fill="#1abdc7" opacity="0.1"/>
+    <rect x="840" y="480" width="70" height="70" fill="#1abdc7" opacity="0.35"/>
+    <rect x="910" y="480" width="70" height="70" fill="#1abdc7" opacity="0.5"/>
+    <rect x="980" y="480" width="70" height="70" fill="#1abdc7" opacity="0.2"/>
+    <rect x="1050" y="480" width="70" height="70" fill="#1abdc7" opacity="0.65"/>
+    <rect x="1120" y="480" width="70" height="70" fill="#1abdc7" opacity="0.1"/>
+    <!-- grid lines -->
+    <line x1="700" y1="130" x2="1190" y2="130" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="200" x2="1190" y2="200" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="270" x2="1190" y2="270" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="340" x2="1190" y2="340" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="410" x2="1190" y2="410" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="480" x2="1190" y2="480" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="550" x2="1190" y2="550" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="700" y1="130" x2="700" y2="550" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="770" y1="130" x2="770" y2="550" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="840" y1="130" x2="840" y2="550" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="910" y1="130" x2="910" y2="550" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="980" y1="130" x2="980" y2="550" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="1050" y1="130" x2="1050" y2="550" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="1120" y1="130" x2="1120" y2="550" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <line x1="1190" y1="130" x2="1190" y2="550" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <!-- outer border -->
+    <rect x="700" y="130" width="490" height="420" fill="none" stroke="#111" stroke-width="2"/>
+    <!-- label -->
+    <text x="945" y="110" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" text-anchor="middle" letter-spacing="2">ATTENTION SCORE MATRIX</text>
+    <!-- diagonal emphasis -->
+    <rect x="700" y="130" width="70" height="70" fill="none" stroke="#1abdc7" stroke-width="2"/>
+    <rect x="770" y="200" width="70" height="70" fill="none" stroke="#1abdc7" stroke-width="2"/>
+    <rect x="840" y="270" width="70" height="70" fill="none" stroke="#1abdc7" stroke-width="2"/>
+    <rect x="910" y="340" width="70" height="70" fill="none" stroke="#1abdc7" stroke-width="2"/>
+    <rect x="980" y="410" width="70" height="70" fill="none" stroke="#1abdc7" stroke-width="2"/>
+    <rect x="1050" y="480" width="70" height="70" fill="none" stroke="#1abdc7" stroke-width="2"/>
+  </g>
+</svg>

@@ -2,6 +2,7 @@
 title: "Agentic Large Language Models, a survey, review: Acting"
 date: 2025-11-22
 tags: [AI Agent, NLP, LLM, ai-agent]
+image: "/meshblog/og/posts/06-agentic-llms-survey-acting.svg"
 ---
 [[paper link]](https://arxiv.org/abs/2503.23037)
 

@@ -2,6 +2,7 @@
 title: "RLPR: EXTRAPOLATING RLVR TO GENERAL DO MAINS WITHOUT VERIFIERS"
 date: 2026-01-03
 tags: [RL, NLP, LLM, neural-network]
+image: "/meshblog/og/posts/11-rlpr.svg"
 ---
 [[paper link]](https://arxiv.org/pdf/2506.18254)
 

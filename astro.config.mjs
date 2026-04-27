@@ -9,6 +9,12 @@ export default defineConfig({
   integrations: [react()],
   output: 'static',
   build: { format: 'directory' },
+  markdown: {
+    shikiConfig: {
+      theme: 'github-dark',
+      wrap: false,
+    },
+  },
   vite: {
     ssr: { noExternal: [] },
     optimizeDeps: { exclude: ['better-sqlite3'] },

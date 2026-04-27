@@ -38,7 +38,8 @@ public/graph/
 
 # Generated artifacts (Phase 3 T7)
 /public/graph/
-/public/og/
+/public/og/*
+!/public/og/posts/
 /public/atom.xml
 /public/notes-manifest.json
 /.data/

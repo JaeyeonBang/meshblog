@@ -9,8 +9,7 @@ import HeroFigure from '../../components/ui/molecules/HeroFigure.astro'
 import PageQa from '../../components/ui/molecules/PageQa.astro'
 import RelatedGrid from '../../components/ui/molecules/RelatedGrid.astro'
 import Pager from '../../components/ui/molecules/Pager.astro'
-import TOC from '../../components/ui/molecules/TOC.astro'
-import PostMeshGraph from '../../components/PostMeshGraph'
+import PostSidebar from '../../components/ui/molecules/PostSidebar.astro'
 import { renderMarkdownToHtml } from '../../lib/markdown/render'
 import { buildNoteResolver } from '../../lib/markdown/wikilink-resolver'
 import {
@@ -184,7 +183,11 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
         )}
       </header>
 
-      <HeroFigure label={`hero · ${post.slug}`} />
+      <HeroFigure
+        src={withBase(`/og/posts/${post.slug}.svg`)}
+        alt={post.title}
+        label={`hero · ${post.slug}`}
+      />
 
       <div class="prose">
         <div set:html={ledeHtml} />
@@ -219,15 +222,14 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
     </article>
 
     <aside class="reader-aside">
-      {meshNodes.length > 1 && (
-        <section aria-label="related mesh" class="related-mesh-section">
-          <h3 class="mono-eyebrow">related</h3>
-          <PostMeshGraph nodes={meshNodes} links={meshLinks} client:visible />
-          <a class="mesh-cta" href={withBase('/graph')}>전체 그래프 →</a>
-        </section>
-      )}
-      <TOC label="contents" items={tocItems} />
-      {/* TODO: restore "backlinks" when backlinks are aggregated */}
+      <PostSidebar
+        currentCategory={post.category_slug ?? null}
+        tags={post.tags}
+        meshNodes={meshNodes}
+        meshLinks={meshLinks}
+        tocItems={tocItems}
+        slug={post.slug}
+      />
     </aside>
   </div>
 </Base>
@@ -423,48 +425,4 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
     margin-top: var(--space-12);
   }
 
-  /* ── Related mesh sidebar section ──────────────────────────── */
-  .related-mesh-section {
-    margin-bottom: 36px;
-  }
-
-  .related-mesh-section .mono-eyebrow {
-    font-family: var(--f-mono);
-    font-size: 10px;
-    letter-spacing: var(--track-eyebrow);
-    text-transform: uppercase;
-    color: var(--ink);
-    padding-bottom: 8px;
-    margin: 0 0 12px 0;
-    border-bottom: 1px solid var(--ink);
-    font-weight: 400;
-  }
-
-  .related-mesh-section .mesh-cta {
-    display: block;
-    margin-top: 10px;
-    font-family: var(--f-mono);
-    font-size: 11px;
-    letter-spacing: var(--track-eyebrow);
-    text-transform: uppercase;
-    color: var(--ink-3);
-    text-decoration: none;
-    transition: color var(--dur-fast) var(--ease);
-  }
-
-  .related-mesh-section .mesh-cta:hover {
-    color: var(--ink);
-  }
-
-  .related-mesh-section .mesh-cta:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  /* Hide the graph + CTA on mobile; TOC stays in flow. */
-  @media (max-width: 779px) {
-    .related-mesh-section {
-      display: none;
-    }
-  }
 </style>
