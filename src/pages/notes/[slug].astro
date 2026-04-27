@@ -8,7 +8,7 @@ import PageQa from '../../components/ui/molecules/PageQa.astro'
 import RelatedGrid from '../../components/ui/molecules/RelatedGrid.astro'
 import Pager from '../../components/ui/molecules/Pager.astro'
 import TOC from '../../components/ui/molecules/TOC.astro'
-import MeshStrip from '../../components/ui/molecules/MeshStrip.astro'
+import PostMeshGraph from '../../components/PostMeshGraph'
 import { renderMarkdownToHtml } from '../../lib/markdown/render'
 import { buildNoteResolver } from '../../lib/markdown/wikilink-resolver'
 import {
@@ -30,7 +30,7 @@ import { injectLedeClass } from '../../lib/lede'
 import { stripLeadingH1 } from '../../lib/markdown/strip-title'
 import { extractToc } from '../../lib/markdown/extract-toc'
 import { plainExcerpt } from '../../lib/markdown/plain-excerpt'
-import { getNoteMeshNodes } from '../../lib/mesh-data'
+import { getNoteMeshNodes, getNoteMeshLinks } from '../../lib/mesh-data'
 import '../../styles/article.css'
 
 export function getStaticPaths() {
@@ -137,13 +137,19 @@ const tocItems = extractToc(contentHtml).map((e) => ({
   href: `#${e.id}`,
 }))
 
-// Per-note subgraph: center = this note, neighbors = up to 5 inbound/outbound links.
-// Returns [] for orphan notes — MeshStrip is hidden in that case.
+// Per-note subgraph: center = this note, neighbors = up to 8 inbound/outbound links.
+// Returns just [center] for orphan notes — PostMeshGraph is hidden in that case via length>1 guard.
 const meshNodes = getNoteMeshNodes({
   noteId: note.id,
   noteTitle: note.title,
   withBase,
 })
+
+// Inter-neighbor edges for the mini graph. Slugs derived from each neighbor's href.
+const neighborSlugs = meshNodes.slice(1)
+  .map((n) => n.href?.split('/').pop())
+  .filter((s): s is string => !!s)
+const meshLinks = getNoteMeshLinks(neighborSlugs)
 ---
 
 <Base
@@ -176,10 +182,6 @@ const meshNodes = getNoteMeshNodes({
           </div>
         )}
       </header>
-
-      {meshNodes.length > 1 && (
-        <MeshStrip nodes={meshNodes} />
-      )}
 
       <!-- Note variant: no HeroFigure, prose width 52ch -->
       <div class="prose note-prose">
@@ -217,6 +219,13 @@ const meshNodes = getNoteMeshNodes({
     <aside class="reader-aside">
       {tocItems.length > 0 && (
         <TOC label="contents" items={tocItems} />
+      )}
+      {meshNodes.length > 1 && (
+        <section aria-label="related mesh" class="related-mesh-section">
+          <h3 class="mono-eyebrow">related</h3>
+          <PostMeshGraph nodes={meshNodes} links={meshLinks} client:visible />
+          <a class="mesh-cta" href={withBase('/graph')}>전체 그래프 →</a>
+        </section>
       )}
       {backlinks.length > 0 && (
         <section aria-label="backlinks" class="backlinks-section">
@@ -492,5 +501,50 @@ const meshNodes = getNoteMeshNodes({
   .backlinks-section a:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+  }
+
+  /* ── Related mesh sidebar section ──────────────────────────── */
+  .related-mesh-section {
+    margin-bottom: 36px;
+  }
+
+  .related-mesh-section .mono-eyebrow {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink);
+    padding-bottom: 8px;
+    margin: 0 0 12px 0;
+    border-bottom: 1px solid var(--ink);
+    font-weight: 400;
+  }
+
+  .related-mesh-section .mesh-cta {
+    display: block;
+    margin-top: 10px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .related-mesh-section .mesh-cta:hover {
+    color: var(--ink);
+  }
+
+  .related-mesh-section .mesh-cta:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Hide the graph + CTA on mobile; TOC stays in flow. */
+  @media (max-width: 779px) {
+    .related-mesh-section {
+      display: none;
+    }
   }
 </style>

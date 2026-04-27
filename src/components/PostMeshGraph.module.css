@@ -1,0 +1,107 @@
+/* PostMeshGraph.module.css — scoped styles for the reader-aside mini graph
+ *
+ * Editorial invariants honoured:
+ *   #1 — no hex literals (all colours via CSS custom properties / tokens)
+ *   #2 — hairline 1px border only (label box)
+ *   #3 — hover-invert: fill flips paper ↔ ink on neighbour circles
+ *   #5 — NO box-shadow (shadow-hard is reserved for .cmdk + .help only)
+ *   #6 — border-radius ≤ 4px (label box has none set — that's fine)
+ */
+
+.wrap {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin: 0;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Entrance fade-in (skipped under prefers-reduced-motion) */
+  animation: postmesh-fadein 150ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg {
+    animation: none;
+  }
+}
+
+@keyframes postmesh-fadein {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Node styles ──────────────────────────────────────────────────────────── */
+
+/* Center node: type='concept' → data-kind="concept" → filled, larger (r=7 from hook) */
+.svg :global(.nodes circle[data-kind="concept"]) {
+  fill: var(--ink);
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+/* Neighbour nodes: type='note' → data-kind="note" → outline only, hover-invert */
+.svg :global(.nodes circle[data-kind="note"]) {
+  fill: var(--paper);
+  stroke: var(--ink-3);
+  stroke-width: 1;
+  transition: fill 120ms ease-out, stroke 120ms ease-out;
+}
+
+/* Hover-invert (invariant #3) — flip background ↔ foreground on hover */
+.svg :global(.nodes circle[data-kind="note"]:hover) {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+
+/* Keyboard-focus ring (accessibility) */
+.svg :global(.nodes circle:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── Link styles ──────────────────────────────────────────────────────────── */
+
+/* Default link style (spokes from center → neighbour) */
+.svg :global(.links line) {
+  stroke: var(--ink-4);
+  stroke-width: 0.5;
+  opacity: 0.7;
+}
+
+/* Inter-neighbour edges are more subtle — the hook sets data-edge-type="inter" */
+.svg :global(.links line[data-edge-type="inter"]) {
+  opacity: 0.4;
+}
+
+/* ── Label suppression ────────────────────────────────────────────────────── */
+
+/* Hide the hook's always-rendered SVG text labels — we use our own fixed popover */
+.svg :global(.labels text) {
+  display: none;
+}
+
+/* ── Hover label popover ──────────────────────────────────────────────────── */
+
+/* Uses position: fixed because the hook reports clientX/clientY (viewport coords) */
+.label {
+  position: fixed;
+  pointer-events: none;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 4px 8px;
+  font: 11px/1.3 var(--f-mono);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  z-index: 100;
+  /* No border-radius — spec says ≤4px and none is fine; keeping square per editorial grid */
+  /* No shadow — invariant #5 */
+}
+
+.labelMeta {
+  color: var(--ink-3);
+}

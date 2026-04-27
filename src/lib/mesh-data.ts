@@ -62,6 +62,18 @@ function loadJson<T>(relPath: string): T | null {
   }
 }
 
+let _backlinksCache: BacklinksJson | null | undefined
+function loadBacklinks(): BacklinksJson | null {
+  if (_backlinksCache !== undefined) return _backlinksCache
+  _backlinksCache = loadJson<BacklinksJson>('public/graph/backlinks.json')
+  return _backlinksCache
+}
+
+/** Reset the module-level backlinks cache. Exposed for test isolation only. */
+export function _resetBacklinksCache(): void {
+  _backlinksCache = undefined
+}
+
 function graphDegreeOf(id: string, links: GraphJson['links']): number {
   return links.filter((l) => l.source === id || l.target === id).length
 }
@@ -134,7 +146,7 @@ type NeighborSource = {
 }
 
 /** Max neighbors returned (center node excluded). */
-const MAX_NEIGHBORS = 5
+const MAX_NEIGHBORS = 8
 
 /**
  * Returns a MeshNode[] for a note or post reader page.
@@ -192,7 +204,7 @@ export function getNoteMeshNodes(opts: {
 // ── Internal: wikilink path ─────────────────────────────────────────────────
 
 function getWikilinkNeighbors(noteId: string): NeighborSource[] {
-  const backlinks = loadJson<BacklinksJson>('public/graph/backlinks.json')
+  const backlinks = loadBacklinks()
   const neighbors: NeighborSource[] = []
 
   if (!backlinks) return neighbors
@@ -243,7 +255,7 @@ function enrichNeighborsFromDb(
   withBase: (p: string) => string,
 ): MeshNode[] {
   // Load backlinks.json once to build the global inbound-count map.
-  const backlinksData = loadJson<BacklinksJson>('public/graph/backlinks.json')
+  const backlinksData = loadBacklinks()
   const inboundMap = backlinksData
     ? buildInboundCountMap(backlinksData.edges)
     : new Map<string, number>()
@@ -319,7 +331,7 @@ function getEntityNeighbors(noteId: string, withBase: (p: string) => string): Me
   if (!db) return []
 
   // Load backlinks.json for the global inbound-count map.
-  const backlinksData = loadJson<BacklinksJson>('public/graph/backlinks.json')
+  const backlinksData = loadBacklinks()
   const inboundMap = backlinksData
     ? buildInboundCountMap(backlinksData.edges)
     : new Map<string, number>()
@@ -361,4 +373,34 @@ function getEntityNeighbors(noteId: string, withBase: (p: string) => string): Me
   } finally {
     db.close()
   }
+}
+
+/**
+ * Returns inter-neighbor edges for the post-page mini graph.
+ *
+ * Given the IDs that getNoteMeshNodes selected as neighbors, this filters
+ * backlinks.json for edges where BOTH endpoints are in the neighbor set.
+ * The center node is intentionally excluded — spokes from center to each
+ * neighbor are implicit in the meshNodes array; the caller draws those
+ * separately. This function returns ONLY the inter-neighbor connections
+ * that give the graph its web-like structure.
+ *
+ * Behavior is independent of how the neighbors were selected (wikilink
+ * tier vs entity-overlap tier). When backlinks.json has wikilinks between
+ * entity-selected neighbors, those edges still appear — the data is the
+ * same, only the selection path differs.
+ *
+ * Returns [] when backlinks.json is missing or empty.
+ */
+export function getNoteMeshLinks(neighborIds: string[]): Array<{ source: string; target: string }> {
+  const backlinks = loadBacklinks()
+  if (!backlinks || neighborIds.length === 0) return []
+  const set = new Set(neighborIds)
+  const out: Array<{ source: string; target: string }> = []
+  for (const edge of backlinks.edges) {
+    if (set.has(edge.source) && set.has(edge.target)) {
+      out.push({ source: edge.source, target: edge.target })
+    }
+  }
+  return out
 }
