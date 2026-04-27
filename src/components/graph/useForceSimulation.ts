@@ -48,6 +48,10 @@ export function useForceSimulation(
     /** When true, note nodes with categorySlug get data-cat for CSS coloring.
      *  False (default) in concept mode so all nodes stay B&W. */
     colorByCategory?: boolean
+    /** When true, every node with a `cluster` field gets data-cat-idx set from
+     *  cluster mod 12. Used in concept mode for graphify-style community colors
+     *  on otherwise-uniform concept nodes. Independent of colorByCategory. */
+    colorByCluster?: boolean
     /** Override d3-force tuning for smaller-scale consumers (e.g. mini graph). */
     simParams?: {
       linkDistance?: number      // default 60
@@ -223,12 +227,19 @@ export function useForceSimulation(
       // data-cat: set only when colorByCategory is enabled AND node is a note with categorySlug.
       // Disabled in concept mode so all nodes in that view stay B&W.
       .attr('data-cat', d => opts.colorByCategory && d.type === 'note' && d.categorySlug ? d.categorySlug : null)
-      // data-cat-idx: palette bucket index (0–11) for dynamic slug coloring via hash.
-      // Set alongside data-cat so CSS can match either the semantic name or the palette slot.
+      // data-cat-idx: palette bucket index (0–11). Two paths:
+      //   • notes mode (colorByCategory): hash categorySlug → 0..11
+      //   • concept mode (colorByCluster): cluster index mod 12 → 0..11
+      // Either way the same CSS rules in GraphView.module.css render the colour.
       .attr('data-cat-idx', d => {
-        if (!opts.colorByCategory || d.type !== 'note' || !d.categorySlug) return null
-        const idx = paletteIndexFor(d.categorySlug)
-        return idx === -1 ? null : String(idx)
+        if (opts.colorByCategory && d.type === 'note' && d.categorySlug) {
+          const idx = paletteIndexFor(d.categorySlug)
+          return idx === -1 ? null : String(idx)
+        }
+        if (opts.colorByCluster && d.cluster != null) {
+          return String(d.cluster % 12)
+        }
+        return null
       })
       .attr('cx', d => d.x ?? 0)
       .attr('cy', d => d.y ?? 0)
