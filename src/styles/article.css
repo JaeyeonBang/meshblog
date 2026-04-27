@@ -51,6 +51,27 @@
   border-radius: 0;
 }
 
+/* ── Shiki dual-theme: pick --shiki-light by default; --shiki-dark in dark mode.
+      Each token <span> carries inline `color: var(--shiki-light)` / `--shiki-dark`.
+      Astro's <pre class="shiki"> wrapper carries `--shiki-light-bg` / `--shiki-dark-bg`
+      but we override the background ourselves for token consistency. ──────────────── */
+.prose pre.shiki,
+.prose pre.shiki span {
+  color: var(--shiki-light);
+}
+
+[data-theme="dark"] .prose pre.shiki,
+[data-theme="dark"] .prose pre.shiki span {
+  color: var(--shiki-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .prose pre.shiki,
+  :root:not([data-theme="light"]) .prose pre.shiki span {
+    color: var(--shiki-dark);
+  }
+}
+
 /* ── Drop cap ─────────────────────────────────────────────────────────────── */
 
 .prose p.drop:first-letter {
