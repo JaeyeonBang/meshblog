@@ -55,7 +55,10 @@ export function HoverCard({ node, x, y, excerpt, href, refCount }: HoverCardProp
 
   if (!node) return null
 
-  const kindLabel = node.type === 'concept' ? 'Concept' : 'Note'
+  const kindLabel =
+    node.type === 'concept'  ? 'Concept' :
+    node.type === 'category' ? 'Category' :
+                               'Note'
 
   // For concept nodes without an excerpt, fall back to reference count
   const fallbackExcerpt =
