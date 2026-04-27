@@ -2,6 +2,7 @@
 title: "Agent AI 논문 리스트 — 카테고리별 정리와 핵심 기여"
 date: 2025-11-19
 tags: [agent-ai, llm, survey, paper-review, machine-learning]
+category: ai
 image: "/meshblog/og/posts/02-agent-ai-paper-list.svg"
 ---
 
