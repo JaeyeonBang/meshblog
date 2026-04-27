@@ -13,13 +13,17 @@ import { renderMarkdownToHtml } from '../../lib/markdown/render'
 import { buildNoteResolver } from '../../lib/markdown/wikilink-resolver'
 import {
   listNotes,
+  listAllNotesUnfiltered,
   listAllLinkable,
+  listAllNoteSlugs,
   getQaForNote,
   getRelatedNotes,
   getBacklinksForNote,
   openReadonlyDb,
 } from '../../lib/pages/index.ts'
 import type { NoteRow, QaCard, RelatedNote, Backlink } from '../../lib/pages/index.ts'
+import { loadMeshblogConfig, getL3NoteSlugs } from '../../lib/config'
+import PrivatePlaceholder from '../../components/ui/molecules/PrivatePlaceholder.astro'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
@@ -34,11 +38,32 @@ import { getNoteMeshNodes, getNoteMeshLinks } from '../../lib/mesh-data'
 import '../../styles/article.css'
 
 export function getStaticPaths() {
-  const notes = listNotes()
-  return notes.map((n) => ({
-    params: { slug: n.slug },
-    props: { note: n },
-  }))
+  const { l3Visibility } = loadMeshblogConfig()
+  const allSlugs = listAllNoteSlugs()
+  // Use unfiltered list so keyword-only mode still has NoteRow props for L3
+  // slugs (needed to render the PrivatePlaceholder with the correct title).
+  // listNotes() strips L3 items in keyword-only/hidden, causing missing props.
+  const allNotesFull = listAllNotesUnfiltered()
+
+  // In hidden mode, exclude L3 slugs from getStaticPaths so Astro never builds the page.
+  if (l3Visibility === 'hidden') {
+    const db = openReadonlyDb()
+    const l3 = db ? (() => { try { return getL3NoteSlugs(db) } finally { db.close() } })() : new Set<string>()
+    const visible = allSlugs.filter((s) => !l3.has(s.slug))
+    const noteMap = new Map(allNotesFull.map((n) => [n.slug, n]))
+    return visible.map((s) => ({
+      params: { slug: s.slug },
+      props: { note: noteMap.get(s.slug) ?? allNotesFull.find((n) => n.slug === s.slug) },
+    })).filter((entry) => entry.props.note !== undefined)
+  }
+
+  // full / keyword-only: all slugs are buildable (keyword-only renders placeholder).
+  // We need full NoteRow for props — join on slug.
+  const noteMap = new Map(allNotesFull.map((n) => [n.slug, n]))
+  return allSlugs.map((s) => ({
+    params: { slug: s.slug },
+    props: { note: noteMap.get(s.slug) ?? allNotesFull.find((n) => n.slug === s.slug) },
+  })).filter((entry) => entry.props.note !== undefined)
 }
 
 const { note } = Astro.props as { note: NoteRow }
@@ -137,6 +162,12 @@ const tocItems = extractToc(contentHtml).map((e) => ({
   href: `#${e.id}`,
 }))
 
+// L3 visibility check
+const { l3Visibility } = loadMeshblogConfig()
+const _l3Db = openReadonlyDb()
+const _l3Set = _l3Db ? (() => { try { return getL3NoteSlugs(_l3Db) } finally { _l3Db.close() } })() : new Set<string>()
+const isPrivate = l3Visibility === 'keyword-only' && _l3Set.has(note.slug)
+
 // Per-note subgraph: center = this note, neighbors = up to 8 inbound/outbound links.
 // Returns just [center] for orphan notes — PostMeshGraph is hidden in that case via length>1 guard.
 const meshNodes = getNoteMeshNodes({
@@ -158,6 +189,7 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
   ogImage={`/og/notes/${note.slug}.png`}
   topBarActive="notes"
 >
+  {isPrivate && <meta name="robots" content="noindex" slot="head" />}
   <div class="reader-layout">
     <article class="reader-article fade-up">
       <Breadcrumbs
@@ -183,37 +215,46 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
         )}
       </header>
 
-      <!-- Note variant: no HeroFigure, prose width 52ch -->
-      <div class="prose note-prose">
-        <div set:html={ledeHtml} />
-      </div>
+      {isPrivate
+        ? <PrivatePlaceholder title={note.title} />
+        : (
+          <>
+            <!-- Note variant: no HeroFigure, prose width 52ch -->
+            <div class="prose note-prose">
+              <div set:html={ledeHtml} />
+            </div>
 
-      {allQa.length > 0 && (
-        <div class="page-qa-wrapper">
-          <PageQa
-            scope="note"
-            items={allQa.map((q) => ({ question: q.question, answer: q.answer ?? undefined }))}
-          />
-          <QAChips qas={allQa} scope="page" client:visible />
-        </div>
+            {allQa.length > 0 && (
+              <div class="page-qa-wrapper">
+                <PageQa
+                  scope="note"
+                  items={allQa.map((q) => ({ question: q.question, answer: q.answer ?? undefined }))}
+                />
+                <QAChips qas={allQa} scope="page" client:visible />
+              </div>
+            )}
+
+            {relatedItems.length > 0 && (
+              <RelatedGrid items={relatedItems} />
+            )}
+          </>
+        )
+      }
+
+      {!isPrivate && (
+        <Pager
+          prev={prevNote ? {
+            number: `N / ${String(currentIndex).padStart(2, '0')}`,
+            title: prevNote.title,
+            href: withBase(`/notes/${prevNote.slug}`),
+          } : undefined}
+          next={nextNote ? {
+            number: `N / ${String(currentIndex + 2).padStart(2, '0')}`,
+            title: nextNote.title,
+            href: withBase(`/notes/${nextNote.slug}`),
+          } : undefined}
+        />
       )}
-
-      {relatedItems.length > 0 && (
-        <RelatedGrid items={relatedItems} />
-      )}
-
-      <Pager
-        prev={prevNote ? {
-          number: `N / ${String(currentIndex).padStart(2, '0')}`,
-          title: prevNote.title,
-          href: withBase(`/notes/${prevNote.slug}`),
-        } : undefined}
-        next={nextNote ? {
-          number: `N / ${String(currentIndex + 2).padStart(2, '0')}`,
-          title: nextNote.title,
-          href: withBase(`/notes/${nextNote.slug}`),
-        } : undefined}
-      />
     </article>
 
     <aside class="reader-aside">
@@ -224,7 +265,7 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
           <a class="mesh-cta" href={withBase('/graph')}>전체 그래프 →</a>
         </section>
       )}
-      {tocItems.length > 0 && (
+      {!isPrivate && tocItems.length > 0 && (
         <TOC label="contents" items={tocItems} />
       )}
       {backlinks.length > 0 && (

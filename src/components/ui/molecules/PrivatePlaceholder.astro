@@ -1,0 +1,23 @@
+---
+interface Props { title: string }
+const { title } = Astro.props
+---
+<article class="prose private-note" aria-label="비공개 노트">
+  <p class="eyebrow">PRIVATE NOTE</p>
+  <h1>{title}</h1>
+  <p>이 노트는 공개 그래프에는 보이지만, 본문은 비공개입니다.</p>
+  <p class="hint">작가가 keyword-only 모드를 선택했어요.</p>
+</article>
+<style>
+  .private-note .eyebrow {
+    font-family: var(--f-mono);
+    letter-spacing: var(--track-eyebrow);
+    font-size: 11px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    margin: 0 0 var(--space-2) 0;
+  }
+  .private-note .hint {
+    color: var(--ink-3);
+  }
+</style>

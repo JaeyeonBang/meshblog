@@ -106,6 +106,8 @@ const fontPreloadHref = `${BASE}/fonts/Pretendard-Regular.subset.91.woff2`
     <!-- Atom feed -->
     <link rel="alternate" type="application/atom+xml" href={atomHref} title="meshblog posts" />
 
+    <slot name="head" />
+
     <style is:global>
       /* ── Accessibility utilities ────────────────────────────────── */
       .sr-only {

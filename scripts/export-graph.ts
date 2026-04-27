@@ -13,6 +13,7 @@ import { join } from "node:path"
 import Graph from "graphology"
 import pagerank from "graphology-metrics/centrality/pagerank"
 import { createDb, queryMany, queryOne, execute, type Database } from "../src/lib/db/index.ts"
+import { loadMeshblogConfig, getL3NoteSlugs } from "../src/lib/config.ts"
 
 const DB_PATH = process.env.MESHBLOG_DB ?? ".data/index.db"
 const GRAPH_DIR = "public/graph"
@@ -366,7 +367,16 @@ export async function runExportGraph(
   assignLevels(noteGraph, db, "note")
   exportLevel(noteGraph, 1, join(outputDir, "note-l1.json"))
   exportLevel(noteGraph, 2, join(outputDir, "note-l2.json"))
-  exportLevel(noteGraph, 3, join(outputDir, "note-l3.json"))
+
+  // In hidden mode, emit empty note-l3.json so L3 nodes are absent from the graph.
+  const { l3Visibility } = loadMeshblogConfig()
+  if (l3Visibility === "hidden") {
+    const emptyL3: GraphJson = { nodes: [], links: [] }
+    writeFileSync(join(outputDir, "note-l3.json"), JSON.stringify(emptyL3, null, 2))
+    console.log(`[export-graph] hidden mode: note-l3.json written as empty (0 nodes, 0 links)`)
+  } else {
+    exportLevel(noteGraph, 3, join(outputDir, "note-l3.json"))
+  }
 
   // Concept Graph + cross-edges (Option B: note nodes injected into concept graph)
   const conceptGraph = buildConceptGraph(db)

@@ -8,6 +8,7 @@
 // linking notes first) then LIMIT applied.
 
 import { openReadonlyDb } from './db'
+import { loadMeshblogConfig, getL3NoteSlugs } from '../config'
 
 export type Backlink = {
   source_id: string
@@ -30,12 +31,19 @@ export function getBacklinksForNote(noteId: string, limit = 10): Backlink[] {
          LIMIT ?`
       )
       .all(noteId, noteId, limit) as any[]
-    return rows.map((row) => ({
+    const backlinks: Backlink[] = rows.map((row) => ({
       source_id: row.source_id,
       source_slug: row.source_slug,
       source_title: row.source_title,
       alias: row.alias ?? undefined,
     }))
+
+    const { l3Visibility } = loadMeshblogConfig()
+    // full / keyword-only: include L3 backlinks (graph still shows them)
+    if (l3Visibility !== 'hidden') return backlinks
+    // hidden: exclude backlinks whose source note is L3
+    const l3 = getL3NoteSlugs(db)
+    return backlinks.filter((b) => !l3.has(b.source_slug))
   } finally {
     db.close()
   }

@@ -7,7 +7,7 @@
 export { openReadonlyDb, DB_PATH } from './db'
 export { listPosts, getPostBySlug } from './posts'
 export type { PostRow } from './posts'
-export { listNotes, getNoteBySlug, listAllLinkable } from './notes'
+export { listNotes, listAllNotesUnfiltered, getNoteBySlug, listAllLinkable, listAllNoteSlugs } from './notes'
 export type { NoteRow } from './notes'
 export { getQaGlobal, getQaForNote, getQaForConcept, getHomepageQa } from './qa'
 export type { QaCard } from './qa'
