@@ -37,7 +37,7 @@ interface Props {
   readingMinutes?: number
   /** Graph node kind — stubs replace excerpt with placeholder prose. */
   kind?: 'hub' | 'concept' | 'selected' | 'note' | 'stub'
-  /** Unique id shared with the trigger's aria-controls. */
+  /** Unique id pointed at by the trigger's aria-describedby. */
   id: string
   /** Display title of the owning note — used in aria-label for screen readers. */
   ariaLabel?: string
@@ -76,6 +76,7 @@ if (readingMinutes !== undefined) metaParts.push(`${Math.max(1, readingMinutes)}
   class="mesh-popover"
   role="tooltip"
   aria-label={ariaLabel ?? `Note preview: ${title}`}
+  aria-hidden="true"
 >
   <p class="popover-title">{title}</p>
 

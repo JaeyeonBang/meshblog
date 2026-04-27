@@ -373,6 +373,11 @@ const [center, ...neighbors] = nodes
 
         positionPopover(trigger, popover)
         popover.classList.add('is-visible')
+        // Expose the popover content to assistive tech via aria-describedby
+        // only while it's actually visible. Otherwise, screen readers would
+        // announce the full title+excerpt+meta on every Tab onto the trigger,
+        // even when the user hasn't asked to preview.
+        popover.setAttribute('aria-hidden', 'false')
 
         // Attach Esc listener (only while a popover is open)
         if (!escListener) {
@@ -389,6 +394,9 @@ const [center, ...neighbors] = nodes
 
       function hidePopoverNow(popover: HTMLElement, _trigger: HTMLElement | null) {
         popover.classList.remove('is-visible')
+        // Re-hide from AT so a still-focused but no-longer-visible trigger
+        // doesn't re-announce the popover content.
+        popover.setAttribute('aria-hidden', 'true')
         activePopover = null
         activeTrigger = null
         if (escListener) {
@@ -424,6 +432,9 @@ const [center, ...neighbors] = nodes
         clone.removeAttribute('id')
         clone.removeAttribute('role')
         clone.removeAttribute('aria-label')
+        // Inline-expand card is visible and read in normal flow — drop the
+        // tooltip's default aria-hidden so AT users get the same content.
+        clone.removeAttribute('aria-hidden')
         clone.style.cssText = ''        // clear inline position styles
         clone.classList.remove('is-visible')
         // Remove the absolute-positioning class; display inline
