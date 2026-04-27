@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" width="1600" height="700">
+  <rect width="1600" height="700" fill="#fff"/>
+  <line x1="533" y1="40" x2="533" y2="660" stroke="#111" stroke-width="1"/>
+  <line x1="40" y1="40" x2="1560" y2="40" stroke="#111" stroke-width="3"/>
+  <line x1="40" y1="660" x2="1560" y2="660" stroke="#111" stroke-width="1"/>
+
+  <!-- LEFT PANEL -->
+  <text x="60" y="90" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#111" letter-spacing="4">POSTS · 05</text>
+  <line x1="60" y1="102" x2="180" y2="102" stroke="#1abdc7" stroke-width="3"/>
+  <text x="60" y="170" font-family="'Pretendard', sans-serif" font-size="38" fill="#111" font-weight="700">Seq2Seq</text>
+  <text x="60" y="218" font-family="'Pretendard', sans-serif" font-size="32" fill="#111" font-weight="700">Encoder-Decoder 구조와</text>
+  <text x="60" y="264" font-family="'Pretendard', sans-serif" font-size="32" fill="#111" font-weight="700">시퀀스 변환의 시작</text>
+  <text x="60" y="335" font-family="'Pretendard', monospace, sans-serif" font-size="13" fill="#1abdc7" letter-spacing="2">SEQ2SEQ · RNN · ENCODER-DECODER</text>
+  <text x="60" y="640" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" letter-spacing="2">2025-11-21</text>
+
+  <!-- RIGHT PANEL: arrow flow / encoder-decoder diagram -->
+  <g clip-path="url(#rp05)">
+    <clipPath id="rp05"><rect x="533" y="40" width="1027" height="620"/></clipPath>
+    <!-- encoder block -->
+    <rect x="600" y="270" width="220" height="160" fill="none" stroke="#111" stroke-width="3"/>
+    <rect x="610" y="280" width="200" height="140" fill="#1abdc7" opacity="0.1"/>
+    <text x="710" y="358" font-family="'Pretendard', monospace, sans-serif" font-size="14" fill="#111" text-anchor="middle" letter-spacing="1">ENCODER</text>
+    <!-- arrow middle -->
+    <line x1="820" y1="350" x2="950" y2="350" stroke="#1abdc7" stroke-width="3"/>
+    <polygon points="950,343 966,350 950,357" fill="#1abdc7"/>
+    <!-- context vector circle -->
+    <circle cx="1000" cy="350" r="30" fill="#1abdc7" opacity="0.3" stroke="#1abdc7" stroke-width="2"/>
+    <text x="1000" y="356" font-family="'Pretendard', monospace, sans-serif" font-size="10" fill="#111" text-anchor="middle">ctx</text>
+    <!-- arrow right -->
+    <line x1="1030" y1="350" x2="1120" y2="350" stroke="#1abdc7" stroke-width="3"/>
+    <polygon points="1120,343 1136,350 1120,357" fill="#1abdc7"/>
+    <!-- decoder block -->
+    <rect x="1136" y="270" width="220" height="160" fill="none" stroke="#1abdc7" stroke-width="3"/>
+    <rect x="1146" y="280" width="200" height="140" fill="#1abdc7" opacity="0.1"/>
+    <text x="1246" y="358" font-family="'Pretendard', monospace, sans-serif" font-size="14" fill="#111" text-anchor="middle" letter-spacing="1">DECODER</text>
+    <!-- input token circles bottom -->
+    <circle cx="630" cy="500" r="20" fill="none" stroke="#111" stroke-width="1"/>
+    <circle cx="680" cy="500" r="20" fill="none" stroke="#111" stroke-width="1"/>
+    <circle cx="730" cy="500" r="20" fill="none" stroke="#111" stroke-width="1"/>
+    <circle cx="780" cy="500" r="20" fill="none" stroke="#111" stroke-width="1"/>
+    <line x1="630" y1="480" x2="660" y2="430" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <line x1="680" y1="480" x2="700" y2="430" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <line x1="730" y1="480" x2="720" y2="430" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <line x1="780" y1="480" x2="740" y2="430" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <!-- output token circles -->
+    <circle cx="1180" cy="200" r="20" fill="none" stroke="#1abdc7" stroke-width="1"/>
+    <circle cx="1230" cy="200" r="20" fill="none" stroke="#1abdc7" stroke-width="1"/>
+    <circle cx="1280" cy="200" r="20" fill="none" stroke="#1abdc7" stroke-width="1"/>
+    <line x1="1196" y1="217" x2="1210" y2="270" stroke="#1abdc7" stroke-width="1" opacity="0.5"/>
+    <line x1="1230" y1="220" x2="1240" y2="270" stroke="#1abdc7" stroke-width="1" opacity="0.5"/>
+    <line x1="1264" y1="217" x2="1270" y2="270" stroke="#1abdc7" stroke-width="1" opacity="0.5"/>
+  </g>
+</svg>

@@ -2,6 +2,7 @@
 title: "Agent AI 논문 리스트 — 카테고리별 정리와 핵심 기여"
 date: 2025-11-19
 tags: [agent-ai, llm, survey, paper-review, machine-learning]
+image: "/meshblog/og/posts/02-agent-ai-paper-list.svg"
 ---
 
 2025년 가을, AI 에이전트 분야는 이제 "실험적 가능성"을 넘어 "운영 가능한 시스템"으로 이동하는 변곡점을 지나고 있다. GPT-4와 Claude 3가 등장하면서 LLM의 지식 압축 능력은 어느 정도 증명됐지만, 단일 추론 호출 하나로는 해결할 수 없는 복잡한 태스크들이 산적해 있다. 웹 브라우저를 열고, 코드를 작성하고, 결과를 확인하고, 계획을 수정하는 — 이 일련의 루프를 자율적으로 수행하는 에이전트가 본격적으로 연구 의제의 중심에 올라선 것이다.

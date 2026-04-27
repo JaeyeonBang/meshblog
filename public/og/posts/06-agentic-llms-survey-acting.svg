@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" width="1600" height="700">
+  <rect width="1600" height="700" fill="#fff"/>
+  <line x1="533" y1="40" x2="533" y2="660" stroke="#111" stroke-width="1"/>
+  <line x1="40" y1="40" x2="1560" y2="40" stroke="#111" stroke-width="3"/>
+  <line x1="40" y1="660" x2="1560" y2="660" stroke="#111" stroke-width="1"/>
+
+  <!-- LEFT PANEL -->
+  <text x="60" y="90" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#111" letter-spacing="4">POSTS · 06</text>
+  <line x1="60" y1="102" x2="180" y2="102" stroke="#1abdc7" stroke-width="3"/>
+  <text x="60" y="165" font-family="'Pretendard', sans-serif" font-size="36" fill="#111" font-weight="700">Agentic Large</text>
+  <text x="60" y="211" font-family="'Pretendard', sans-serif" font-size="36" fill="#111" font-weight="700">Language Models,</text>
+  <text x="60" y="257" font-family="'Pretendard', sans-serif" font-size="36" fill="#111" font-weight="700">a survey — Acting</text>
+  <text x="60" y="330" font-family="'Pretendard', monospace, sans-serif" font-size="13" fill="#1abdc7" letter-spacing="2">AI AGENT · LLM · ACTING</text>
+  <text x="60" y="640" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" letter-spacing="2">2025-11-22</text>
+
+  <!-- RIGHT PANEL: hexagonal grid pattern -->
+  <g clip-path="url(#rp06)">
+    <clipPath id="rp06"><rect x="533" y="40" width="1027" height="620"/></clipPath>
+    <!-- hexagonal shapes (approximated with polygons) -->
+    <!-- row 1 -->
+    <polygon points="700,100 740,122 740,168 700,190 660,168 660,122" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <polygon points="820,100 860,122 860,168 820,190 780,168 780,122" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <polygon points="940,100 980,122 980,168 940,190 900,168 900,122" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <polygon points="1060,100 1100,122 1100,168 1060,190 1020,168 1020,122" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <polygon points="1180,100 1220,122 1220,168 1180,190 1140,168 1140,122" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <polygon points="1300,100 1340,122 1340,168 1300,190 1260,168 1260,122" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <!-- row 2 (offset) -->
+    <polygon points="760,210 800,232 800,278 760,300 720,278 720,232" fill="#1abdc7" opacity="0.08" stroke="#111" stroke-width="1"/>
+    <polygon points="880,210 920,232 920,278 880,300 840,278 840,232" fill="none" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <polygon points="1000,210 1040,232 1040,278 1000,300 960,278 960,232" fill="#1abdc7" opacity="0.15" stroke="#1abdc7" stroke-width="2"/>
+    <polygon points="1120,210 1160,232 1160,278 1120,300 1080,278 1080,232" fill="none" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <polygon points="1240,210 1280,232 1280,278 1240,300 1200,278 1200,232" fill="#1abdc7" opacity="0.08" stroke="#111" stroke-width="1"/>
+    <!-- row 3 -->
+    <polygon points="700,320 740,342 740,388 700,410 660,388 660,342" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <polygon points="820,320 860,342 860,388 820,410 780,388 780,342" fill="#1abdc7" opacity="0.2" stroke="#1abdc7" stroke-width="2"/>
+    <polygon points="940,320 980,342 980,388 940,410 900,388 900,342" fill="none" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <polygon points="1060,320 1100,342 1100,388 1060,410 1020,388 1020,342" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <polygon points="1180,320 1220,342 1220,388 1180,410 1140,388 1140,342" fill="none" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <polygon points="1300,320 1340,342 1340,388 1300,410 1260,388 1260,342" fill="#1abdc7" opacity="0.08" stroke="#111" stroke-width="1"/>
+    <!-- row 4 (offset) -->
+    <polygon points="760,430 800,452 800,498 760,520 720,498 720,452" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.3"/>
+    <polygon points="880,430 920,452 920,498 880,520 840,498 840,452" fill="#1abdc7" opacity="0.12" stroke="#111" stroke-width="1"/>
+    <polygon points="1000,430 1040,452 1040,498 1000,520 960,498 960,452" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.4"/>
+    <polygon points="1120,430 1160,452 1160,498 1120,520 1080,498 1080,452" fill="none" stroke="#111" stroke-width="1" opacity="0.3"/>
+    <polygon points="1240,430 1280,452 1280,498 1240,520 1200,498 1200,452" fill="#1abdc7" opacity="0.1" stroke="#1abdc7" stroke-width="1"/>
+    <!-- row 5 -->
+    <polygon points="700,540 740,562 740,608 700,630 660,608 660,562" fill="none" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <polygon points="820,540 860,562 860,608 820,630 780,608 780,562" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.3"/>
+    <polygon points="940,540 980,562 980,608 940,630 900,608 900,562" fill="none" stroke="#111" stroke-width="1" opacity="0.2"/>
+    <polygon points="1060,540 1100,562 1100,608 1060,630 1020,608 1020,562" fill="none" stroke="#1abdc7" stroke-width="1" opacity="0.3"/>
+  </g>
+</svg>

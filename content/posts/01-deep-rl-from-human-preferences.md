@@ -2,6 +2,7 @@
 title: "Deep Reinforcement Learning from Human Preferences"
 date: 2025-11-18
 tags: [RL, NLP, LLM, neural-network]
+image: "/meshblog/og/posts/01-deep-rl-from-human-preferences.svg"
 ---
 RLHF: [**Deep reinforcement learning from human preferences**](https://arxiv.org/abs/1706.03741)
 

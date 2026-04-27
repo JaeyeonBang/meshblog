@@ -2,6 +2,7 @@
 title: "PPO 개념 간단 요약"
 date: 2025-12-03
 tags: [RL, NLP, LLM, neural-network]
+image: "/meshblog/og/posts/09-ppo.svg"
 ---
 [[paper link]](https://arxiv.org/abs/1707.06347)
 

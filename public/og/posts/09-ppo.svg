@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" width="1600" height="700">
+  <rect width="1600" height="700" fill="#fff"/>
+  <line x1="533" y1="40" x2="533" y2="660" stroke="#111" stroke-width="1"/>
+  <line x1="40" y1="40" x2="1560" y2="40" stroke="#111" stroke-width="3"/>
+  <line x1="40" y1="660" x2="1560" y2="660" stroke="#111" stroke-width="1"/>
+
+  <!-- LEFT PANEL -->
+  <text x="60" y="90" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#111" letter-spacing="4">POSTS · 09</text>
+  <line x1="60" y1="102" x2="180" y2="102" stroke="#1abdc7" stroke-width="3"/>
+  <text x="60" y="170" font-family="'Pretendard', sans-serif" font-size="42" fill="#111" font-weight="700">PPO</text>
+  <text x="60" y="218" font-family="'Pretendard', sans-serif" font-size="34" fill="#111" font-weight="700">개념 간단 요약</text>
+  <text x="60" y="270" font-family="'Pretendard', sans-serif" font-size="22" fill="#888" font-weight="400">Proximal Policy Optimization</text>
+  <text x="60" y="330" font-family="'Pretendard', monospace, sans-serif" font-size="13" fill="#1abdc7" letter-spacing="2">RL · POLICY GRADIENT · PPO</text>
+  <text x="60" y="640" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" letter-spacing="2">2025-12-03</text>
+
+  <!-- RIGHT PANEL: reward curve / policy clipping -->
+  <g clip-path="url(#rp09)">
+    <clipPath id="rp09"><rect x="533" y="40" width="1027" height="620"/></clipPath>
+    <!-- axes -->
+    <line x1="620" y1="560" x2="1500" y2="560" stroke="#111" stroke-width="2"/>
+    <line x1="620" y1="100" x2="620" y2="560" stroke="#111" stroke-width="2"/>
+    <!-- axis labels -->
+    <text x="1060" y="600" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" text-anchor="middle" letter-spacing="1">ratio r(θ)</text>
+    <text x="580" y="340" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" text-anchor="middle" letter-spacing="1" transform="rotate(-90 580 340)">L_CLIP</text>
+    <!-- clip bounds vertical lines -->
+    <line x1="820" y1="100" x2="820" y2="560" stroke="#111" stroke-width="1" stroke-dasharray="6,4" opacity="0.4"/>
+    <line x1="1300" y1="100" x2="1300" y2="560" stroke="#111" stroke-width="1" stroke-dasharray="6,4" opacity="0.4"/>
+    <text x="820" y="590" font-family="monospace" font-size="11" fill="#888" text-anchor="middle">1-ε</text>
+    <text x="1300" y="590" font-family="monospace" font-size="11" fill="#888" text-anchor="middle">1+ε</text>
+    <!-- unclipped line (diagonal) -->
+    <line x1="620" y1="500" x2="1500" y2="150" stroke="#111" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+    <!-- clipped piecewise line -->
+    <polyline points="620,500 820,420 1300,270 1500,270" fill="none" stroke="#1abdc7" stroke-width="3"/>
+    <!-- fill under clipped -->
+    <polygon points="620,500 820,420 1300,270 1500,270 1500,560 620,560" fill="#1abdc7" opacity="0.08"/>
+    <!-- clip highlight areas -->
+    <rect x="1300" y="270" width="200" height="290" fill="#1abdc7" opacity="0.05"/>
+    <text x="1400" y="200" font-family="monospace" font-size="11" fill="#1abdc7" text-anchor="middle">clipped</text>
+    <!-- label -->
+    <text x="1060" y="180" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#1abdc7" text-anchor="middle" letter-spacing="1">CLIP OBJECTIVE</text>
+  </g>
+</svg>

@@ -1,0 +1,242 @@
+---
+/**
+ * PostSidebar.astro — right 240px aside for post reader pages.
+ *
+ * Always rendered sections (mesh-independent):
+ *   1. Categories — site-wide list, current post's category highlighted.
+ *   2. Tags       — current post's tags in sorted form.
+ *   3. Related    — PostMeshGraph (only when meshNodes.length > 1).
+ *   4. TOC        — existing scroll-spy table of contents.
+ *
+ * Editorial invariants honoured: #1 no hex, #2 hairline 1px, #3 hover-invert,
+ *   #4 mono eyebrow 10px + letter-spacing:0.2em uppercase, #5 no shadow, #6 ≤4px radius.
+ */
+
+import TOC from './TOC.astro'
+import PostMeshGraph from '../../PostMeshGraph'
+import { listCategories } from '../../../lib/pages/index'
+import type { CategoryRow } from '../../../lib/pages/index'
+import type { MeshNode } from '../../../lib/mesh-data'
+import { withBase } from '../../../lib/url'
+import { formatCategoryName } from '../../../lib/categories/display-name'
+
+interface TocItem {
+  label: string
+  level?: 1 | 2
+  href?: string
+  active?: boolean
+}
+
+interface Props {
+  /** slug of the current post's category (may be null if uncategorised) */
+  currentCategory: string | null
+  /** tags on the current post */
+  tags: string[]
+  /** centre + neighbour nodes for PostMeshGraph */
+  meshNodes: MeshNode[]
+  /** inter-neighbour edges for PostMeshGraph */
+  meshLinks: Array<{ source: string; target: string }>
+  /** TOC items extracted from the article HTML */
+  tocItems: TocItem[]
+  /** current post slug (unused here but forwarded for future use) */
+  slug: string
+}
+
+const { currentCategory, tags, meshNodes, meshLinks, tocItems } = Astro.props
+
+const allCategories: CategoryRow[] = listCategories()
+
+// Hard-code the canonical 5 categories as fallback when DB returns empty
+// (e.g. fixture build without category data populated).
+const FALLBACK_CATEGORIES: CategoryRow[] = [
+  { slug: 'engineering', name: 'Engineering', noteCount: 0, postCount: 0 },
+  { slug: 'ai', name: 'AI', noteCount: 0, postCount: 0 },
+  { slug: 'writing', name: 'Writing', noteCount: 0, postCount: 0 },
+  { slug: 'design', name: 'Design', noteCount: 0, postCount: 0 },
+  { slug: 'personal', name: 'Personal', noteCount: 0, postCount: 0 },
+]
+
+// Merge DB categories with the fallback list so all 5 canonical categories
+// always appear; DB counts override fallback zero counts when present.
+const dbBySlug = new Map(allCategories.map((c) => [c.slug, c]))
+const categories: CategoryRow[] = FALLBACK_CATEGORIES.map((fb) => dbBySlug.get(fb.slug) ?? fb)
+
+// Sort tags alphabetically for stable ordering
+const sortedTags = [...tags].sort()
+---
+
+<!-- ── Categories ─────────────────────────────────────────────────────────── -->
+<section class="sidebar-section" aria-label="categories">
+  <div class="section-label">categories</div>
+  <ul class="cat-list" role="list">
+    {categories.map((cat) => (
+      <li class:list={['cat-item', currentCategory === cat.slug && 'active']}>
+        <a href={withBase(`/categories/${cat.slug}/`)} class="cat-link">
+          <span class="cat-name">{formatCategoryName(cat.slug, cat.name)}</span>
+          {(cat.noteCount + cat.postCount) > 0 && (
+            <span class="cat-count">&middot; {cat.noteCount + cat.postCount}</span>
+          )}
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<!-- ── Tags ───────────────────────────────────────────────────────────────── -->
+{sortedTags.length > 0 && (
+  <section class="sidebar-section" aria-label="tags">
+    <div class="section-label">tags</div>
+    <div class="tag-cloud">
+      {sortedTags.map((tag) => (
+        <span class="sidebar-tag">{tag}</span>
+      ))}
+    </div>
+  </section>
+)}
+
+<!-- ── Related mesh (conditional) ────────────────────────────────────────── -->
+{meshNodes.length > 1 && (
+  <section class="sidebar-section related-mesh-section" aria-label="related mesh">
+    <div class="section-label">related</div>
+    <PostMeshGraph nodes={meshNodes} links={meshLinks} client:visible />
+    <a class="mesh-cta" href={withBase('/graph')}>full graph →</a>
+  </section>
+)}
+
+<!-- ── TOC ────────────────────────────────────────────────────────────────── -->
+<TOC label="contents" items={tocItems} />
+
+<style>
+  /* ── Shared section chrome ─────────────────────────────────────────────── */
+  .sidebar-section {
+    margin-bottom: 36px;
+  }
+
+  .section-label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--ink);
+    font-weight: 400;
+  }
+
+  /* ── Category list ─────────────────────────────────────────────────────── */
+  .cat-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .cat-item {
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .cat-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px 0;
+    text-decoration: none;
+    color: var(--ink-3);
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+
+  /* hover-invert: ink bg, paper text */
+  .cat-link:hover {
+    background: var(--ink);
+    color: var(--paper);
+    padding-left: 8px;
+    margin-left: -8px;
+    padding-right: 8px;
+    margin-right: -8px;
+  }
+
+  .cat-link:hover .cat-count {
+    color: var(--paper-2);
+  }
+
+  .cat-link:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Active state: same invert treatment as hover */
+  .cat-item.active .cat-link {
+    background: var(--ink);
+    color: var(--paper);
+    padding-left: 8px;
+    margin-left: -8px;
+    padding-right: 8px;
+    margin-right: -8px;
+  }
+
+  .cat-item.active .cat-count {
+    color: var(--paper-2);
+  }
+
+  .cat-name {
+    font-family: var(--f-serif);
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .cat-count {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  /* ── Tag cloud ─────────────────────────────────────────────────────────── */
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .sidebar-tag {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    padding: 2px 8px 3px;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--ink-5);
+    display: inline-block;
+    line-height: 1.4;
+    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  }
+
+  /* ── Related mesh ──────────────────────────────────────────────────────── */
+  .mesh-cta {
+    display: block;
+    margin-top: 10px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .mesh-cta:hover {
+    color: var(--ink);
+  }
+
+  .mesh-cta:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Hide graph on mobile; rest stays in flow */
+  @media (max-width: 779px) {
+    .related-mesh-section {
+      display: none;
+    }
+  }
+</style>

@@ -2,6 +2,7 @@
 title: "트랜스포머(Transformer) 완벽 이해 — Self-Attention, Multi-Head, Positional Encoding"
 date: 2025-10-05
 tags: [transformer, self-attention, multi-head, positional-encoding, encoder-decoder, masked-attention, machine-learning]
+image: "/meshblog/og/posts/12-transformer-self-attention.svg"
 ---
 
 ## 핵심 요약 — 한 문장으로 정리

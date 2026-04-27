@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" width="1600" height="700">
+  <rect width="1600" height="700" fill="#fff"/>
+  <line x1="533" y1="40" x2="533" y2="660" stroke="#111" stroke-width="1"/>
+  <line x1="40" y1="40" x2="1560" y2="40" stroke="#111" stroke-width="3"/>
+  <line x1="40" y1="660" x2="1560" y2="660" stroke="#111" stroke-width="1"/>
+
+  <!-- LEFT PANEL -->
+  <text x="60" y="90" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#111" letter-spacing="4">POSTS · 11</text>
+  <line x1="60" y1="102" x2="180" y2="102" stroke="#1abdc7" stroke-width="3"/>
+  <text x="60" y="170" font-family="'Pretendard', sans-serif" font-size="42" fill="#111" font-weight="700">RLPR</text>
+  <text x="60" y="218" font-family="'Pretendard', sans-serif" font-size="24" fill="#111" font-weight="700">Extrapolating RLVR to</text>
+  <text x="60" y="252" font-family="'Pretendard', sans-serif" font-size="24" fill="#111" font-weight="700">General Domains</text>
+  <text x="60" y="286" font-family="'Pretendard', sans-serif" font-size="24" fill="#111" font-weight="700">Without Verifiers</text>
+  <text x="60" y="345" font-family="'Pretendard', monospace, sans-serif" font-size="13" fill="#1abdc7" letter-spacing="2">RL · LLM · REWARD · VERIFIER-FREE</text>
+  <text x="60" y="640" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#888" letter-spacing="2">2026-01-03</text>
+
+  <!-- RIGHT PANEL: probability distribution / bell curve -->
+  <g clip-path="url(#rp11)">
+    <clipPath id="rp11"><rect x="533" y="40" width="1027" height="620"/></clipPath>
+    <!-- baseline -->
+    <line x1="580" y1="500" x2="1540" y2="500" stroke="#111" stroke-width="2"/>
+    <!-- bell curve shape (polygon approximation) -->
+    <polygon points="
+      580,500 620,498 680,490 740,468 800,430 860,375 900,330 940,290 980,260 1020,245 1060,240 1100,245 1140,260 1180,290 1220,330 1260,375 1300,430 1360,468 1420,490 1480,498 1540,500
+    " fill="#1abdc7" opacity="0.15" stroke="#1abdc7" stroke-width="2"/>
+    <!-- reference answer marker -->
+    <line x1="1060" y1="120" x2="1060" y2="500" stroke="#111" stroke-width="3" stroke-dasharray="8,4"/>
+    <circle cx="1060" cy="240" r="12" fill="#1abdc7"/>
+    <text x="1060" y="110" font-family="'Pretendard', monospace, sans-serif" font-size="11" fill="#111" text-anchor="middle" letter-spacing="1">reference</text>
+    <!-- score bars at bottom -->
+    <rect x="700" y="520" width="60" height="20" fill="#111" opacity="0.1"/>
+    <text x="730" y="556" font-family="monospace" font-size="10" fill="#888" text-anchor="middle">low p</text>
+    <rect x="1000" y="520" width="60" height="20" fill="#1abdc7" opacity="0.3"/>
+    <text x="1030" y="556" font-family="monospace" font-size="10" fill="#1abdc7" text-anchor="middle">high p</text>
+    <rect x="1300" y="520" width="60" height="20" fill="#111" opacity="0.1"/>
+    <text x="1330" y="556" font-family="monospace" font-size="10" fill="#888" text-anchor="middle">low p</text>
+    <!-- reward label -->
+    <text x="1060" y="600" font-family="'Pretendard', monospace, sans-serif" font-size="13" fill="#1abdc7" text-anchor="middle" letter-spacing="2">reward = log P(answer)</text>
+  </g>
+</svg>
