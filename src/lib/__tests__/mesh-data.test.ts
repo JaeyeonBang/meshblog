@@ -47,7 +47,8 @@ function makeDb(): ReturnType<typeof Database> {
     CREATE TABLE notes (
       id   TEXT PRIMARY KEY,
       slug TEXT UNIQUE NOT NULL,
-      title TEXT NOT NULL
+      title TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT ''
     );
     CREATE TABLE entities (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,8 +63,14 @@ function makeDb(): ReturnType<typeof Database> {
   return db
 }
 
-function insertNote(db: ReturnType<typeof Database>, id: string, slug: string, title: string) {
-  db.prepare('INSERT INTO notes (id, slug, title) VALUES (?, ?, ?)').run(id, slug, title)
+function insertNote(
+  db: ReturnType<typeof Database>,
+  id: string,
+  slug: string,
+  title: string,
+  content: string = `Body of ${title}.`,
+) {
+  db.prepare('INSERT INTO notes (id, slug, title, content) VALUES (?, ?, ?, ?)').run(id, slug, title, content)
 }
 
 function insertEntity(db: ReturnType<typeof Database>, id: number, name: string) {

@@ -1,0 +1,509 @@
+---
+/**
+ * MeshStrip.astro
+ * Full-width mesh-navigation band placed ABOVE the article prose.
+ * Replaces the canvas-style MiniMesh.astro with a typographic,
+ * keyboard-accessible, popover-enabled layout.
+ *
+ * Layout:
+ *   [ CENTER LABEL ]  ·  NEIGHBOR A  ·  NEIGHBOR B  ·  NEIGHBOR C …
+ *
+ * Interaction model (desktop ≥780px):
+ *   - Hover / focus a neighbor → 140 ms delayed fade-in popover below trigger.
+ *   - Leave / blur → 140 ms fade-out.
+ *   - Esc while a popover is open → close, keep focus on trigger.
+ *   - Click → native <a> navigation (no JS needed).
+ *
+ * Interaction model (mobile <780px):
+ *   - NO floating popover.
+ *   - Tap neighbor → toggles an inline-expanded card below the strip row.
+ *   - Tap outside → collapse.
+ *
+ * Deliberate design decision — TYPOGRAPHIC HOVER (not bg-flip):
+ *   Neighbor labels use color → var(--ink) + font-weight 600 on hover/focus,
+ *   NOT a background-color flip. This mirrors Obsidian Publish's TOC active-
+ *   state pattern and was chosen because the strip is a wayfinding aid rather
+ *   than a button surface. The conventional hover-invert (paper ↔ ink bg swap)
+ *   is preserved for button/interactive-surface elements elsewhere in the system.
+ */
+
+import MeshNodePopover from './MeshNodePopover.astro'
+
+interface Node {
+  label: string
+  href?: string
+  kind?: 'hub' | 'concept' | 'selected' | 'note' | 'stub'
+  excerpt?: string
+  backlinks?: number
+  relationship?: 'backlink' | 'outbound' | 'entity'
+  readingMinutes?: number
+}
+type Props = {
+  nodes: Node[]   // index 0 is center; indices 1..N are neighbors
+}
+
+const { nodes } = Astro.props
+const [center, ...neighbors] = nodes
+---
+
+<div class="mesh-strip" data-mesh-strip>
+  {/* ── Strip row ──────────────────────────────────────────────────── */}
+  <div class="strip-row">
+    {/* Center node — not interactive, excluded from tab order */}
+    <span class="center-label" aria-current="page" tabindex="-1">
+      {center?.label ?? ''}
+    </span>
+
+    {neighbors.length > 0 && (
+      <span class="strip-divider" aria-hidden="true">·</span>
+    )}
+
+    {/* Neighbor nodes */}
+    {neighbors.map((node: Node, idx: number) => {
+      const popoverId = `mesh-popover-${idx}`
+      const isStub = node.kind === 'stub'
+
+      return (
+        <span class="neighbor-wrap" data-mesh-wrap>
+          {node.href ? (
+            <a
+              href={node.href}
+              class:list={['neighbor-label', isStub && 'neighbor-label--stub']}
+              data-mesh-trigger
+              aria-expanded="false"
+              aria-controls={popoverId}
+            >
+              {node.label}
+            </a>
+          ) : (
+            <span
+              class:list={['neighbor-label', isStub && 'neighbor-label--stub']}
+              data-mesh-trigger
+              aria-expanded="false"
+              aria-controls={popoverId}
+              tabindex="0"
+            >
+              {node.label}
+            </span>
+          )}
+
+          {/* Popover — hidden at rest; JS flips .is-visible */}
+          <MeshNodePopover
+            id={popoverId}
+            title={node.label}
+            excerpt={node.excerpt}
+            backlinks={node.backlinks}
+            relationship={node.relationship}
+            readingMinutes={node.readingMinutes}
+            kind={node.kind}
+            ariaLabel={`Note preview: ${node.label}`}
+          />
+        </span>
+      )
+    })}
+  </div>
+
+  {/* ── Mobile inline expansion area ─────────────────────────────────
+      JS populates this with a clone of the active popover's content.
+  ──────────────────────────────────────────────────────────────────── */}
+  <div class="mobile-expand" data-mesh-mobile-expand aria-live="polite" hidden></div>
+</div>
+
+<style>
+  /* ── Strip container ──────────────────────────────────────────────── */
+  .mesh-strip {
+    width: 100%;
+    border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    background: var(--paper);
+    padding: var(--space-3) 0;
+    /* Aim for 80–100px height; min-height prevents collapse when empty */
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* ── Strip row (center + neighbors) ──────────────────────────────── */
+  .strip-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  /* ── Center label ─────────────────────────────────────────────────── */
+  .center-label {
+    font-family: var(--f-disp);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--ink);
+    /* Not clickable — remove from interactive/tab flow */
+    pointer-events: none;
+    user-select: none;
+    line-height: 1;
+  }
+
+  /* ── Divider dot ─────────────────────────────────────────────────── */
+  .strip-divider {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    flex-shrink: 0;
+  }
+
+  /* ── Neighbor wrapper (positions the popover) ─────────────────────── */
+  .neighbor-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* ── Neighbor label ── mono eyebrow style at rest ─────────────────
+     Invariant #3 (deliberate exception):
+       This widget uses TYPOGRAPHIC hover (color + weight shift), not
+       the usual hover-invert (bg ↔ ink flip). See header comment.
+     Invariant #4: var(--f-mono) + letter-spacing 0.2em + 10–11px + var(--ink-3).
+  ──────────────────────────────────────────────────────────────────── */
+  .neighbor-label {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    line-height: 1;
+    transition: color var(--dur-fast) var(--ease), font-weight var(--dur-fast) var(--ease);
+  }
+
+  /* Hover / focus — typographic shift only (no background change) */
+  .neighbor-label:hover,
+  .neighbor-label:focus-visible {
+    color: var(--ink);
+    font-weight: 600;
+    outline: none;
+  }
+
+  /* Explicit focus ring for accessibility */
+  .neighbor-label:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: var(--r-sm);
+  }
+
+  /* Stub modifier: dotted underline + reduced opacity */
+  .neighbor-label--stub {
+    text-decoration: underline dotted var(--ink-3);
+    opacity: 0.7;
+  }
+  .neighbor-label--stub:hover,
+  .neighbor-label--stub:focus-visible {
+    opacity: 1;
+  }
+
+  /* ── Mobile expand area ──────────────────────────────────────────── */
+  .mobile-expand {
+    margin-top: var(--space-3);
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: var(--space-4);
+    /* Width mirrors popover spec at mobile scale */
+    max-width: 80vw;
+  }
+
+  /* ── Mobile: hide popovers (handled inline) ─────────────────────── */
+  @media (max-width: 780px) {
+    /* Popovers are suppressed by JS; belt-and-suspenders CSS fallback */
+    :global([data-mesh-popover]) {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  /**
+   * MeshStrip interactive controller (vanilla JS, no framework deps).
+   *
+   * Responsibilities:
+   *   1. Desktop: hover/focus → delayed-fade popover; blur/leave → fade out.
+   *   2. Desktop: Esc → close active popover, restore focus.
+   *   3. Desktop: popover flip — opens above trigger when too close to viewport bottom.
+   *   4. Mobile (<780px): tap trigger → inline expand; tap outside → collapse.
+   *   5. Reduced-motion: no delay, instant show/hide.
+   */
+  (function initMeshStrip() {
+    const DELAY   = 140   // ms — matches var(--dur-fast)
+    const MOBILE  = 780   // px breakpoint
+
+    const isMobile = () => window.matchMedia(`(max-width: ${MOBILE}px)`).matches
+    const reducedMotion = () =>
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    /**
+     * One controller per `.mesh-strip` instance (supports multiple strips
+     * on a single page, e.g. post + note layouts).
+     */
+    function mountStrip(strip: HTMLElement) {
+      const triggers  = Array.from(
+        strip.querySelectorAll<HTMLElement>('[data-mesh-trigger]')
+      )
+      const mobileBox = strip.querySelector<HTMLElement>('[data-mesh-mobile-expand]')
+
+      let activePopover: HTMLElement | null = null
+      let activeTrigger: HTMLElement | null = null
+      let showTimer: ReturnType<typeof setTimeout> | null = null
+      let hideTimer: ReturnType<typeof setTimeout> | null = null
+      let escListener: ((e: KeyboardEvent) => void) | null = null
+
+      /* ── Helpers ──────────────────────────────────────────────── */
+
+      function clearTimers() {
+        if (showTimer) { clearTimeout(showTimer); showTimer = null }
+        if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+      }
+
+      function getPopover(trigger: HTMLElement): HTMLElement | null {
+        const id = trigger.getAttribute('aria-controls')
+        if (!id) return null
+        return document.getElementById(id)
+      }
+
+      /** Reposition popover below trigger; flip to above if viewport-bottom overflow. */
+      function positionPopover(trigger: HTMLElement, popover: HTMLElement) {
+        // Reset to default (below trigger)
+        popover.style.top    = ''
+        popover.style.bottom = ''
+        popover.style.left   = '0'
+
+        const tRect = trigger.getBoundingClientRect()
+        const pHeight = popover.offsetHeight || 200
+        const spaceBelow = window.innerHeight - tRect.bottom
+
+        if (spaceBelow < pHeight + 8) {
+          // Flip above
+          popover.style.bottom = '100%'
+          popover.style.top    = 'auto'
+          popover.style.marginTop = '0'
+          popover.style.marginBottom = 'var(--space-2)'
+        } else {
+          popover.style.top    = '100%'
+          popover.style.bottom = 'auto'
+          popover.style.marginTop = 'var(--space-2)'
+          popover.style.marginBottom = '0'
+        }
+      }
+
+      function showPopover(trigger: HTMLElement) {
+        const popover = getPopover(trigger)
+        if (!popover) return
+
+        // Close any other active popover first
+        if (activePopover && activePopover !== popover) {
+          hidePopoverNow(activePopover, activeTrigger)
+        }
+
+        activePopover  = popover
+        activeTrigger  = trigger
+
+        trigger.setAttribute('aria-expanded', 'true')
+        positionPopover(trigger, popover)
+        popover.classList.add('is-visible')
+
+        // Attach Esc listener (only while a popover is open)
+        if (!escListener) {
+          escListener = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && activePopover) {
+              e.preventDefault()
+              hidePopoverNow(activePopover, activeTrigger)
+              activeTrigger?.focus()
+            }
+          }
+          document.addEventListener('keydown', escListener)
+        }
+      }
+
+      function hidePopoverNow(popover: HTMLElement, trigger: HTMLElement | null) {
+        popover.classList.remove('is-visible')
+        trigger?.setAttribute('aria-expanded', 'false')
+        activePopover = null
+        activeTrigger = null
+        if (escListener) {
+          document.removeEventListener('keydown', escListener)
+          escListener = null
+        }
+      }
+
+      function scheduleShow(trigger: HTMLElement) {
+        clearTimers()
+        const delay = reducedMotion() ? 0 : DELAY
+        showTimer = setTimeout(() => showPopover(trigger), delay)
+      }
+
+      function scheduleHide() {
+        clearTimers()
+        const delay = reducedMotion() ? 0 : DELAY
+        hideTimer = setTimeout(() => {
+          if (activePopover) hidePopoverNow(activePopover, activeTrigger)
+        }, delay)
+      }
+
+      /* ── Mobile inline expand ─────────────────────────────────── */
+
+      function expandMobile(trigger: HTMLElement) {
+        if (!mobileBox) return
+        const id = trigger.getAttribute('aria-controls')
+        const source = id ? document.getElementById(id) : null
+        if (!source) { collapseMobile(); return }
+
+        // Clone the popover content (strip position/opacity styles)
+        const clone = source.cloneNode(true) as HTMLElement
+        clone.removeAttribute('id')
+        clone.removeAttribute('role')
+        clone.removeAttribute('aria-label')
+        clone.style.cssText = ''        // clear inline position styles
+        clone.classList.remove('is-visible')
+        // Remove the absolute-positioning class; display inline
+        clone.style.position = 'static'
+        clone.style.opacity  = '1'
+        clone.style.boxShadow = 'none'
+        clone.style.border    = 'none'
+        clone.style.padding   = '0'
+
+        mobileBox.innerHTML = ''
+        mobileBox.appendChild(clone)
+        mobileBox.hidden = false
+        trigger.setAttribute('aria-expanded', 'true')
+        activeTrigger = trigger
+      }
+
+      function collapseMobile() {
+        if (!mobileBox) return
+        mobileBox.hidden = true
+        mobileBox.innerHTML = ''
+        activeTrigger?.setAttribute('aria-expanded', 'false')
+        activeTrigger = null
+      }
+
+      /* ── Event wiring ─────────────────────────────────────────── */
+
+      triggers.forEach((trigger) => {
+        // Desktop: hover
+        trigger.addEventListener('mouseenter', () => {
+          if (isMobile()) return
+          scheduleShow(trigger)
+        })
+        trigger.addEventListener('mouseleave', () => {
+          if (isMobile()) return
+          scheduleHide()
+        })
+
+        // Desktop: focus / blur (keyboard nav)
+        trigger.addEventListener('focus', () => {
+          if (isMobile()) return
+          scheduleShow(trigger)
+        })
+        trigger.addEventListener('blur', () => {
+          if (isMobile()) return
+          scheduleHide()
+        })
+
+        // Mobile: tap to toggle
+        trigger.addEventListener('click', (e) => {
+          if (!isMobile()) return
+          // Prevent <a> navigation on mobile for popover toggle
+          const href = (trigger as HTMLAnchorElement).href
+          if (href) e.preventDefault()
+
+          if (activeTrigger === trigger) {
+            collapseMobile()
+          } else {
+            expandMobile(trigger)
+          }
+        })
+      })
+
+      // Mobile: tap outside strip → collapse
+      document.addEventListener('click', (e) => {
+        if (!isMobile()) return
+        if (!strip.contains(e.target as Node)) {
+          collapseMobile()
+        }
+      })
+
+      // Keep popovers from capturing mouseleave when cursor moves into popover
+      strip.querySelectorAll<HTMLElement>('[data-mesh-strip] [id^="mesh-popover-"]')
+        .forEach((popover) => {
+          popover.addEventListener('mouseenter', () => {
+            if (isMobile()) return
+            clearTimers() // cancel pending hide while hovering the popover itself
+          })
+          popover.addEventListener('mouseleave', () => {
+            if (isMobile()) return
+            scheduleHide()
+          })
+        })
+    }
+
+    function init() {
+      document.querySelectorAll<HTMLElement>('[data-mesh-strip]').forEach(mountStrip)
+    }
+
+    document.addEventListener('DOMContentLoaded', init)
+    document.addEventListener('astro:page-load', init)
+  })()
+</script>
+
+{/*
+  ──────────────────────────────────────────────────────────────────────
+  DEMO INVOCATION (copy-paste for ad-hoc testing — not rendered)
+  ──────────────────────────────────────────────────────────────────────
+
+  import MeshStrip from '../components/ui/molecules/MeshStrip.astro'
+
+  <MeshStrip nodes={[
+    {
+      label: 'Permanent Notes',
+      kind: 'selected',
+    },
+    {
+      label: 'Zettelkasten',
+      href: '/meshblog/notes/zettelkasten',
+      kind: 'concept',
+      excerpt: 'A slip-box system for building a personal knowledge network through atomic, linked notes.',
+      backlinks: 14,
+      relationship: 'outbound',
+      readingMinutes: 4,
+    },
+    {
+      label: 'Fleeting Notes',
+      href: '/meshblog/notes/fleeting-notes',
+      kind: 'note',
+      excerpt: 'Raw captures before they are processed and turned into permanent notes.',
+      backlinks: 6,
+      relationship: 'backlink',
+      readingMinutes: 2,
+    },
+    {
+      label: 'Evergreen Notes',
+      href: '/meshblog/notes/evergreen-notes',
+      kind: 'note',
+      excerpt: 'Notes that are continually updated to reflect current thinking rather than one-time observations.',
+      backlinks: 9,
+      relationship: 'entity',
+      readingMinutes: 3,
+    },
+    {
+      label: 'Orphaned Concept',
+      href: '/meshblog/notes/orphaned-concept',
+      kind: 'stub',
+      backlinks: 0,
+      relationship: 'outbound',
+    },
+  ]} />
+
+  ──────────────────────────────────────────────────────────────────────
+*/}
