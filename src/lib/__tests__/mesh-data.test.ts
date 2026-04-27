@@ -209,6 +209,71 @@ describe('getNoteMeshNodes', () => {
       db.close()
     })
 
+    it('marks neighbor as kind="stub" when DB row content is whitespace-only', () => {
+      // plainExcerpt('   \n\t  ', 160) collapses whitespace and returns ''.
+      // Must be treated identically to true-empty content for stub detection.
+      __backlinkJson = JSON.stringify({
+        nodes: [
+          { id: 'note-a', title: 'Note A' },
+          { id: 'note-ws', title: 'Whitespace Note' },
+        ],
+        edges: [
+          { source: 'note-ws', target: 'note-a' },
+        ],
+      })
+      const db = makeDb()
+      insertNote(db, 'note-ws', 'note-ws', 'Whitespace Note', '   \n\t  \n  ')
+      __mockDb = db
+
+      const nodes = getNoteMeshNodes({
+        noteId: 'note-a',
+        noteTitle: 'Note A',
+        withBase: wb,
+      })
+
+      const neighbor = nodes[1]
+      expect(neighbor.kind).toBe('stub')
+      expect(neighbor.excerpt).toBeUndefined()
+
+      db.close()
+    })
+
+    it('handles Korean (multi-byte) content correctly in excerpt + readingMinutes', () => {
+      // Real-world meshblog vault is bilingual — verify the enrich path doesn't
+      // mis-slice multi-byte characters or zero out reading-time on Hangul.
+      const koreanBody = '한국어 본문 콘텐츠입니다. '.repeat(20) // ~280 chars Hangul
+      __backlinkJson = JSON.stringify({
+        nodes: [
+          { id: 'note-a', title: 'Note A' },
+          { id: 'note-kr', title: '한국어 노트' },
+        ],
+        edges: [
+          { source: 'note-kr', target: 'note-a' },
+        ],
+      })
+      const db = makeDb()
+      insertNote(db, 'note-kr', 'note-kr', '한국어 노트', koreanBody)
+      __mockDb = db
+
+      const nodes = getNoteMeshNodes({
+        noteId: 'note-a',
+        noteTitle: 'Note A',
+        withBase: wb,
+      })
+
+      const neighbor = nodes[1]
+      expect(neighbor.kind).toBe('note')
+      expect(typeof neighbor.excerpt).toBe('string')
+      expect(neighbor.excerpt!.length).toBeGreaterThan(0)
+      expect(neighbor.excerpt!.length).toBeLessThanOrEqual(160)
+      // Excerpt must contain readable Hangul, not garbage from byte-level slicing
+      expect(neighbor.excerpt).toMatch(/[가-힯]/)
+      expect(typeof neighbor.readingMinutes).toBe('number')
+      expect(neighbor.readingMinutes!).toBeGreaterThan(0)
+
+      db.close()
+    })
+
     it('falls back to kind="note" when DB row missing (graceful for fixture-mode/test envs)', () => {
       __backlinkJson = JSON.stringify({
         nodes: [

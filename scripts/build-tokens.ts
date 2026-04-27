@@ -268,6 +268,15 @@ const darkCategoricalVars = Object.keys(darkCategorical).length > 0
     Object.entries(darkCategorical).map(([k, v]) => `    --${k}: ${v};`).join('\n')
   : '';
 
+// Light-categorical overrides — required for [data-theme="light"] block so that
+// a dark-OS user who explicitly toggles to light doesn't inherit the dark
+// --cat-* values from prefers-color-scheme:dark. Without this, category dots
+// render ~6–8% too bright on the white background.
+const lightCategoricalVars = Object.keys(categorical).length > 0
+  ? `\n    /* ── categorical (graph nodes per category — light) ─────────────────── */\n` +
+    Object.entries(categorical).map(([k, v]) => `    --${k}: ${v};`).join('\n')
+  : '';
+
 const darkColorVars = `\
     /* ── color (dark — ink↔paper inverted) ──────────────────────────────── */
     --ink:       ${darkInk};
@@ -292,7 +301,7 @@ const lightColorVars = `\
     --paper-2:   ${colors['paper-2']};
     --rule:      ${colors.rule ?? colors.ink};
     --rule-soft: ${colors['rule-soft']};
-    --accent:    ${colors.accent};`;
+    --accent:    ${colors.accent};${lightCategoricalVars}`;
 
 const darkBlock = `\
 @media (prefers-color-scheme: dark) {
