@@ -83,7 +83,7 @@ import { withBase } from '../lib/url'
         </div>
 
         <div class="block">
-          <GraphLegend noteCount={0} conceptCount={0} />
+          <GraphLegend noteCount="—" conceptCount="—" />
         </div>
       </aside>
     </div>
@@ -133,6 +133,15 @@ import { withBase } from '../lib/url'
       const e = detail.linksCount ?? 0
       statsEl.textContent = `${n} nodes · ${e} edges`
     }
+
+    // Update sidebar legend counts (NOTE / CONCEPT) from live nodes
+    const allNodes = (detail.nodes ?? []) as Array<{ type?: string }>
+    const noteN = allNodes.filter(n => n.type === 'note').length
+    const conceptN = allNodes.filter(n => n.type === 'concept').length
+    const lnEl = document.getElementById('legendNoteCount')
+    const lcEl = document.getElementById('legendConceptCount')
+    if (lnEl) lnEl.textContent = String(noteN)
+    if (lcEl) lcEl.textContent = String(conceptN)
 
     // Backlinks + concept modes: hide depth disclosure entirely
     const hideDepth = detail.mode === 'backlinks' || detail.mode === 'concept'
@@ -452,6 +461,7 @@ import { withBase } from '../lib/url'
     letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     color: var(--ink-3);
+    line-height: 1;
     margin: 0;
   }
 
@@ -543,6 +553,7 @@ import { withBase } from '../lib/url'
     letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     color: var(--ink-3);
+    line-height: 1;
     min-width: 5em;
     flex-shrink: 0;
   }
@@ -559,6 +570,7 @@ import { withBase } from '../lib/url'
     color: var(--ink-3);
     letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
+    line-height: 1;
     padding: var(--space-4) 0;
     text-align: center;
   }
@@ -585,6 +597,7 @@ import { withBase } from '../lib/url'
     letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     color: var(--ink-3);
+    line-height: 1;
     margin-bottom: var(--space-3);
   }
 
@@ -600,6 +613,7 @@ import { withBase } from '../lib/url'
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
     color: var(--ink-3);
+    line-height: 1;
     margin: 2px 0 var(--space-4);
     letter-spacing: 0.04em;
   }

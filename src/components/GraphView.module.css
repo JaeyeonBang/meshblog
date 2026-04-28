@@ -304,6 +304,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 500;
+  line-height: 1;
   padding: 4px 10px;
   border: 1px solid var(--ink);
   cursor: pointer;
