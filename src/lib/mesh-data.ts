@@ -502,12 +502,12 @@ export function getPostConceptGraph(noteId: string): PostConceptGraph {
   const links: ConceptGraphLink[] = []
   if (conceptL3) {
     for (const e of conceptL3.links) {
-      const s = typeof e.source === 'string' ? e.source : (e.source as { id: string }).id
-      const t = typeof e.target === 'string' ? e.target : (e.target as { id: string }).id
-      if (s === t) continue
-      if (!idSet.has(s) || !idSet.has(t)) continue
+      // concept-l3.json always serialises endpoints as strings; the type
+      // says so. No defensive cast needed.
+      if (e.source === e.target) continue
+      if (!idSet.has(e.source) || !idSet.has(e.target)) continue
       if (e.type === 'mentions') continue
-      links.push({ source: s, target: t, weight: e.weight ?? 1 })
+      links.push({ source: e.source, target: e.target, weight: e.weight ?? 1 })
     }
   }
 

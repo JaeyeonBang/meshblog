@@ -105,13 +105,18 @@ const latestDate = posts.length > 0
 
     function applyFilter(tag: string | null) {
       let visible = 0
-      cards.forEach((card, i) => {
-        const tags = (card.getAttribute('data-tags') || '').split('|').filter(Boolean)
+      cards.forEach((card) => {
+        // Tags joined with U+001F (unit separator) so a literal "|" in a tag
+        // can't mis-split. Empty data-tags (no tags) → empty array.
+        const tags = (card.getAttribute('data-tags') || '').split('').filter(Boolean)
         const match = !tag || tags.includes(tag)
         card.hidden = !match
         if (match) {
           visible++
-          card.classList.toggle('featured', visible === 1 && i === 0)
+          // First *visible* card becomes the leader (large h2 + extra padding),
+          // not just the SSR-first card. After filtering, the new leader takes
+          // over so the list never looks decapitated.
+          card.classList.toggle('featured', visible === 1)
         }
       })
       if (countEl) countEl.textContent = String(visible)

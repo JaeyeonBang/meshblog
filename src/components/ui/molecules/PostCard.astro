@@ -40,7 +40,9 @@ const {
 } = Astro.props;
 const showThumb = thumb || !!image;
 const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boolean).join('  ·  ');
-const tagsAttr = tags.join('|');
+// U+001F (unit separator) — guarantees no collision with tag content even if
+// a tag itself contains a vertical bar or other punctuation.
+const tagsAttr = tags.join('');
 ---
 <article
   class:list={['post-card', showThumb && 'with-thumb', featured && 'featured']}
