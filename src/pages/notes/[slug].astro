@@ -323,6 +323,24 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
   })()
 </script>
 
+<!-- Hide broken inline images in .prose (vault attachments not yet wired
+     to the build pipeline; pre-existing content gap, v2 scope). Keeps
+     editorial reading clean without empty-image-icon noise. -->
+<script>
+  (function () {
+    document.addEventListener(
+      'error',
+      (e) => {
+        const t = e.target as HTMLElement | null
+        if (t && t.tagName === 'IMG' && t.closest('.prose')) {
+          ;(t as HTMLImageElement).style.display = 'none'
+        }
+      },
+      true,
+    )
+  })()
+</script>
+
 <!-- Scroll reveal for sections below the fold -->
 <script>
   (function () {
