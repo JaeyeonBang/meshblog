@@ -1,6 +1,7 @@
 ---
 import Badge from '../atoms/Badge.astro'
 import KindBadge from '../atoms/KindBadge.astro'
+import { withBase } from '../../../lib/url'
 
 interface Props {
   kind: 'post' | 'note';
@@ -18,6 +19,8 @@ interface Props {
   featured?: boolean;
   badge?: 'new' | 'updated' | null;
   style?: string;
+  /** When true, render tags as anchor links to /posts?tag=<tag> for client-side filtering. */
+  tagsAsLinks?: boolean;
 }
 const {
   kind,
@@ -33,49 +36,68 @@ const {
   featured = false,
   badge = null,
   style,
+  tagsAsLinks = false,
 } = Astro.props;
 const showThumb = thumb || !!image;
 const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boolean).join('  ·  ');
+const tagsAttr = tags.join('|');
 ---
-<a class:list={['post-card', showThumb && 'with-thumb', featured && 'featured']} href={href} style={style}>
-  {showThumb && (
-    image
-      ? <div class="thumb thumb--image"><img src={image} alt="" loading="lazy" /></div>
-      : <div class="thumb"><span>og · {number}</span></div>
-  )}
-  <div>
-    <div class="head">
-      <KindBadge kind={kind} number={number} />
-      {badge && (
-        <Badge variant={badge}>{badge === 'new' ? 'NEW' : 'UPDATED'}</Badge>
-      )}
-      {featured && !badge && (
-        <Badge variant="featured">FEATURED</Badge>
-      )}
-      {meta && <span class="meta">{meta}</span>}
-    </div>
-    <h2 class:list={[thumb && 'sm']}>{title}</h2>
-    {excerpt && <p class="excerpt">{excerpt}</p>}
-    {tags.length > 0 && (
-      <div class="tags">
-        {tags.map(t => <span class="tag">#{t}</span>)}
-      </div>
+<article
+  class:list={['post-card', showThumb && 'with-thumb', featured && 'featured']}
+  style={style}
+  data-post-card
+  data-tags={tagsAttr}
+>
+  <a class="post-card-link" href={href}>
+    {showThumb && (
+      image
+        ? <div class="thumb thumb--image"><img src={image} alt="" loading="lazy" /></div>
+        : <div class="thumb"><span>og · {number}</span></div>
     )}
-  </div>
-</a>
+    <div>
+      <div class="head">
+        <KindBadge kind={kind} number={number} />
+        {badge && (
+          <Badge variant={badge}>{badge === 'new' ? 'NEW' : 'UPDATED'}</Badge>
+        )}
+        {featured && !badge && (
+          <Badge variant="featured">FEATURED</Badge>
+        )}
+        {meta && <span class="meta">{meta}</span>}
+      </div>
+      <h2 class:list={[thumb && 'sm']}>{title}</h2>
+      {excerpt && <p class="excerpt">{excerpt}</p>}
+    </div>
+  </a>
+  {tags.length > 0 && (
+    <div class="tags">
+      {tags.map((t) => (
+        tagsAsLinks ? (
+          <a class="tag" href={`${withBase('/posts')}?tag=${encodeURIComponent(t)}`} data-tag-filter={t}>#{t}</a>
+        ) : (
+          <span class="tag">#{t}</span>
+        )
+      ))}
+    </div>
+  )}
+</article>
 
 <style>
   .post-card {
     padding: 28px 0;
     border-bottom: 1px solid var(--rule-soft);
-    cursor: pointer;
     transition: background var(--dur-fast) var(--ease);
     margin: 0 -16px;
     padding-left: 16px;
     padding-right: 16px;
     display: block;
+    color: inherit;
+  }
+  .post-card-link {
+    display: block;
     text-decoration: none;
     color: inherit;
+    cursor: pointer;
   }
   .post-card:hover {
     background: var(--ink);
@@ -91,14 +113,14 @@ const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boole
     color: var(--paper);
     border-bottom-color: var(--paper-2);
   }
-  .post-card:focus-visible {
+  .post-card-link:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
   .post-card:first-child {
     padding-top: 0;
   }
-  .post-card.with-thumb {
+  .post-card.with-thumb .post-card-link {
     display: grid;
     grid-template-columns: 160px 1fr;
     gap: 28px;
@@ -173,10 +195,19 @@ const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boole
     display: inline-block;
     cursor: pointer;
     transition: all var(--dur-fast) var(--ease);
+    text-decoration: none;
   }
   .tag:hover {
     color: var(--ink);
     border-bottom-color: var(--ink);
+  }
+  .post-card:hover a.tag {
+    color: var(--paper);
+    border-bottom-color: var(--paper-2);
+  }
+  .post-card:hover a.tag:hover {
+    color: var(--paper);
+    border-bottom-color: var(--paper);
   }
   .thumb {
     aspect-ratio: 4 / 3;

@@ -27,7 +27,8 @@ import { injectLedeClass } from '../../lib/lede'
 import { stripLeadingH1 } from '../../lib/markdown/strip-title'
 import { extractToc } from '../../lib/markdown/extract-toc'
 import { plainExcerpt } from '../../lib/markdown/plain-excerpt'
-import { getNoteMeshNodes, getNoteMeshLinks } from '../../lib/mesh-data'
+import { getNoteMeshNodes, getNoteMeshLinks, getPostConceptGraph } from '../../lib/mesh-data'
+import PostConceptGraph from '../../components/PostConceptGraph'
 import '../../styles/article.css'
 
 export async function getStaticPaths() {
@@ -120,14 +121,20 @@ const currentIndex = allPosts.findIndex((p) => p.slug === post.slug)
 const prevPost = currentIndex > 0 ? allPosts[currentIndex - 1] : undefined
 const nextPost = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : undefined
 
-// Related grid items
-const relatedItems = related.map((r, i) => ({
-  kind: 'note' as const,
-  number: `N / ${String(i + 1).padStart(2, '0')}`,
-  title: r.title,
-  meta: '',
-  href: resolveHref(r.id),
-}))
+// Related grid items — derive kind/badge from manifest folder so post-typed
+// related items link to /posts/<slug>/ and show a P/ badge instead of N/.
+const relatedItems = related.map((r, i) => {
+  const folder = manifest[r.id]?.folder
+  const kind: 'post' | 'note' = folder === 'posts' ? 'post' : 'note'
+  const prefix = kind === 'post' ? 'P' : 'N'
+  return {
+    kind,
+    number: `${prefix} / ${String(i + 1).padStart(2, '0')}`,
+    title: r.title,
+    meta: '',
+    href: resolveHref(r.id),
+  }
+})
 
 // TOC items from the rendered article HTML (H2/H3 with ids from rehype-slug).
 const tocItems = extractToc(contentHtml).map((e) => ({
@@ -145,11 +152,18 @@ const meshNodes = getNoteMeshNodes({
 })
 
 // Inter-neighbor edges for the mini graph. Slugs derived from each neighbor's href
-// (`/meshblog/notes/<slug>` or `/meshblog/posts/<slug>`); center has no href.
+// (`/meshblog/notes/<slug>` or `/meshblog/posts/<slug>/`); strips trailing slash.
 const neighborSlugs = meshNodes.slice(1)
-  .map((n) => n.href?.split('/').pop())
+  .map((n) => {
+    const segs = (n.href ?? '').split('/').filter(Boolean)
+    return segs[segs.length - 1]
+  })
   .filter((s): s is string => !!s)
 const meshLinks = getNoteMeshLinks(neighborSlugs)
+
+// Per-post concept subgraph — same shape as /graph?mode=concept&level=3 but
+// limited to concepts whose entities overlap this post's entities.
+const conceptGraph = getPostConceptGraph(post.id)
 ---
 
 <Base
@@ -177,9 +191,25 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
         {post.tags && post.tags.length > 0 && (
           <div class="tags">
             {post.tags.map((tag: string) => (
-              <Tag>{tag}</Tag>
+              <Tag href={`${withBase('/posts')}?tag=${encodeURIComponent(tag)}`}>{tag}</Tag>
             ))}
           </div>
+        )}
+
+        {conceptGraph.nodes.length > 0 && (
+          <details class="concept-toggle" data-concept-toggle>
+            <summary>
+              <span class="concept-toggle-label">concept 그래프 보기</span>
+              <span class="concept-toggle-meta">{conceptGraph.nodes.length} concepts · {conceptGraph.links.length} links</span>
+            </summary>
+            <div class="concept-toggle-canvas">
+              <PostConceptGraph
+                nodes={conceptGraph.nodes}
+                links={conceptGraph.links}
+                client:visible
+              />
+            </div>
+          </details>
         )}
       </header>
 
@@ -229,6 +259,7 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
         meshLinks={meshLinks}
         tocItems={tocItems}
         slug={post.slug}
+        conceptGraph={conceptGraph}
       />
     </aside>
   </div>
@@ -465,6 +496,79 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
   /* ── Page QA wrapper ───────────────────────────────────────── */
   .page-qa-wrapper {
     margin-top: var(--space-12);
+  }
+
+  /* ── Concept-graph toggle (Task 7-1) ──────────────────────── */
+  .concept-toggle {
+    margin-top: var(--space-6);
+    border-top: 1px solid var(--rule-soft);
+    padding-top: var(--space-4);
+  }
+
+  .concept-toggle > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    user-select: none;
+  }
+
+  .concept-toggle > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .concept-toggle > summary::before {
+    content: "+";
+    display: inline-block;
+    font-family: var(--f-mono);
+    font-size: var(--fs-sm);
+    width: 14px;
+    color: var(--ink-3);
+    transition: transform var(--dur-fast) var(--ease);
+  }
+
+  .concept-toggle[open] > summary::before {
+    content: "−";
+  }
+
+  .concept-toggle-label {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .concept-toggle-meta {
+    margin-left: auto;
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .concept-toggle > summary:hover .concept-toggle-label {
+    color: var(--ink-2);
+  }
+
+  .concept-toggle > summary:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .concept-toggle-canvas {
+    margin-top: var(--space-5);
+    height: 480px;
+    border: 1px solid var(--rule-soft);
+    overflow: hidden;
+  }
+
+  @media (max-width: 779px) {
+    .concept-toggle-canvas {
+      height: 320px;
+    }
   }
 
 </style>

@@ -12,6 +12,38 @@ import { openReadonlyDb } from './pages/db'
 import { plainExcerpt } from './markdown/plain-excerpt'
 import { estimateReadingMinutes } from './reading-time'
 
+// ── Manifest-based href resolution ───────────────────────────────────────────
+// notes-manifest.json is built by scripts/build-manifest.ts and tags each row
+// with `folder: 'posts' | 'notes'` based on the source `folder_path`. We
+// consult it here so a post-typed neighbor links to /posts/<slug>/ instead of
+// the hardcoded /notes/<slug> that 404s on the live site.
+type ManifestEntry = { id: string; href: string; title: string; folder: 'posts' | 'notes' }
+let _manifestCache: Record<string, ManifestEntry> | null | undefined
+function loadManifest(): Record<string, ManifestEntry> | null {
+  if (_manifestCache !== undefined) return _manifestCache
+  _manifestCache = loadJson<Record<string, ManifestEntry>>('public/notes-manifest.json')
+  return _manifestCache
+}
+
+/** Reset the module-level manifest cache. Exposed for test isolation only. */
+export function _resetManifestCache(): void {
+  _manifestCache = undefined
+}
+
+/**
+ * Resolve a neighbor slug to its canonical href via the manifest.
+ * Falls back to /notes/<slug> when the manifest is missing or doesn't list
+ * the slug — matches legacy behavior so existing tests and fixture-mode keep working.
+ */
+function resolveNeighborHref(slug: string, withBase: (p: string) => string): string {
+  const manifest = loadManifest()
+  if (manifest) {
+    const entry = manifest[slug]
+    if (entry?.href) return withBase(entry.href)
+  }
+  return withBase(`/notes/${slug}`)
+}
+
 // ── Types ───────────────────────────────────────────────────────────────────
 
 export type MeshNode = {
@@ -295,7 +327,7 @@ function enrichNeighborsFromDb(
     return {
       label: n.title,
       kind: isStub ? ('stub' as const) : ('note' as const),
-      href: withBase(`/notes/${n.slug}`),
+      href: resolveNeighborHref(n.slug, withBase),
       excerpt: isStub || excerpt === '' ? undefined : excerpt,
       backlinks: backlinkCount,
       relationship: n.sourceType,
@@ -363,7 +395,7 @@ function getEntityNeighbors(noteId: string, withBase: (p: string) => string): Me
       return {
         label: row.title,
         kind: isStub ? ('stub' as const) : ('note' as const),
-        href: withBase(`/notes/${row.slug}`),
+        href: resolveNeighborHref(row.slug, withBase),
         excerpt: isStub ? undefined : excerpt,
         backlinks: backlinkCount,
         relationship: 'entity' as const,
@@ -373,6 +405,113 @@ function getEntityNeighbors(noteId: string, withBase: (p: string) => string): Me
   } finally {
     db.close()
   }
+}
+
+// ── Per-post concept subgraph (Task 7) ──────────────────────────────────────
+
+export type ConceptGraphNode = {
+  id: string
+  label: string
+  /** Louvain cluster index from concept-l3.json (mod 12 → palette slot) */
+  cluster: number
+  /** PageRank-ish score from concept-l3.json; falls back to 0 */
+  pagerank: number
+  /** Number of source-note entities also attached to this concept */
+  weight: number
+}
+
+export type ConceptGraphLink = { source: string; target: string; weight: number }
+
+export type PostConceptGraph = {
+  nodes: ConceptGraphNode[]
+  links: ConceptGraphLink[]
+}
+
+type ConceptL3Json = {
+  nodes: Array<{
+    id: string
+    label: string
+    type?: string
+    cluster?: number
+    pagerank?: number
+  }>
+  links: Array<{ source: string; target: string; weight?: number; type?: string }>
+}
+
+let _conceptL3Cache: ConceptL3Json | null | undefined
+function loadConceptL3(): ConceptL3Json | null {
+  if (_conceptL3Cache !== undefined) return _conceptL3Cache
+  _conceptL3Cache = loadJson<ConceptL3Json>('public/graph/concept-l3.json')
+  return _conceptL3Cache
+}
+
+/** Reset internal concept-l3 cache. Test helper only. */
+export function _resetConceptGraphCache(): void {
+  _conceptL3Cache = undefined
+}
+
+/**
+ * Build a per-post concept subgraph mirroring `/graph?mode=concept&level=3`
+ * but limited to concepts that share at least one entity with `noteId`.
+ */
+const MAX_CONCEPT_NODES = 14
+
+export function getPostConceptGraph(noteId: string): PostConceptGraph {
+  const db = openReadonlyDb()
+  if (!db) return { nodes: [], links: [] }
+
+  type ConceptRow = { id: string; name: string; weight: number }
+  let rows: ConceptRow[] = []
+  try {
+    rows = db
+      .prepare<[string, number]>(
+        `SELECT c.id, c.name, COUNT(DISTINCT ce.entity_id) AS weight
+         FROM concepts c
+         JOIN concept_entities ce ON ce.concept_id = c.id
+         JOIN note_entities ne    ON ne.entity_id   = ce.entity_id
+         WHERE ne.note_id = ?
+         GROUP BY c.id
+         ORDER BY weight DESC, c.name ASC
+         LIMIT ?`
+      )
+      .all(noteId, MAX_CONCEPT_NODES) as ConceptRow[]
+  } finally {
+    db.close()
+  }
+
+  if (rows.length === 0) return { nodes: [], links: [] }
+
+  const conceptL3 = loadConceptL3()
+  const globalById = new Map<string, ConceptL3Json['nodes'][number]>()
+  if (conceptL3) {
+    for (const n of conceptL3.nodes) globalById.set(n.id, n)
+  }
+
+  const idSet = new Set(rows.map((r) => r.id))
+  const nodes: ConceptGraphNode[] = rows.map((r) => {
+    const g = globalById.get(r.id)
+    return {
+      id: r.id,
+      label: g?.label ?? r.name,
+      cluster: g?.cluster ?? 0,
+      pagerank: g?.pagerank ?? 0,
+      weight: r.weight,
+    }
+  })
+
+  const links: ConceptGraphLink[] = []
+  if (conceptL3) {
+    for (const e of conceptL3.links) {
+      const s = typeof e.source === 'string' ? e.source : (e.source as { id: string }).id
+      const t = typeof e.target === 'string' ? e.target : (e.target as { id: string }).id
+      if (s === t) continue
+      if (!idSet.has(s) || !idSet.has(t)) continue
+      if (e.type === 'mentions') continue
+      links.push({ source: s, target: t, weight: e.weight ?? 1 })
+    }
+  }
+
+  return { nodes, links }
 }
 
 /**

@@ -33,7 +33,12 @@ export interface LegendProps {
   visible: boolean
 }
 
-/** Apply cross-highlight to SVG nodes matching the given slug. null = clear. */
+/**
+ * Apply cross-highlight to SVG nodes matching the given slug or palette index.
+ * `null` = clear. When slug is `__idx:N`, we match circles by data-cat-idx=N
+ * instead — used for cluster-based highlighting in concept mode where there
+ * is no slug attached to each circle.
+ */
 function highlightCategory(slug: string | null): void {
   if (typeof document === 'undefined') return
   const circles = document.querySelectorAll<SVGCircleElement>('.nodes circle')
@@ -43,9 +48,12 @@ function highlightCategory(slug: string | null): void {
     })
     return
   }
+  const isIdxKey = slug.startsWith('__idx:')
+  const targetIdx = isIdxKey ? slug.slice(6) : null
   circles.forEach(c => {
-    const cat = c.getAttribute('data-cat')
-    const isMatch = cat === slug
+    const isMatch = isIdxKey
+      ? c.getAttribute('data-cat-idx') === targetIdx
+      : c.getAttribute('data-cat') === slug
     c.classList.toggle('node--cat-active', isMatch)
     c.classList.toggle('node--cat-dim', !isMatch)
   })
@@ -81,27 +89,33 @@ export function Legend({ categories, visible }: LegendProps) {
         role="list"
         aria-label="categories"
       >
-        {categories.map(cat => (
-          <li
-            key={cat.slug}
-            className={styles.item}
-            onMouseEnter={onItemEnter(cat.slug)}
-            onMouseLeave={onItemLeave}
-            onFocus={onItemEnter(cat.slug)}
-            onBlur={onItemLeave}
-            tabIndex={0}
-          >
-            <span
-              className={styles.dot}
-              data-cat={cat.slug}
-              data-cat-idx={paletteIndexFor(cat.slug) === -1 ? undefined : String(paletteIndexFor(cat.slug))}
-              aria-hidden="true"
-            />
-            <span className={styles.itemLabel}>
-              {cat.label}&thinsp;·&thinsp;{cat.count}
-            </span>
-          </li>
-        ))}
+        {categories.map(cat => {
+          // Cluster-mode entries arrive with slug "__idx:N" so we don't run
+          // them through the DJB2 hash; the index is already explicit.
+          const isClusterKey = cat.slug.startsWith('__idx:')
+          const idx = isClusterKey ? Number(cat.slug.slice(6)) : paletteIndexFor(cat.slug)
+          return (
+            <li
+              key={cat.slug}
+              className={styles.item}
+              onMouseEnter={onItemEnter(cat.slug)}
+              onMouseLeave={onItemLeave}
+              onFocus={onItemEnter(cat.slug)}
+              onBlur={onItemLeave}
+              tabIndex={0}
+            >
+              <span
+                className={styles.dot}
+                data-cat={isClusterKey ? undefined : cat.slug}
+                data-cat-idx={idx === -1 ? undefined : String(idx)}
+                aria-hidden="true"
+              />
+              <span className={styles.itemLabel}>
+                {cat.label}&thinsp;·&thinsp;{cat.count}
+              </span>
+            </li>
+          )
+        })}
       </ul>
     </div>
   )

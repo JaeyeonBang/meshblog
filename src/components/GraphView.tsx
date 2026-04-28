@@ -485,9 +485,43 @@ export default function GraphView() {
   const hoverExcerpt = hoveredEntry?.excerpt ?? null
   const hoverHref = hoveredEntry ? withBase(hoveredEntry.href) : null
 
-  // Derive legend categories from currently visible graph nodes (notes mode only)
+  // Derive legend categories from currently visible graph nodes.
+  //   - notes mode: group by categorySlug (existing behaviour)
+  //   - concept mode: group by Louvain cluster index, label each bucket with
+  //     the highest-pagerank concept in that cluster so the legend reads as
+  //     a community key rather than anonymous "Cluster 0..N".
   const legendCategories = useMemo<LegendCategory[]>(() => {
-    if (!graph || mode === 'concept') return []
+    if (!graph) return []
+
+    if (mode === 'concept') {
+      // Bucket nodes by cluster index. cluster mod 12 mirrors what
+      // useForceSimulation writes to data-cat-idx so legend dots line up
+      // with circle fills.
+      const buckets = new Map<number, { count: number; rep: string; pagerank: number }>()
+      for (const node of graph.nodes) {
+        if (node.cluster == null) continue
+        const idx = node.cluster % 12
+        const cur = buckets.get(idx)
+        const pr = node.pagerank ?? 0
+        if (!cur) {
+          buckets.set(idx, { count: 1, rep: node.label, pagerank: pr })
+        } else {
+          cur.count++
+          if (pr > cur.pagerank) {
+            cur.rep = node.label
+            cur.pagerank = pr
+          }
+        }
+      }
+      return [...buckets.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([idx, info]) => ({
+          slug: `__idx:${idx}`,
+          label: info.rep,
+          count: info.count,
+        }))
+    }
+
     const counts = new Map<string, number>()
     for (const node of graph.nodes) {
       if (node.type !== 'note') continue
@@ -576,10 +610,10 @@ export default function GraphView() {
         incidentEdges={hoverState?.incident}
       />
 
-      {/* Category color legend — hidden in concept mode */}
+      {/* Color legend — categories in notes mode, clusters in concept mode */}
       <Legend
         categories={legendCategories}
-        visible={mode !== 'concept' && status === 'ready'}
+        visible={status === 'ready' && legendCategories.length > 0}
       />
 
       {/* Stats */}
