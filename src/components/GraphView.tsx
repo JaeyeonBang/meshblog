@@ -643,7 +643,7 @@ export default function GraphView() {
           disabled={status !== 'ready'}
           aria-label="Reset zoom"
           title="Reset zoom"
-        >reset</button>
+        >1:1</button>
       </div>
 
       {/* Stats */}

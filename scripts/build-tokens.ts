@@ -71,7 +71,7 @@ const koSerif = fonts['korean-serif'] ? `'${fonts['korean-serif']}', ` : '';
 const F_DISP  = `'${fonts.display}', ${koSerif}'Pretendard', Georgia, serif`;
 const F_SERIF = `'${fonts.serif ?? fonts.display}', ${koSerif}'Pretendard', Georgia, serif`;
 const F_SANS  = `'${fonts.sans}', -apple-system, system-ui, sans-serif`;
-const F_MONO  = `'${fonts.mono}', ui-monospace, Menlo, monospace`;
+const F_MONO  = `'${fonts.mono}', 'Pretendard', ui-monospace, Menlo, monospace`;
 
 // ── space stops (11 named stops) ─────────────────────────────────────────────
 

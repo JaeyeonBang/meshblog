@@ -20,7 +20,7 @@
   --f-disp:  'Source Serif 4', 'Pretendard', Georgia, serif;
   --f-serif: 'Source Serif 4', 'Pretendard', Georgia, serif;
   --f-sans:  'Pretendard', -apple-system, system-ui, sans-serif;
-  --f-mono:  'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --f-mono:  'JetBrains Mono', 'Pretendard', ui-monospace, Menlo, monospace;
 
   /* ── type scale ───────────────────────────────────────────────────────── */
   --fs-xs:   12px;
