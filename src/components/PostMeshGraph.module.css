@@ -16,6 +16,7 @@
   max-width: 100%;
   aspect-ratio: 1 / 1;
   margin: 0;
+  overflow: hidden;
 }
 
 .svg {
@@ -89,14 +90,14 @@
 /* ── Link styles ──────────────────────────────────────────────────────────── */
 
 .svg :global(.links line) {
-  stroke: var(--ink-4);
-  stroke-width: 0.5;
-  opacity: 0.7;
+  stroke: var(--ink-3);
+  stroke-width: 0.6;
+  opacity: 0.8;
   pointer-events: none;
 }
 
 .svg :global(.links line[data-edge-type="inter"]) {
-  opacity: 0.4;
+  opacity: 0.6;
 }
 
 /* ── Hover label popover (fixed position, viewport coords) ────────────────── */
@@ -173,6 +174,7 @@
   height: min(720px, 90vw, 90vh);
   background: var(--paper);
   border: 1px solid var(--ink);
+  overflow: hidden;
 }
 
 .closeBtn {

@@ -7,6 +7,8 @@ import * as d3Drag from 'd3-drag'
 import type { GraphNode, GraphLink, GraphJson, IncidentEdge, IncidentEdgeList } from './types'
 import { paletteIndexFor } from './categoryPalette'
 
+export type ZoomController = { zoomIn: () => void; zoomOut: () => void; reset: () => void }
+
 type SimNode = GraphNode & d3Force.SimulationNodeDatum
 type SimLink = { source: SimNode; target: SimNode; weight: number; type?: string; alias?: string }
 
@@ -69,6 +71,8 @@ export function useForceSimulation(
     }
     /** When false, skip the entrance stagger animation (set delay to 0ms). Default true. */
     staggerEnabled?: boolean
+    /** Called with a ZoomController after setup, called with null on cleanup. */
+    onZoomReady?: (ctrl: ZoomController | null) => void
   },
 ): void {
   useEffect(() => {
@@ -386,6 +390,20 @@ export function useForceSimulation(
 
     svg.call(zoomBehavior)
 
+    // Build and expose ZoomController via callback.
+    // d3-transition is a transitive dep but has no @types — cast through unknown to avoid
+    // TS2339 on .interrupt()/.transition(). Runtime behaviour is correct.
+    const svgTrans = svg as unknown as {
+      interrupt(): void
+      transition(): { duration(ms: number): { call(fn: (...a: unknown[]) => void, ...args: unknown[]): void } }
+    }
+    const zoomController: ZoomController = {
+      zoomIn:  () => { svgTrans.interrupt(); svgTrans.transition().duration(180).call(zoomBehavior.scaleBy as never, 1.4) },
+      zoomOut: () => { svgTrans.interrupt(); svgTrans.transition().duration(180).call(zoomBehavior.scaleBy as never, 1 / 1.4) },
+      reset:   () => { svgTrans.interrupt(); svgTrans.transition().duration(220).call(zoomBehavior.transform as never, d3Zoom.zoomIdentity) },
+    }
+    opts.onZoomReady?.(zoomController)
+
     // --- Drag ---
     let dragged = false
 
@@ -434,6 +452,7 @@ export function useForceSimulation(
 
     // Cleanup
     return () => {
+      opts.onZoomReady?.(null)
       simulation.stop()
       svg.on('.zoom', null)
       svg.selectAll('*').remove()

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import type { GraphJson, Manifest, GraphNode, NodeKind } from './graph/types'
 import { useForceSimulation } from './graph/useForceSimulation'
-import type { HoverState } from './graph/useForceSimulation'
+import type { HoverState, ZoomController } from './graph/useForceSimulation'
 import { HoverCard } from './graph/HoverCard'
 import { Legend } from './graph/Legend'
 import type { LegendCategory } from './graph/Legend'
@@ -185,6 +185,7 @@ export default function GraphView() {
   const [manifest, setManifest] = useState<Manifest>({})
   const [status, setStatus] = useState<Status>('loading')
   const [retry, setRetry] = useState(0)
+  const [zoomCtrl, setZoomCtrl] = useState<ZoomController | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
   // Hover popover state
@@ -478,6 +479,7 @@ export default function GraphView() {
     // Explicit defaults to make the regression-safe nature visible:
     simParams: { linkDistance: 60, chargeStrength: -120, collideRadius: 10, scaleExtent: [0.1, 8] },
     staggerEnabled: true,
+    onZoomReady: setZoomCtrl,
   })
 
   // Derive popover props from hover state + manifest
@@ -615,6 +617,34 @@ export default function GraphView() {
         categories={legendCategories}
         visible={status === 'ready' && legendCategories.length > 0}
       />
+
+      {/* Zoom controls — top-right horizontal stack */}
+      <div className={styles.zoomControls} role="group" aria-label="Zoom controls">
+        <button
+          type="button"
+          className={styles.zoomBtn}
+          onClick={() => zoomCtrl?.zoomIn()}
+          disabled={status !== 'ready'}
+          aria-label="Zoom in"
+          title="Zoom in"
+        >+</button>
+        <button
+          type="button"
+          className={styles.zoomBtn}
+          onClick={() => zoomCtrl?.zoomOut()}
+          disabled={status !== 'ready'}
+          aria-label="Zoom out"
+          title="Zoom out"
+        >−</button>
+        <button
+          type="button"
+          className={styles.zoomBtn}
+          onClick={() => zoomCtrl?.reset()}
+          disabled={status !== 'ready'}
+          aria-label="Reset zoom"
+          title="Reset zoom"
+        >reset</button>
+      </div>
 
       {/* Stats */}
       {status === 'ready' && graph && (
