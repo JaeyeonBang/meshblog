@@ -95,9 +95,9 @@ const typeTokens = [
   `  --fs-3xl:  ${t['3xl']}px;`,
   `  --fs-4xl:  ${t['4xl']}px;`,
   `  --fs-5xl:  ${t['5xl']}px;`,
-  `  --fs-hero:     clamp(44px, 6vw, 82px);`,
-  `  --fs-article:  clamp(38px, 5vw, 64px);`,
-  `  --fs-notfound: 160px;`,
+  `  --fs-hero:     clamp(36px, 4.5vw, 60px);`,
+  `  --fs-article:  clamp(30px, 3.8vw, 48px);`,
+  `  --fs-notfound: 140px;`,
 ].join('\n');
 
 // ── radius ────────────────────────────────────────────────────────────────────

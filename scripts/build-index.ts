@@ -21,39 +21,37 @@ const CONTENT_DIRS = ["content/posts", "content/notes"]
 // Future notes can override this by adding `category: <slug>` to their frontmatter.
 // Extend this map as new content domains appear in the vault.
 const TAG_TO_CATEGORY: Record<string, string> = {
-  // ── nlp ─ transformer / language model architecture
-  nlp: "nlp",
-  transformer: "nlp",
-  attention: "nlp",
-  "self-attention": "nlp",
-  "multi-head": "nlp",
-  "positional-encoding": "nlp",
-  seq2seq: "nlp",
-  rnn: "nlp",
-  "encoder-decoder": "nlp",
-  "masked-attention": "nlp",
-  // ── rl ─ reinforcement learning
-  rl: "rl",
-  ppo: "rl",
-  "deep-rl": "rl",
-  rlhf: "rl",
-  rlpr: "rl",
-  // ── agent ─ agentic systems / LLM agents
-  agent: "agent",
-  "ai-agent": "agent",
-  "agent-ai": "agent",
-  "ai agent": "agent",
-  agentic: "agent",
-  // ── fine-tuning / efficient adaptation
-  "fine-tuning": "fine-tuning",
-  finetuning: "fine-tuning",
-  lora: "fine-tuning",
-  peft: "fine-tuning",
-  // ── paper-review / survey
-  "paper-review": "paper",
-  paper: "paper",
-  survey: "paper",
-  // ── generic ML/AI (fallback for the umbrella)
+  // ── ai / ml / nlp / rl / agents (umbrella)
+  // All AI-flavoured tags route to a single "ai" category to avoid spawning
+  // empty taxonomies (nlp, rl, agent, fine-tuning, paper) that have no
+  // post-facing presence.
+  nlp: "ai",
+  transformer: "ai",
+  attention: "ai",
+  "self-attention": "ai",
+  "multi-head": "ai",
+  "positional-encoding": "ai",
+  seq2seq: "ai",
+  rnn: "ai",
+  "encoder-decoder": "ai",
+  "masked-attention": "ai",
+  rl: "ai",
+  ppo: "ai",
+  "deep-rl": "ai",
+  rlhf: "ai",
+  rlpr: "ai",
+  agent: "ai",
+  "ai-agent": "ai",
+  "agent-ai": "ai",
+  "ai agent": "ai",
+  agentic: "ai",
+  "fine-tuning": "ai",
+  finetuning: "ai",
+  lora: "ai",
+  peft: "ai",
+  "paper-review": "ai",
+  paper: "ai",
+  survey: "ai",
   rag: "ai",
   llm: "ai",
   embeddings: "ai",
@@ -77,13 +75,6 @@ const TAG_TO_CATEGORY: Record<string, string> = {
   글쓰기: "writing",
   문서화: "writing",
   지식관리: "writing",
-  // ── design / product
-  design: "design",
-  product: "product",
-  // ── ops / devops
-  ops: "ops",
-  ci: "ops",
-  deploy: "ops",
 }
 
 /** Derive a category slug from a list of tags using TAG_TO_CATEGORY. */
