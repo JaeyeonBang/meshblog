@@ -26,8 +26,6 @@ categorical:
   cat-engineering: "oklch(64% 0.14 250)"
   cat-ai:          "oklch(66% 0.15 195)"
   cat-writing:     "oklch(68% 0.12 60)"
-  cat-design:      "oklch(62% 0.13 340)"
-  cat-personal:    "oklch(67% 0.11 135)"
   cat-fallback:    "oklch(55% 0.00 0)"
   cat-c0:          "oklch(64% 0.13 0)"
   cat-c1:          "oklch(64% 0.13 30)"
@@ -45,8 +43,6 @@ darkCategorical:
   cat-engineering: "oklch(72% 0.13 250)"
   cat-ai:          "oklch(74% 0.13 195)"
   cat-writing:     "oklch(76% 0.11 60)"
-  cat-design:      "oklch(70% 0.12 340)"
-  cat-personal:    "oklch(75% 0.10 135)"
   cat-fallback:    "oklch(65% 0.00 0)"
   cat-c0:          "oklch(72% 0.13 0)"
   cat-c1:          "oklch(72% 0.13 30)"
@@ -61,8 +57,8 @@ darkCategorical:
   cat-c10:         "oklch(72% 0.13 300)"
   cat-c11:         "oklch(72% 0.13 330)"
 fonts:
-  display:    "Fraunces"
-  serif:      "Fraunces"
+  display:    "Source Serif 4"
+  serif:      "Source Serif 4"
   sans:       "Pretendard"
   mono:       "JetBrains Mono"
 scale:
@@ -132,7 +128,7 @@ Voice: a long-form essay in a small print magazine. Confident enough to use one 
 
 2. **Hover-invert.** All interactive surfaces invert on hover: background becomes `--ink`, text becomes `--paper`. No colour-shift, no underline-only, no opacity. The inversion is the signal — it reads equally well in light and dark mode.
 
-3. **Fraunces holds the page.** Headlines, drop caps, lede paragraphs, and pull-quotes are set in Fraunces (optical size axis, opsz 9–144). Don't reach for a display typeface for impact — use size, weight variation, and the opsz axis. Never gradient-fill text. Never track out all-caps headings longer than two words.
+3. **Source Serif 4 holds the page.** Headlines, drop caps, lede paragraphs, and pull-quotes are set in Source Serif 4 (optical size axis, opsz 8–60). Don't reach for a display typeface for impact — use size, weight variation, and the opsz axis. Never gradient-fill text. Never track out all-caps headings longer than two words.
 
 4. **Mono eyebrows.** Labels, categories, counts, and meta text use JetBrains Mono with `letter-spacing: 0.2em` and `text-transform: uppercase`. They are signals, not prose. Size: 11px (`--fs-xs`). This creates a clear register separation without a second sans-serif.
 

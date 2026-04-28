@@ -9,21 +9,21 @@ import { withBase } from '../../../lib/url';
     </div>
     <div class="footer-col">
       <div class="ch">read</div>
-      <a href={withBase('/posts')}>최신 posts</a>
+      <a href={withBase('/posts')}>latest posts</a>
       <a href={withBase('/atom.xml')}>atom · rss</a>
     </div>
     <div class="footer-col">
       <div class="ch">explore</div>
-      <a href={withBase('/graph')}>graph</a>
       <a href={withBase('/notes')}>notes</a>
-      <a href={withBase('/graph?mode=concept')}>개념 클러스터</a>
+      <a href={withBase('/categories')}>categories</a>
+      <a href={withBase('/graph')}>graph</a>
+      <a href={withBase('/graph?mode=concept')}>concept mesh</a>
     </div>
     <div class="footer-col">
       <div class="ch">about</div>
-      <a href={withBase('/about')}>만든 사람</a>
-      <a href={withBase('/about#colophon')}>콜로폰</a>
+      <a href={withBase('/about')}>about</a>
+      <a href={withBase('/about#colophon')}>colophon</a>
       <a href="https://github.com/JaeyeonBang/meshblog" target="_blank" rel="noopener">github</a>
-      <a href="mailto:hello@meshblog.dev">mailto</a>
     </div>
   </div>
   <div class="footer-legal">

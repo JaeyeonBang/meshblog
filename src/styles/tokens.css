@@ -17,8 +17,8 @@
   --focus-ring: oklch(45% 0.18 265);
 
   /* ── type families ────────────────────────────────────────────────────── */
-  --f-disp:  'Fraunces', 'Pretendard', Georgia, serif;
-  --f-serif: 'Fraunces', 'Pretendard', Georgia, serif;
+  --f-disp:  'Source Serif 4', 'Pretendard', Georgia, serif;
+  --f-serif: 'Source Serif 4', 'Pretendard', Georgia, serif;
   --f-sans:  'Pretendard', -apple-system, system-ui, sans-serif;
   --f-mono:  'JetBrains Mono', ui-monospace, Menlo, monospace;
 
@@ -33,9 +33,9 @@
   --fs-3xl:  31px;
   --fs-4xl:  38px;
   --fs-5xl:  54px;
-  --fs-hero:     clamp(44px, 6vw, 82px);
-  --fs-article:  clamp(38px, 5vw, 64px);
-  --fs-notfound: 160px;
+  --fs-hero:     clamp(36px, 4.5vw, 60px);
+  --fs-article:  clamp(30px, 3.8vw, 48px);
+  --fs-notfound: 140px;
 
   /* ── spacing (4-based, 11 stops) ─────────────────────────────────────── */
   --space-1: 4px;
@@ -83,8 +83,6 @@
   --cat-engineering: oklch(64% 0.14 250);
   --cat-ai: oklch(66% 0.15 195);
   --cat-writing: oklch(68% 0.12 60);
-  --cat-design: oklch(62% 0.13 340);
-  --cat-personal: oklch(67% 0.11 135);
   --cat-fallback: oklch(55% 0.00 0);
   --cat-c0: oklch(64% 0.13 0);
   --cat-c1: oklch(64% 0.13 30);
@@ -117,8 +115,6 @@
     --cat-engineering: oklch(72% 0.13 250);
     --cat-ai: oklch(74% 0.13 195);
     --cat-writing: oklch(76% 0.11 60);
-    --cat-design: oklch(70% 0.12 340);
-    --cat-personal: oklch(75% 0.10 135);
     --cat-fallback: oklch(65% 0.00 0);
     --cat-c0: oklch(72% 0.13 0);
     --cat-c1: oklch(72% 0.13 30);
@@ -151,8 +147,6 @@
     --cat-engineering: oklch(72% 0.13 250);
     --cat-ai: oklch(74% 0.13 195);
     --cat-writing: oklch(76% 0.11 60);
-    --cat-design: oklch(70% 0.12 340);
-    --cat-personal: oklch(75% 0.10 135);
     --cat-fallback: oklch(65% 0.00 0);
     --cat-c0: oklch(72% 0.13 0);
     --cat-c1: oklch(72% 0.13 30);
@@ -184,8 +178,6 @@
     --cat-engineering: oklch(64% 0.14 250);
     --cat-ai: oklch(66% 0.15 195);
     --cat-writing: oklch(68% 0.12 60);
-    --cat-design: oklch(62% 0.13 340);
-    --cat-personal: oklch(67% 0.11 135);
     --cat-fallback: oklch(55% 0.00 0);
     --cat-c0: oklch(64% 0.13 0);
     --cat-c1: oklch(64% 0.13 30);
