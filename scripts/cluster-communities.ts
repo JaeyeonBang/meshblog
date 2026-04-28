@@ -24,9 +24,7 @@ import louvain from "graphology-communities-louvain"
 // ── Cluster palette ────────────────────────────────────────────────────────────
 //
 // Canonical mapping from cluster index to (tone, strokeStyle).
-// Exported here for reference; the React-side version lives in
-// src/components/graph/cluster-palette.ts (re-exports this constant via a
-// plain TypeScript file — no Node.js imports).
+// Exported here; consumers import directly from this file.
 
 export type StrokeStyle = "solid" | "dashed" | "dotted"
 
