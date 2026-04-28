@@ -103,10 +103,13 @@ layout:
   w-search-box:    "760px"
   # Posts index: thumb (160) + gap (28) + 60ch ≈ 770. Asymmetric on 1280 page.
   w-post-list:     "770px"
-  # Reader-page right-rail order. Union set across PostSidebar.astro
-  # (1-4) and notes/[slug].astro inline aside (3-6). When a section
-  # appears, it MUST follow this index. Single source of truth.
-  aside-order:     ["categories", "tags", "related-graph", "contents", "backlinks", "concepts"]
+  # Right-rail section order. The detail page leads with Related (the graph
+  # grounds the reader in their current article); the index page leads with
+  # Categories (the dominant wayfinding tool when browsing without a target).
+  # When a section is rendered, it MUST follow the order below for its page.
+  # Single source of truth.
+  aside-order-detail: ["related-graph", "categories", "tags", "contents", "backlinks", "concepts"]
+  aside-order-index:  ["categories", "tags", "related-graph"]
 tracking:
   eyebrow: "0.2em"
   badge:   "0.14em"

@@ -2,15 +2,16 @@
 /**
  * PostSidebar.astro — right 240px aside for post reader pages.
  *
- * CANONICAL ASIDE ORDER (single source of truth: design.md → layout.aside-order)
- *   1. Categories     — site-wide list, current post's category highlighted.
- *   2. Tags           — current post's tags in sorted form.
- *   3. Related-graph  — PostMeshGraph (only when meshNodes.length > 1).
+ * CANONICAL ASIDE ORDER for DETAIL pages (single source of truth: design.md
+ * → layout.aside-order-detail). Top to bottom:
+ *   1. Related-graph  — PostMeshGraph (only when meshNodes.length > 1).
+ *   2. Categories     — site-wide list, current post's category highlighted.
+ *   3. Tags           — current post's tags in sorted form.
  *   4. Contents (TOC) — scroll-spy table of contents.
- *   (5. Backlinks, 6. Concepts — added by notes/[slug].astro inline aside.)
+ *   (5. Backlinks, 6. Concepts — only on notes/[slug].astro inline aside.)
  *
  * If you change this order, update BOTH:
- *   - design.md `layout.aside-order`
+ *   - design.md `layout.aside-order-detail`
  *   - notes/[slug].astro inline aside
  *
  * Editorial invariants honoured: #1 no hex, #2 hairline 1px, #3 hover-invert,
@@ -70,6 +71,15 @@ const categories: CategoryRow[] = FALLBACK_CATEGORIES.map((fb) => dbBySlug.get(f
 const sortedTags = [...tags].sort()
 ---
 
+<!-- ── Related mesh (conditional) ────────────────────────────────────────── -->
+{meshNodes.length > 1 && (
+  <section class="sidebar-section related-mesh-section" aria-label="related mesh">
+    <div class="section-label">related</div>
+    <PostMeshGraph nodes={meshNodes} links={meshLinks} client:visible />
+    <a class="mesh-cta" href={withBase('/graph')}>full graph →</a>
+  </section>
+)}
+
 <!-- ── Categories ─────────────────────────────────────────────────────────── -->
 <section class="sidebar-section" aria-label="categories">
   <div class="section-label">categories</div>
@@ -96,15 +106,6 @@ const sortedTags = [...tags].sort()
         <span class="sidebar-tag">{tag}</span>
       ))}
     </div>
-  </section>
-)}
-
-<!-- ── Related mesh (conditional) ────────────────────────────────────────── -->
-{meshNodes.length > 1 && (
-  <section class="sidebar-section related-mesh-section" aria-label="related mesh">
-    <div class="section-label">related</div>
-    <PostMeshGraph nodes={meshNodes} links={meshLinks} client:visible />
-    <a class="mesh-cta" href={withBase('/graph')}>full graph →</a>
   </section>
 )}
 
@@ -213,7 +214,13 @@ const sortedTags = [...tags].sort()
     border-bottom: 1px solid var(--ink-5);
     display: inline-block;
     line-height: 1.4;
-    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  }
+  /* Hover-invert (editorial invariant #3) — was missing pre-existing. */
+  .sidebar-tag:hover {
+    background: var(--ink);
+    color: var(--paper);
+    border-bottom-color: var(--ink);
   }
 
   /* ── Related mesh ──────────────────────────────────────────────────────── */

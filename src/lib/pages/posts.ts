@@ -51,6 +51,61 @@ export function listPosts(): PostRow[] {
   }
 }
 
+/**
+ * listTopTags — aggregate tag counts across a posts array (pure in-memory, no DB).
+ *
+ * Normalization: each tag is trimmed + lowercased for COUNTING, but the most-common
+ * original casing is preserved for display. Sorted by count desc, ties alphabetically.
+ * Capped at `limit` (default 16 — visual budget for ~4 rows in a 240px sidebar column).
+ */
+export function listTopTags(
+  posts: PostRow[],
+  limit = 16
+): Array<{ tag: string; count: number }> {
+  // counts keyed by normalized (trimmed + lowercase) form
+  const countByNorm = new Map<string, number>()
+  // best original casing: first occurrence wins unless a later casing appears more often
+  const canonByNorm = new Map<string, Map<string, number>>()
+
+  for (const post of posts) {
+    for (const raw of post.tags ?? []) {
+      const norm = raw.trim().toLowerCase()
+      if (!norm) continue
+      // count
+      countByNorm.set(norm, (countByNorm.get(norm) ?? 0) + 1)
+      // track per-casing frequency for display
+      if (!canonByNorm.has(norm)) canonByNorm.set(norm, new Map())
+      const casingMap = canonByNorm.get(norm)!
+      const trimmed = raw.trim()
+      casingMap.set(trimmed, (casingMap.get(trimmed) ?? 0) + 1)
+    }
+  }
+
+  // Build result: pick the most-frequent original casing for each norm key
+  const result: Array<{ tag: string; count: number }> = []
+  for (const [norm, count] of countByNorm) {
+    const casingMap = canonByNorm.get(norm)!
+    // most common original casing; tie-break by the casing string itself (stable)
+    let bestCasing = norm
+    let bestCasingCount = 0
+    for (const [casing, casingCount] of casingMap) {
+      if (casingCount > bestCasingCount || (casingCount === bestCasingCount && casing < bestCasing)) {
+        bestCasing = casing
+        bestCasingCount = casingCount
+      }
+    }
+    result.push({ tag: bestCasing, count })
+  }
+
+  // Sort by count desc, ties alphabetically (case-insensitive)
+  result.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count
+    return a.tag.toLowerCase().localeCompare(b.tag.toLowerCase())
+  })
+
+  return result.slice(0, limit)
+}
+
 export function getPostBySlug(slug: string): PostRow | null {
   const db = openReadonlyDb()
   if (!db) return null

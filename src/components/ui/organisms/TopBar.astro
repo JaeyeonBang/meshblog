@@ -1,16 +1,15 @@
 ---
 import { withBase } from '../../../lib/url';
 interface Props {
-  active?: 'posts' | 'notes' | 'categories' | 'graph' | 'about';
+  active?: 'posts' | 'notes' | 'graph' | 'about';
   showSearch?: boolean;
 }
 const { active, showSearch = true } = Astro.props;
 const links = [
-  { key: 'posts',      label: 'posts',      href: withBase('/posts') },
-  { key: 'notes',      label: 'notes',      href: withBase('/notes') },
-  { key: 'categories', label: 'categories', href: withBase('/categories') },
-  { key: 'graph',      label: 'graph',      href: withBase('/graph') },
-  { key: 'about',      label: 'about',      href: withBase('/about') },
+  { key: 'posts',  label: 'posts',  href: withBase('/posts') },
+  { key: 'notes',  label: 'notes',  href: withBase('/notes') },
+  { key: 'graph',  label: 'graph',  href: withBase('/graph') },
+  { key: 'about',  label: 'about',  href: withBase('/about') },
 ] as const;
 ---
 <header class="topbar">

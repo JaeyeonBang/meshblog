@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro'
 import PostCard from '../../components/ui/molecules/PostCard.astro'
+import PostsIndexSidebar from '../../components/ui/molecules/PostsIndexSidebar.astro'
 import { listPosts } from '../../lib/pages/index.ts'
 import type { PostRow } from '../../lib/pages/index.ts'
 import { withBase } from '../../lib/url'
@@ -36,48 +37,55 @@ const latestDate = posts.length > 0
   description="All curated posts from the meshblog vault — writing on software, systems, and ideas."
   topBarActive="posts"
 >
-  <div class="index-layout">
+  <div class="index-layout-outer">
     <header class="index-header">
       <p class="eyebrow">curated{latestDate ? ` · ${latestDate}` : ''}</p>
       <h1>posts</h1>
       <p class="stats">{count} {count === 1 ? 'entry' : 'entries'}</p>
     </header>
 
-    <main class="index-main">
-      <!-- h2 bridges h1 → h2 inside PostCard (no skip) and provides visible section label -->
-      <h2 class="section-label">all posts</h2>
-      {posts.length > 0 ? posts.map((post, i) => (
-        <PostCard
-          kind="post"
-          number={String(i + 1).padStart(2, '0')}
-          href={withBase(`/posts/${post.slug}`)}
-          title={post.title}
-          excerpt={plainExcerpt(post.content, 120)}
-          date={new Date(post.created_at).toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-          })}
-          tags={post.tags ?? []}
-          image={withBase(`/og/posts/${post.slug}.svg`)}
-          featured={i === 0}
-          badge={getPostBadge(post)}
-        />
-      )) : (
-        <p class="empty">아직 올라온 글이 없습니다 · still drafting.</p>
-      )}
-    </main>
+    <div class="index-layout">
+      <main class="index-main">
+        <!-- h2 bridges h1 → h2 inside PostCard (no skip) and provides visible section label -->
+        <h2 class="section-label">all posts</h2>
+        {posts.length > 0 ? posts.map((post, i) => (
+          <PostCard
+            kind="post"
+            number={String(i + 1).padStart(2, '0')}
+            href={withBase(`/posts/${post.slug}`)}
+            title={post.title}
+            excerpt={plainExcerpt(post.content, 120)}
+            date={new Date(post.created_at).toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+            })}
+            tags={post.tags ?? []}
+            image={withBase(`/og/posts/${post.slug}.svg`)}
+            featured={i === 0}
+            badge={getPostBadge(post)}
+          />
+        )) : (
+          <p class="empty">아직 올라온 글이 없습니다 · still drafting.</p>
+        )}
+      </main>
+
+      <aside class="reader-aside">
+        <PostsIndexSidebar posts={posts} />
+      </aside>
+    </div>
   </div>
 </Base>
 
 <style>
-  .index-layout {
+  /* ── Outer wrapper (page-level constraints) ─────────────────── */
+  .index-layout-outer {
     max-width: var(--w-page);
     margin: 0 auto;
     padding: 0 var(--space-8) var(--space-24);
   }
 
-  /* ── Page header ────────────────────────────────────────────── */
+  /* ── Page header (full-width above the grid) ─────────────────── */
   .index-header {
     padding: var(--space-12) 0 var(--space-10);
     border-bottom: 1px solid var(--ink);
@@ -123,6 +131,20 @@ const latestDate = posts.length > 0
     margin: 0;
   }
 
+  /* ── 2-column grid (main list + right aside) ─────────────────── */
+  /*
+   * Width math: page 1280, padding 2×32=64 → content 1216
+   * Aside 240 (--w-reader-side), gap 48 (--space-12)
+   * Main column: 1216 - 240 - 48 = 928. Cards cap at --w-post-list (770px).
+   * Intentional left-lean within the 928px column — editorial asymmetry.
+   */
+  .index-layout {
+    display: grid;
+    grid-template-columns: 1fr var(--w-reader-side);
+    gap: var(--space-12);
+    align-items: start;
+  }
+
   /* ── Section label (h2 visible bridge) ────────────────────── */
   .section-label {
     font-family: var(--f-mono);
@@ -134,7 +156,7 @@ const latestDate = posts.length > 0
     margin: 0 0 var(--space-4);
   }
 
-  /* ── List ───────────────────────────────────────────────────── */
+  /* ── Main post list ─────────────────────────────────────────── */
   /* --w-post-list (design.md → tokens.css). Wider than --w-prose
      because PostCards carry a 160px thumb + 28px gap on the left.
      Editorial asymmetry preserved on the 1280px page. */
@@ -144,11 +166,41 @@ const latestDate = posts.length > 0
     max-width: var(--w-post-list);
   }
 
+  /* ── Right aside ─────────────────────────────────────────────── */
+  .reader-aside {
+    padding-top: var(--space-5);
+    align-self: start;
+  }
+
   .empty {
     font-family: var(--f-serif);
     font-size: var(--fs-md);
     font-style: italic;
     color: var(--ink-3);
     padding: var(--space-6) 0;
+  }
+
+  /* ── Tablet: collapse to single column (980px) ───────────────── */
+  /*
+   * Aside gets order:1 so the post list stays first on mobile.
+   * (This is the INDEX page — posts first is the right UX.)
+   * Contrast with reader pages where order:-1 puts aside above article.
+   */
+  @media (max-width: 980px) {
+    .index-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .reader-aside {
+      order: 1;
+    }
+  }
+
+  /* ── Phone: hide aside entirely (≤779px) ─────────────────────── */
+  /* Post list IS the page on phones. Categories reachable via TopBar/CmdK. */
+  @media (max-width: 779px) {
+    .reader-aside {
+      display: none;
+    }
   }
 </style>

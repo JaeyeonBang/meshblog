@@ -1,0 +1,143 @@
+---
+/**
+ * PostsIndexSidebar.astro — right 240px aside for the /posts index page.
+ *
+ * CANONICAL INDEX ORDER (single source of truth: design.md → layout.aside-order-index)
+ *   1. Categories     — site-wide list via CategoryList.astro (no active row on index).
+ *   2. Tags           — tag cloud aggregated from posts via listTopTags(), capped at 16.
+ *   3. Related-graph  — PostMeshGraph fed by getHomeMeshNodes(); always ≥6 nodes so
+ *                       rendered unconditionally.
+ *
+ * Editorial invariants honoured: #1 no hex, #2 hairline 1px, #3 hover-invert,
+ *   #4 mono eyebrow 10px + letter-spacing:0.2em uppercase, #5 no shadow, #6 ≤4px radius.
+ */
+
+import CategoryList from './CategoryList.astro'
+import PostMeshGraph from '../../PostMeshGraph'
+import type { PostRow } from '../../../lib/pages/posts'
+import { listTopTags } from '../../../lib/pages/posts'
+import { getHomeMeshNodes } from '../../../lib/mesh-data'
+import { withBase } from '../../../lib/url'
+
+interface Props {
+  /** Full posts array already fetched by the page — avoid a second DB hit. */
+  posts: PostRow[]
+}
+
+const { posts } = Astro.props
+
+const topTags = listTopTags(posts, 16)
+const meshNodes = getHomeMeshNodes(withBase)
+const meshLinks: Array<{ source: string; target: string }> = []
+---
+
+<!-- ── 1. Categories ──────────────────────────────────────────────────────── -->
+<CategoryList limit={0} />
+
+<!-- ── 2. Tags ────────────────────────────────────────────────────────────── -->
+{topTags.length > 0 && (
+  <section class="sidebar-section" aria-label="tags">
+    <div class="section-label">tags</div>
+    <div class="tag-cloud">
+      {topTags.map(({ tag, count }) => (
+        <span class="sidebar-tag">
+          {tag}<span class="tag-count"> ({count})</span>
+        </span>
+      ))}
+    </div>
+  </section>
+)}
+
+<!-- ── 3. Related graph ───────────────────────────────────────────────────── -->
+<section class="sidebar-section related-mesh-section" aria-label="related mesh">
+  <div class="section-label">related</div>
+  <PostMeshGraph nodes={meshNodes} links={meshLinks} client:visible />
+  <a class="mesh-cta" href={withBase('/graph')}>full graph →</a>
+</section>
+
+<style>
+  /* ── Shared section chrome ─────────────────────────────────────────────── */
+  .sidebar-section {
+    margin-bottom: 36px;
+  }
+
+  .section-label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--ink);
+    font-weight: 400;
+  }
+
+  /* ── Tag cloud ─────────────────────────────────────────────────────────── */
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .sidebar-tag {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    padding: 2px 8px 3px;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--ink-5);
+    display: inline-block;
+    line-height: 1.4;
+    cursor: default;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  }
+
+  /* hover-invert (editorial invariant #3) */
+  .sidebar-tag:hover {
+    background: var(--ink);
+    color: var(--paper);
+    border-bottom-color: var(--ink);
+  }
+
+  .sidebar-tag:hover .tag-count {
+    color: var(--paper-2);
+  }
+
+  .tag-count {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    font-weight: 400;
+    color: var(--ink-3);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  /* ── Related mesh ──────────────────────────────────────────────────────── */
+  .mesh-cta {
+    display: block;
+    margin-top: 10px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .mesh-cta:hover {
+    color: var(--ink);
+  }
+
+  .mesh-cta:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Hide graph section on mobile */
+  @media (max-width: 779px) {
+    .related-mesh-section {
+      display: none;
+    }
+  }
+</style>
