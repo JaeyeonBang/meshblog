@@ -110,7 +110,7 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
         depthBtn.textContent = next ? '− depth' : '+ depth'
       })
 
-      // Desktop default: open (SSR ships aria-expanded="true").
+      // Desktop default: depth segments visible (SSR ships aria-expanded="true").
       // Mobile default: collapse on first paint — reduces visible clusters from 6 to 3-4.
       // Only applied once on init; does NOT re-fire on resize so user manual toggles survive.
       const isMobile = window.matchMedia('(max-width: 780px)').matches
@@ -119,6 +119,13 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
         levelGroup.hidden = true
         if (levelCaption) levelCaption.hidden = true
         depthBtn.textContent = '+ depth'
+      } else {
+        // Desktop: lock the expanded state explicitly so reloads or
+        // re-runs (astro:page-load) never accidentally inherit a collapsed flag.
+        depthBtn.setAttribute('aria-expanded', 'true')
+        levelGroup.hidden = false
+        if (levelCaption) levelCaption.hidden = false
+        depthBtn.textContent = '− depth'
       }
     }
 

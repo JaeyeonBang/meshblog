@@ -8,7 +8,8 @@
  *   2. Categories     — site-wide list, current post's category highlighted.
  *   3. Tags           — current post's tags in sorted form.
  *   4. Contents (TOC) — scroll-spy table of contents.
- *   (5. Backlinks, 6. Concepts — only on notes/[slug].astro inline aside.)
+ *   5. Concept-graph  — sticky-bottom PostConceptGraph (only when conceptGraph
+ *      has nodes). Uses /graph?mode=concept&level=3 visual contract.
  *
  * If you change this order, update BOTH:
  *   - design.md `layout.aside-order-detail`
@@ -20,9 +21,10 @@
 
 import TOC from './TOC.astro'
 import PostMeshGraph from '../../PostMeshGraph'
+import PostConceptGraph from '../../PostConceptGraph'
 import { listCategories } from '../../../lib/pages/index'
 import type { CategoryRow } from '../../../lib/pages/index'
-import type { MeshNode } from '../../../lib/mesh-data'
+import type { MeshNode, PostConceptGraph as PostConceptGraphData } from '../../../lib/mesh-data'
 import { withBase } from '../../../lib/url'
 import { formatCategoryName } from '../../../lib/categories/display-name'
 
@@ -46,9 +48,11 @@ interface Props {
   tocItems: TocItem[]
   /** current post slug (unused here but forwarded for future use) */
   slug: string
+  /** Per-post concept subgraph (sticky-bottom block). Optional — hidden when empty. */
+  conceptGraph?: PostConceptGraphData
 }
 
-const { currentCategory, tags, meshNodes, meshLinks, tocItems } = Astro.props
+const { currentCategory, tags, meshNodes, meshLinks, tocItems, conceptGraph } = Astro.props
 
 const allCategories: CategoryRow[] = listCategories()
 
@@ -103,7 +107,7 @@ const sortedTags = [...tags].sort()
     <div class="section-label">tags</div>
     <div class="tag-cloud">
       {sortedTags.map((tag) => (
-        <span class="sidebar-tag">{tag}</span>
+        <a class="sidebar-tag" href={`${withBase('/posts')}?tag=${encodeURIComponent(tag)}`}>{tag}</a>
       ))}
     </div>
   </section>
@@ -111,6 +115,19 @@ const sortedTags = [...tags].sort()
 
 <!-- ── TOC ────────────────────────────────────────────────────────────────── -->
 <TOC label="contents" items={tocItems} />
+
+<!-- ── Sticky concept graph (Task 7-2) ──────────────────────────────────── -->
+{conceptGraph && conceptGraph.nodes.length > 0 && (
+  <section class="sidebar-section sticky-concept-section" aria-label="post concept graph">
+    <div class="section-label">concepts in this post</div>
+    <PostConceptGraph
+      nodes={conceptGraph.nodes}
+      links={conceptGraph.links}
+      client:visible
+    />
+    <p class="concept-meta">{conceptGraph.nodes.length} concepts · {conceptGraph.links.length} links</p>
+  </section>
+)}
 
 <style>
   /* ── Shared section chrome ─────────────────────────────────────────────── */
@@ -214,13 +231,18 @@ const sortedTags = [...tags].sort()
     border-bottom: 1px solid var(--ink-5);
     display: inline-block;
     line-height: 1.4;
+    text-decoration: none;
     transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
   }
-  /* Hover-invert (editorial invariant #3) — was missing pre-existing. */
+  /* Hover-invert (editorial invariant #3) */
   .sidebar-tag:hover {
     background: var(--ink);
     color: var(--paper);
     border-bottom-color: var(--ink);
+  }
+  .sidebar-tag:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   /* ── Related mesh ──────────────────────────────────────────────────────── */
@@ -248,6 +270,30 @@ const sortedTags = [...tags].sort()
   /* Hide graph on mobile; rest stays in flow */
   @media (max-width: 779px) {
     .related-mesh-section {
+      display: none;
+    }
+  }
+
+  /* ── Sticky concept graph (Task 7-2) ──────────────────────────────────── */
+  .sticky-concept-section {
+    position: sticky;
+    bottom: var(--space-4);
+    background: var(--paper);
+    padding-top: var(--space-3);
+    margin-top: var(--space-8);
+  }
+
+  .concept-meta {
+    margin: var(--space-2) 0 0;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  @media (max-width: 779px) {
+    .sticky-concept-section {
       display: none;
     }
   }

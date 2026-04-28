@@ -41,33 +41,47 @@ const latestDate = posts.length > 0
     <header class="index-header">
       <p class="eyebrow">curated{latestDate ? ` · ${latestDate}` : ''}</p>
       <h1>posts</h1>
-      <p class="stats">{count} {count === 1 ? 'entry' : 'entries'}</p>
+      <p class="stats">
+        <span data-stats-count>{count}</span>
+        <span> {count === 1 ? 'entry' : 'entries'}</span>
+      </p>
     </header>
+
+    <!-- Active-tag chip — populated client-side from ?tag= search param -->
+    <div class="filter-bar" data-filter-bar hidden>
+      <span class="filter-label">filtered by</span>
+      <span class="filter-tag" data-filter-tag></span>
+      <a class="filter-clear" href={withBase('/posts')} data-filter-clear>clear ×</a>
+    </div>
 
     <div class="index-layout">
       <main class="index-main">
         <!-- h2 bridges h1 → h2 inside PostCard (no skip) and provides visible section label -->
         <h2 class="section-label">all posts</h2>
-        {posts.length > 0 ? posts.map((post, i) => (
-          <PostCard
-            kind="post"
-            number={String(i + 1).padStart(2, '0')}
-            href={withBase(`/posts/${post.slug}`)}
-            title={post.title}
-            excerpt={plainExcerpt(post.content, 120)}
-            date={new Date(post.created_at).toLocaleDateString('ko-KR', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-            })}
-            tags={post.tags ?? []}
-            image={withBase(`/og/posts/${post.slug}.svg`)}
-            featured={i === 0}
-            badge={getPostBadge(post)}
-          />
-        )) : (
-          <p class="empty">아직 올라온 글이 없습니다 · still drafting.</p>
-        )}
+        <div data-posts-list>
+          {posts.length > 0 ? posts.map((post, i) => (
+            <PostCard
+              kind="post"
+              number={String(i + 1).padStart(2, '0')}
+              href={withBase(`/posts/${post.slug}`)}
+              title={post.title}
+              excerpt={plainExcerpt(post.content, 120)}
+              date={new Date(post.created_at).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+              })}
+              tags={post.tags ?? []}
+              image={withBase(`/og/posts/${post.slug}.svg`)}
+              featured={i === 0}
+              badge={getPostBadge(post)}
+              tagsAsLinks={true}
+            />
+          )) : (
+            <p class="empty">아직 올라온 글이 없습니다 · still drafting.</p>
+          )}
+        </div>
+        <p class="empty" data-no-results hidden>이 태그가 달린 글이 없습니다 · no posts with this tag.</p>
       </main>
 
       <aside class="reader-aside">
@@ -76,6 +90,92 @@ const latestDate = posts.length > 0
     </div>
   </div>
 </Base>
+
+<script>
+  (function () {
+    const params = new URLSearchParams(window.location.search)
+    const activeTag = params.get('tag')
+
+    const bar = document.querySelector<HTMLElement>('[data-filter-bar]')
+    const tagEl = document.querySelector<HTMLElement>('[data-filter-tag]')
+    const cards = document.querySelectorAll<HTMLElement>('[data-post-card]')
+    const noResults = document.querySelector<HTMLElement>('[data-no-results]')
+    const countEl = document.querySelector<HTMLElement>('[data-stats-count]')
+    const totalCount = cards.length
+
+    function applyFilter(tag: string | null) {
+      let visible = 0
+      cards.forEach((card) => {
+        // Tags joined with U+001F (unit separator) so a literal "|" in a tag
+        // can't mis-split. Empty data-tags (no tags) → empty array.
+        const tags = (card.getAttribute('data-tags') || '').split('').filter(Boolean)
+        const match = !tag || tags.includes(tag)
+        card.hidden = !match
+        if (match) {
+          visible++
+          // First *visible* card becomes the leader (large h2 + extra padding),
+          // not just the SSR-first card. After filtering, the new leader takes
+          // over so the list never looks decapitated.
+          card.classList.toggle('featured', visible === 1)
+        }
+      })
+      if (countEl) countEl.textContent = String(visible)
+      if (noResults) noResults.hidden = visible !== 0
+    }
+
+    if (activeTag) {
+      if (bar && tagEl) {
+        tagEl.textContent = `#${activeTag}`
+        bar.hidden = false
+      }
+      applyFilter(activeTag)
+    }
+
+    document.querySelectorAll<HTMLAnchorElement>('a[data-tag-filter]').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault()
+        const tag = a.getAttribute('data-tag-filter')
+        if (!tag) return
+        const url = new URL(window.location.href)
+        url.searchParams.set('tag', tag)
+        history.pushState(null, '', url.toString())
+        if (bar && tagEl) {
+          tagEl.textContent = `#${tag}`
+          bar.hidden = false
+        }
+        applyFilter(tag)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      })
+    })
+
+    const clearEl = document.querySelector<HTMLAnchorElement>('[data-filter-clear]')
+    if (clearEl) {
+      clearEl.addEventListener('click', (e) => {
+        e.preventDefault()
+        const url = new URL(window.location.href)
+        url.searchParams.delete('tag')
+        history.pushState(null, '', url.pathname + url.hash)
+        if (bar) bar.hidden = true
+        applyFilter(null)
+        if (countEl) countEl.textContent = String(totalCount)
+      })
+    }
+
+    window.addEventListener('popstate', () => {
+      const t = new URLSearchParams(window.location.search).get('tag')
+      if (t) {
+        if (bar && tagEl) {
+          tagEl.textContent = `#${t}`
+          bar.hidden = false
+        }
+        applyFilter(t)
+      } else {
+        if (bar) bar.hidden = true
+        applyFilter(null)
+      }
+    })
+  })()
+</script>
 
 <style>
   /* ── Outer wrapper (page-level constraints) ─────────────────── */
@@ -129,6 +229,48 @@ const latestDate = posts.length > 0
     letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     margin: 0;
+  }
+
+  /* ── Filter bar (active tag chip) ────────────────────────── */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--ink);
+    margin-bottom: var(--space-8);
+    max-width: var(--w-prose);
+  }
+  .filter-label {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .filter-tag {
+    font-family: var(--f-mono);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .filter-clear {
+    margin-left: auto;
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-decoration: none;
+    border: 1px solid var(--ink-5);
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all var(--dur-fast) var(--ease);
+  }
+  .filter-clear:hover {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
   }
 
   /* ── 2-column grid (main list + right aside) ─────────────────── */
