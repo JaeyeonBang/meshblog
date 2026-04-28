@@ -86,7 +86,7 @@ export function useForceSimulation(
     const nodes: SimNode[] = graph.nodes.map(n => ({ ...n }))
     const linkMap = new Map(nodes.map(n => [n.id, n]))
     const links: SimLink[] = graph.links
-      .map(l => {
+      .map((l): SimLink | null => {
         const sourceId = typeof l.source === 'string' ? l.source : l.source.id
         const targetId = typeof l.target === 'string' ? l.target : l.target.id
         const s = linkMap.get(sourceId)

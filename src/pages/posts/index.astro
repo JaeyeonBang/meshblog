@@ -108,7 +108,7 @@ const latestDate = posts.length > 0
       cards.forEach((card) => {
         // Tags joined with U+001F (unit separator) so a literal "|" in a tag
         // can't mis-split. Empty data-tags (no tags) → empty array.
-        const tags = (card.getAttribute('data-tags') || '').split('').filter(Boolean)
+        const tags = (card.getAttribute('data-tags') || '').split('\u001F').filter(Boolean)
         const match = !tag || tags.includes(tag)
         card.hidden = !match
         if (match) {
