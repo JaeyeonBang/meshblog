@@ -139,7 +139,7 @@
 
 .svg :global(.links line) {
   stroke: var(--ink-3);
-  stroke-opacity: 0.55;
+  stroke-opacity: 0.75;
   stroke-width: 1px;
   transition: stroke-opacity 120ms var(--ease), stroke-width 120ms var(--ease), stroke 120ms var(--ease);
 }
@@ -149,7 +149,7 @@
 .svg :global(.links line[data-edge-type="mentions"]) {
   stroke: var(--ink-4);
   stroke-dasharray: 3 2;
-  stroke-opacity: 0.5;
+  stroke-opacity: 0.7;
 }
 
 /* Edge hover states: incident edges pop; non-incident edges dim */
@@ -421,4 +421,61 @@
 .svg :global(.nodes circle[data-cluster="9"]) {
   stroke: var(--ink-5);
   stroke-dasharray: 2 2;
+}
+
+/* ── Zoom controls (top-right, horizontal) ────────────────────────── */
+.zoomControls {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-4);
+  display: flex;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  z-index: 10;
+}
+
+.zoomBtn {
+  font-family: var(--f-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  font-weight: 500;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 0;
+  border-right: 1px solid var(--ink);
+  cursor: pointer;
+  line-height: 1;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.zoomBtn:last-child {
+  border-right: 0;
+}
+
+.zoomBtn:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.zoomBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.zoomBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 780px) {
+  .zoomBtn {
+    min-width: 32px;
+    height: 32px;
+  }
 }

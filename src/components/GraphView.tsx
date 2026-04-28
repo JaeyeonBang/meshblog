@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import type { GraphJson, Manifest, GraphNode, NodeKind } from './graph/types'
 import { useForceSimulation } from './graph/useForceSimulation'
-import type { HoverState } from './graph/useForceSimulation'
+import type { HoverState, ZoomController } from './graph/useForceSimulation'
 import { HoverCard } from './graph/HoverCard'
 import { Legend } from './graph/Legend'
 import type { LegendCategory } from './graph/Legend'
@@ -185,6 +185,7 @@ export default function GraphView() {
   const [manifest, setManifest] = useState<Manifest>({})
   const [status, setStatus] = useState<Status>('loading')
   const [retry, setRetry] = useState(0)
+  const [zoomCtrl, setZoomCtrl] = useState<ZoomController | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
   // Hover popover state
@@ -478,6 +479,7 @@ export default function GraphView() {
     // Explicit defaults to make the regression-safe nature visible:
     simParams: { linkDistance: 60, chargeStrength: -120, collideRadius: 10, scaleExtent: [0.1, 8] },
     staggerEnabled: true,
+    onZoomReady: setZoomCtrl,
   })
 
   // Derive popover props from hover state + manifest
@@ -485,9 +487,43 @@ export default function GraphView() {
   const hoverExcerpt = hoveredEntry?.excerpt ?? null
   const hoverHref = hoveredEntry ? withBase(hoveredEntry.href) : null
 
-  // Derive legend categories from currently visible graph nodes (notes mode only)
+  // Derive legend categories from currently visible graph nodes.
+  //   - notes mode: group by categorySlug (existing behaviour)
+  //   - concept mode: group by Louvain cluster index, label each bucket with
+  //     the highest-pagerank concept in that cluster so the legend reads as
+  //     a community key rather than anonymous "Cluster 0..N".
   const legendCategories = useMemo<LegendCategory[]>(() => {
-    if (!graph || mode === 'concept') return []
+    if (!graph) return []
+
+    if (mode === 'concept') {
+      // Bucket nodes by cluster index. cluster mod 12 mirrors what
+      // useForceSimulation writes to data-cat-idx so legend dots line up
+      // with circle fills.
+      const buckets = new Map<number, { count: number; rep: string; pagerank: number }>()
+      for (const node of graph.nodes) {
+        if (node.cluster == null) continue
+        const idx = node.cluster % 12
+        const cur = buckets.get(idx)
+        const pr = node.pagerank ?? 0
+        if (!cur) {
+          buckets.set(idx, { count: 1, rep: node.label, pagerank: pr })
+        } else {
+          cur.count++
+          if (pr > cur.pagerank) {
+            cur.rep = node.label
+            cur.pagerank = pr
+          }
+        }
+      }
+      return [...buckets.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([idx, info]) => ({
+          slug: `__idx:${idx}`,
+          label: info.rep,
+          count: info.count,
+        }))
+    }
+
     const counts = new Map<string, number>()
     for (const node of graph.nodes) {
       if (node.type !== 'note') continue
@@ -576,11 +612,39 @@ export default function GraphView() {
         incidentEdges={hoverState?.incident}
       />
 
-      {/* Category color legend — hidden in concept mode */}
+      {/* Color legend — categories in notes mode, clusters in concept mode */}
       <Legend
         categories={legendCategories}
-        visible={mode !== 'concept' && status === 'ready'}
+        visible={status === 'ready' && legendCategories.length > 0}
       />
+
+      {/* Zoom controls — top-right horizontal stack */}
+      <div className={styles.zoomControls} role="group" aria-label="Zoom controls">
+        <button
+          type="button"
+          className={styles.zoomBtn}
+          onClick={() => zoomCtrl?.zoomIn()}
+          disabled={status !== 'ready'}
+          aria-label="Zoom in"
+          title="Zoom in"
+        >+</button>
+        <button
+          type="button"
+          className={styles.zoomBtn}
+          onClick={() => zoomCtrl?.zoomOut()}
+          disabled={status !== 'ready'}
+          aria-label="Zoom out"
+          title="Zoom out"
+        >−</button>
+        <button
+          type="button"
+          className={styles.zoomBtn}
+          onClick={() => zoomCtrl?.reset()}
+          disabled={status !== 'ready'}
+          aria-label="Reset zoom"
+          title="Reset zoom"
+        >reset</button>
+      </div>
 
       {/* Stats */}
       {status === 'ready' && graph && (
