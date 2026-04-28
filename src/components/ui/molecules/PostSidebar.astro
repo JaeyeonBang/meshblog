@@ -2,11 +2,16 @@
 /**
  * PostSidebar.astro — right 240px aside for post reader pages.
  *
- * Always rendered sections (mesh-independent):
- *   1. Categories — site-wide list, current post's category highlighted.
- *   2. Tags       — current post's tags in sorted form.
- *   3. Related    — PostMeshGraph (only when meshNodes.length > 1).
- *   4. TOC        — existing scroll-spy table of contents.
+ * CANONICAL ASIDE ORDER (single source of truth: design.md → layout.aside-order)
+ *   1. Categories     — site-wide list, current post's category highlighted.
+ *   2. Tags           — current post's tags in sorted form.
+ *   3. Related-graph  — PostMeshGraph (only when meshNodes.length > 1).
+ *   4. Contents (TOC) — scroll-spy table of contents.
+ *   (5. Backlinks, 6. Concepts — added by notes/[slug].astro inline aside.)
+ *
+ * If you change this order, update BOTH:
+ *   - design.md `layout.aside-order`
+ *   - notes/[slug].astro inline aside
  *
  * Editorial invariants honoured: #1 no hex, #2 hairline 1px, #3 hover-invert,
  *   #4 mono eyebrow 10px + letter-spacing:0.2em uppercase, #5 no shadow, #6 ≤4px radius.

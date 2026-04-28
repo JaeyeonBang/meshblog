@@ -413,11 +413,17 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
   }
 
   /* ── Reader aside ──────────────────────────────────────────── */
+  /* Sticky aside can exceed viewport (categories + tags + graph + TOC).
+     max-height + overflow-y keeps the bottom items reachable. */
   .reader-aside {
     align-self: start;
     position: sticky;
     top: 96px;
     padding-top: var(--space-5);
+    max-height: calc(100vh - 96px - var(--space-8));
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
   }
 
   /* ── Page QA wrapper ───────────────────────────────────────── */

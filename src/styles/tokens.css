@@ -72,6 +72,7 @@
   --w-reader-side:   240px;
   --w-graph-side:    300px;
   --w-search-box:    760px;
+  --w-post-list:     770px;
 
   /* ── letter-spacing (3 semantic tracking tokens) ─────────────────────── */
   --track-eyebrow: 0.2em;   /* free-standing eyebrow labels */

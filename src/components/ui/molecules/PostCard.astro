@@ -12,6 +12,9 @@ interface Props {
   readingTime?: string;
   tags?: string[];
   thumb?: boolean;
+  /** Real cover image URL. When set, renders <img>; otherwise falls back
+   *  to the hatched `og · NN` placeholder when `thumb` is also true. */
+  image?: string;
   featured?: boolean;
   badge?: 'new' | 'updated' | null;
   style?: string;
@@ -26,17 +29,19 @@ const {
   readingTime,
   tags = [],
   thumb = false,
+  image,
   featured = false,
   badge = null,
   style,
 } = Astro.props;
+const showThumb = thumb || !!image;
 const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boolean).join('  ·  ');
 ---
-<a class:list={['post-card', thumb && 'with-thumb', featured && 'featured']} href={href} style={style}>
-  {thumb && (
-    <div class="thumb">
-      <span>og · {number}</span>
-    </div>
+<a class:list={['post-card', showThumb && 'with-thumb', featured && 'featured']} href={href} style={style}>
+  {showThumb && (
+    image
+      ? <div class="thumb thumb--image"><img src={image} alt="" loading="lazy" /></div>
+      : <div class="thumb"><span>og · {number}</span></div>
   )}
   <div>
     <div class="head">
@@ -186,9 +191,20 @@ const meta = [date, readingTime ? `${readingTime} min` : undefined].filter(Boole
     font-size: 10px;
     color: var(--ink);
     letter-spacing: 0.1em;
+    overflow: hidden;
   }
   .thumb span {
     background: var(--paper);
     padding: 2px 6px;
+  }
+  .thumb--image {
+    background: var(--paper);
+    padding: 0;
+  }
+  .thumb--image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 </style>

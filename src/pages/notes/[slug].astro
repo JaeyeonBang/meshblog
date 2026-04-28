@@ -469,12 +469,24 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
   }
 
   /* ── Reader aside ──────────────────────────────────────────── */
+  /* Sticky aside is taller than viewport once graph + TOC + backlinks
+     + concepts stack up. Without max-height + overflow-y, the bottom
+     of the rail is unreachable. */
   .reader-aside {
     align-self: start;
     position: sticky;
     top: 96px;
     padding-top: var(--space-5);
+    max-height: calc(100vh - 96px - var(--space-8));
+    overflow-y: auto;
+    /* Hide scrollbar visual until hover, keeps editorial calm */
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
   }
+
+  /* Canonical aside order — keep parallel with PostSidebar.astro:
+     1. related (graph)  2. contents (TOC)  3. referenced by (backlinks)
+     4. concepts. design.md layout.aside-order is the source of truth. */
 
   /* ── Page QA wrapper ───────────────────────────────────────── */
   .page-qa-wrapper {

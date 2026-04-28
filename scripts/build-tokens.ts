@@ -253,6 +253,7 @@ ${radiusTokens}
   --w-reader-side:   ${layout['w-reader-side']};
   --w-graph-side:    ${layout['w-graph-side']};
   --w-search-box:    ${layout['w-search-box']};
+  --w-post-list:     ${layout['w-post-list']};
 ${Object.keys(tracking).length > 0 ? `
   /* ── letter-spacing (3 semantic tracking tokens) ─────────────────────── */
   --track-eyebrow: ${tracking.eyebrow ?? '0.2em'};   /* free-standing eyebrow labels */

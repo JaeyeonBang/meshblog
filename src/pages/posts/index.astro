@@ -59,6 +59,7 @@ const latestDate = posts.length > 0
             day: '2-digit',
           })}
           tags={post.tags ?? []}
+          image={withBase(`/og/posts/${post.slug}.svg`)}
           featured={i === 0}
           badge={getPostBadge(post)}
         />
@@ -134,10 +135,13 @@ const latestDate = posts.length > 0
   }
 
   /* ── List ───────────────────────────────────────────────────── */
+  /* --w-post-list (design.md → tokens.css). Wider than --w-prose
+     because PostCards carry a 160px thumb + 28px gap on the left.
+     Editorial asymmetry preserved on the 1280px page. */
   .index-main {
     display: flex;
     flex-direction: column;
-    max-width: var(--w-prose);
+    max-width: var(--w-post-list);
   }
 
   .empty {
