@@ -4,6 +4,9 @@ import * as d3Force from 'd3-force'
 import * as d3Selection from 'd3-selection'
 import * as d3Zoom from 'd3-zoom'
 import * as d3Drag from 'd3-drag'
+// d3-transition has no module export; importing for side-effects augments
+// d3-selection's Selection type with .interrupt() and .transition().
+import 'd3-transition'
 import type { GraphNode, GraphLink, GraphJson, IncidentEdge, IncidentEdgeList } from './types'
 import { paletteIndexFor } from './categoryPalette'
 
@@ -391,16 +394,12 @@ export function useForceSimulation(
     svg.call(zoomBehavior)
 
     // Build and expose ZoomController via callback.
-    // d3-transition is a transitive dep but has no @types — cast through unknown to avoid
-    // TS2339 on .interrupt()/.transition(). Runtime behaviour is correct.
-    const svgTrans = svg as unknown as {
-      interrupt(): void
-      transition(): { duration(ms: number): { call(fn: (...a: unknown[]) => void, ...args: unknown[]): void } }
-    }
+    // d3-transition's side-effect import (top of file) augments Selection
+    // with .interrupt() and .transition(), so no casts needed here.
     const zoomController: ZoomController = {
-      zoomIn:  () => { svgTrans.interrupt(); svgTrans.transition().duration(180).call(zoomBehavior.scaleBy as never, 1.4) },
-      zoomOut: () => { svgTrans.interrupt(); svgTrans.transition().duration(180).call(zoomBehavior.scaleBy as never, 1 / 1.4) },
-      reset:   () => { svgTrans.interrupt(); svgTrans.transition().duration(220).call(zoomBehavior.transform as never, d3Zoom.zoomIdentity) },
+      zoomIn:  () => { svg.interrupt(); zoomBehavior.scaleBy(svg.transition().duration(180), 1.4) },
+      zoomOut: () => { svg.interrupt(); zoomBehavior.scaleBy(svg.transition().duration(180), 1 / 1.4) },
+      reset:   () => { svg.interrupt(); zoomBehavior.transform(svg.transition().duration(220), d3Zoom.zoomIdentity) },
     }
     opts.onZoomReady?.(zoomController)
 
