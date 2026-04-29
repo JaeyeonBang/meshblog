@@ -19,7 +19,8 @@ import * as d3Force from 'd3-force'
 import * as d3Selection from 'd3-selection'
 import * as d3Drag from 'd3-drag'
 import * as d3Zoom from 'd3-zoom'
-import styles from './PostMeshGraph.module.css'
+import meshStyles from './PostMeshGraph.module.css'
+import conceptStyles from './PostConceptGraph.module.css'
 import './PostConceptGraph.css'
 
 export type ConceptNode = {
@@ -35,6 +36,7 @@ export type ConceptLink = { source: string; target: string; weight: number }
 type Props = {
   nodes: ConceptNode[]
   links: ConceptLink[]
+  size?: 'compact' | 'inline'
 }
 
 type SimNode = d3Force.SimulationNodeDatum & ConceptNode
@@ -56,6 +58,14 @@ const COMPACT_MODE: Mode = {
   chargeStrength: -180,
 }
 
+const INLINE_MODE: Mode = {
+  canvas: 720,
+  fontSize: 12,
+  baseRadius: 7,
+  linkDistance: 90,
+  chargeStrength: -260,
+}
+
 const EXPANDED_MODE: Mode = {
   canvas: 720,
   fontSize: 12,
@@ -73,6 +83,8 @@ function radiusOf(n: ConceptNode, mode: Mode): number {
 
 function GraphCanvas({ nodes, links, mode }: { nodes: ConceptNode[]; links: ConceptLink[]; mode: Mode }) {
   const svgRef = useRef<SVGSVGElement>(null)
+  const zoomRef = useRef<d3Zoom.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const svgEl = svgRef.current
@@ -105,6 +117,9 @@ function GraphCanvas({ nodes, links, mode }: { nodes: ConceptNode[]; links: Conc
       .stop()
 
     for (let i = 0; i < 200; i++) sim.tick()
+
+    // Mark simulation as ready for zoom buttons
+    setReady(true)
 
     const svg = d3Selection.select(svgEl)
     svg.selectAll('*').remove()
@@ -191,28 +206,80 @@ function GraphCanvas({ nodes, links, mode }: { nodes: ConceptNode[]; links: Conc
         root.attr('transform', event.transform.toString())
       })
 
+    // Attach to ref before calling svg.call so buttons can use it
+    zoomRef.current = zoomBehavior
     svg.call(zoomBehavior)
 
     return () => {
       sim.stop()
       svg.on('.zoom', null)
       svg.selectAll('*').remove()
+      setReady(false)
     }
   }, [nodes, links, mode])
 
+  function handleZoomIn() {
+    const svgEl = svgRef.current
+    const zb = zoomRef.current
+    if (!svgEl || !zb) return
+    d3Selection.select(svgEl).transition().duration(160).call(zb.scaleBy, 1.4)
+  }
+
+  function handleZoomOut() {
+    const svgEl = svgRef.current
+    const zb = zoomRef.current
+    if (!svgEl || !zb) return
+    d3Selection.select(svgEl).transition().duration(160).call(zb.scaleBy, 1 / 1.4)
+  }
+
+  function handleZoomReset() {
+    const svgEl = svgRef.current
+    const zb = zoomRef.current
+    if (!svgEl || !zb) return
+    d3Selection.select(svgEl).transition().duration(160).call(zb.transform, d3Zoom.zoomIdentity)
+  }
+
   return (
-    <svg
-      ref={svgRef}
-      viewBox={`0 0 ${mode.canvas} ${mode.canvas}`}
-      preserveAspectRatio="xMidYMid meet"
-      className={styles.svg}
-      aria-label="post concept graph"
-      role="img"
-    />
+    <>
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${mode.canvas} ${mode.canvas}`}
+        preserveAspectRatio="xMidYMid meet"
+        className={meshStyles.svg}
+        aria-label="post concept graph"
+        role="img"
+      />
+      <div className={conceptStyles.zoomControls} role="group" aria-label="Zoom controls">
+        <button
+          type="button"
+          className={conceptStyles.zoomBtn}
+          onClick={handleZoomIn}
+          disabled={!ready}
+          aria-label="Zoom in"
+          title="Zoom in"
+        >+</button>
+        <button
+          type="button"
+          className={conceptStyles.zoomBtn}
+          onClick={handleZoomOut}
+          disabled={!ready}
+          aria-label="Zoom out"
+          title="Zoom out"
+        >−</button>
+        <button
+          type="button"
+          className={conceptStyles.zoomBtn}
+          onClick={handleZoomReset}
+          disabled={!ready}
+          aria-label="Reset zoom"
+          title="Reset zoom"
+        >1:1</button>
+      </div>
+    </>
   )
 }
 
-export default function PostConceptGraph({ nodes, links }: Props) {
+export default function PostConceptGraph({ nodes, links, size = 'compact' }: Props) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
@@ -231,12 +298,22 @@ export default function PostConceptGraph({ nodes, links }: Props) {
 
   if (nodes.length === 0) return null
 
+  // Inline mode: full-width canvas with zoom buttons, no expand button, no modal
+  if (size === 'inline') {
+    return (
+      <div className={conceptStyles.inlineWrap}>
+        <GraphCanvas key="inline" nodes={nodes} links={links} mode={INLINE_MODE} />
+      </div>
+    )
+  }
+
+  // Compact mode (default): sidebar wrap with expand button + modal
   return (
     <>
-      <div className={styles.wrap}>
+      <div className={meshStyles.wrap}>
         <button
           type="button"
-          className={styles.expandBtn}
+          className={meshStyles.expandBtn}
           onClick={() => setIsExpanded(true)}
           aria-label="크게 보기"
           title="크게 보기"
@@ -250,7 +327,7 @@ export default function PostConceptGraph({ nodes, links }: Props) {
 
       {isExpanded && (
         <div
-          className={styles.modal}
+          className={meshStyles.modal}
           role="dialog"
           aria-modal="true"
           aria-label="concept graph 확대 보기"
@@ -258,10 +335,10 @@ export default function PostConceptGraph({ nodes, links }: Props) {
             if (e.target === e.currentTarget) setIsExpanded(false)
           }}
         >
-          <div className={styles.modalInner}>
+          <div className={meshStyles.modalInner}>
             <button
               type="button"
-              className={styles.closeBtn}
+              className={meshStyles.closeBtn}
               onClick={() => setIsExpanded(false)}
               aria-label="닫기"
               title="닫기 (Esc)"

@@ -273,11 +273,10 @@ const sortedTags = [...tags].sort()
 
   /* ── Sticky concept graph (Task 7-2) ──────────────────────────────────── */
   .sticky-concept-section {
-    position: sticky;
-    bottom: var(--space-4);
-    background: var(--paper);
-    padding-top: var(--space-3);
+    /* class name retained to avoid markup churn — the section is now in normal flow */
     margin-top: var(--space-8);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--rule-soft);
   }
 
   .concept-meta {

@@ -120,8 +120,11 @@ describe("#7 post page has related-mesh + concept-graph", () => {
     expect(POST_SIDEBAR).toMatch(/conceptGraph\.nodes\.length\s*>\s*1/)
   })
 
-  it("concept graph section is sticky-bottom (sticky-concept-section)", () => {
-    expect(POST_SIDEBAR).toMatch(/sticky-concept-section[\s\S]*position:\s*sticky/)
+  it("concept graph section keeps the .sticky-concept-section class (markup contract)", () => {
+    // The class name is retained even though sticky was dropped (reader-polish
+    // Lane A) — see assertion in `reader-polish A` describe block for the
+    // affirmative "no position: sticky" check.
+    expect(POST_SIDEBAR).toMatch(/sticky-concept-section/)
   })
 
   it("PostConceptGraph component supports compact + expanded modes", () => {
@@ -250,5 +253,116 @@ describe("additional QA findings", () => {
     if (slug.includes("import { stripLeadingH1 }")) {
       expect(slug, "import is dead — drop it").toMatch(/stripLeadingH1\(/)
     }
+  })
+})
+
+// ── 2026-04-29 reader polish — Lane A · sticky drop ─────────────────────────
+describe("reader-polish A: PostSidebar concept-graph in normal flow", () => {
+  it("PostSidebar.astro contains no `position: sticky` declaration", () => {
+    expect(POST_SIDEBAR).not.toMatch(/position\s*:\s*sticky/)
+  })
+
+  it("the sticky-concept-section class survives but is now flow-positioned", () => {
+    expect(POST_SIDEBAR).toMatch(/\.sticky-concept-section\s*\{/)
+    const rule = POST_SIDEBAR.match(/\.sticky-concept-section\s*\{[^}]+\}/)?.[0] ?? ""
+    expect(rule).not.toMatch(/position\s*:\s*sticky/)
+    expect(rule).not.toMatch(/bottom\s*:/)
+  })
+})
+
+// ── Lane B · prose width 60ch → 72ch + centred ───────────────────────────────
+describe("reader-polish B: prose width and centring", () => {
+  it("--w-prose token resolves to 72ch", () => {
+    expect(TOKENS_CSS).toMatch(/--w-prose:\s*72ch/)
+  })
+
+  it("design.md (source of truth) lists w-prose as 72ch", () => {
+    const designMd = read("design.md")
+    expect(designMd).toMatch(/w-prose:\s*"72ch"/)
+  })
+
+  it(".prose declares margin-inline: auto so it centres in its column", () => {
+    const articleCss = read("src/styles/article.css")
+    const proseRule = articleCss.match(/^\.prose\s*\{[\s\S]*?\}/m)?.[0] ?? ""
+    expect(proseRule).toMatch(/margin-inline:\s*auto/)
+    expect(proseRule).toMatch(/max-width:\s*var\(--w-prose\)/)
+    // Drop the legacy 60ch fallback that pre-dated the token.
+    expect(proseRule).not.toMatch(/max-width:\s*60ch/)
+  })
+})
+
+// ── Lane C · inline concept-graph + zoom controls ────────────────────────────
+describe("reader-polish C: PostConceptGraph inline mode + zoom buttons", () => {
+  const CONCEPT_TSX = read("src/components/PostConceptGraph.tsx")
+  const CONCEPT_MOD_CSS = read("src/components/PostConceptGraph.module.css")
+
+  it("exports an INLINE_MODE constant with canvas: 720", () => {
+    expect(CONCEPT_TSX).toMatch(/INLINE_MODE[\s\S]*?canvas:\s*720/)
+  })
+
+  it("accepts a `size: 'compact' | 'inline'` prop", () => {
+    expect(CONCEPT_TSX).toMatch(/size\??:\s*['"]compact['"]\s*\|\s*['"]inline['"]/)
+  })
+
+  it("renders three zoom buttons (+, −, 1:1) with role='group'", () => {
+    expect(CONCEPT_TSX).toMatch(/role="group"\s+aria-label="Zoom controls"/)
+    expect(CONCEPT_TSX).toMatch(/aria-label="Zoom in"/)
+    expect(CONCEPT_TSX).toMatch(/aria-label="Zoom out"/)
+    expect(CONCEPT_TSX).toMatch(/aria-label="Reset zoom"/)
+  })
+
+  it("zoom buttons disable until the simulation has ticked once", () => {
+    // Some `disabled={!ready}` / `disabled={...}` guard exists on every zoomBtn
+    expect(CONCEPT_TSX).toMatch(/zoomBtn[\s\S]{0,200}disabled=\{/)
+  })
+
+  it("inline-mode CSS uses var(--paper-2) sub-region wash", () => {
+    expect(CONCEPT_MOD_CSS).toMatch(/\.inlineWrap[\s\S]*?background:\s*var\(--paper-2\)/)
+  })
+
+  it("zoom-button tap target scales to ≥ 44px on mobile (WCAG)", () => {
+    expect(CONCEPT_MOD_CSS).toMatch(
+      /@media\s*\(max-width:\s*780px\)[\s\S]*?\.zoomBtn[\s\S]*?min-width:\s*44px[\s\S]*?min-height:\s*44px/,
+    )
+  })
+
+  it("posts/[slug].astro article-header passes size=\"inline\"", () => {
+    expect(POST_SLUG).toMatch(/<PostConceptGraph[\s\S]*?size="inline"/)
+  })
+
+  it("zoom-button styles have no hex literals (editorial invariant #1)", () => {
+    const zoomBlock = CONCEPT_MOD_CSS.match(/\.zoomBtn\s*\{[\s\S]*?\}/g)?.join("\n") ?? ""
+    expect(zoomBlock).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+  })
+})
+
+// ── Lane D · related-rail tag-overlap fallback ──────────────────────────────
+describe("reader-polish D: tag-overlap fallback for empty related rails", () => {
+  const RELATED_TS = read("src/lib/pages/related.ts")
+  const MESH_TS = read("src/lib/mesh-data.ts")
+
+  it("related.ts exports getTagOverlapNeighbors", () => {
+    expect(RELATED_TS).toMatch(/export\s+function\s+getTagOverlapNeighbors/)
+  })
+
+  it("uses json_each on notes.tags (SQLite JSON1 pivot)", () => {
+    expect(RELATED_TS).toMatch(/json_each\(/)
+  })
+
+  it("getRelatedNotes calls the tag-fallback when entity-overlap returns 0", () => {
+    expect(RELATED_TS).toMatch(/rows\.length\s*===\s*0[\s\S]*getTagOverlapNeighbors/)
+  })
+
+  it("tag-overlap helper degrades gracefully on JSON1-missing (try/catch → [])", () => {
+    expect(RELATED_TS).toMatch(/try\s*\{[\s\S]*?json_each[\s\S]*?\}\s*catch[\s\S]*?return\s*\[\]/)
+  })
+
+  it("MeshNode.relationship union extends to include 'tag'", () => {
+    expect(MESH_TS).toMatch(/relationship\??:\s*['"]backlink['"][\s\S]*?\|\s*['"]tag['"]/)
+  })
+
+  it("getNoteMeshNodes Tier 3 imports + calls getTagOverlapNeighbors", () => {
+    expect(MESH_TS).toMatch(/from\s+['"]\.\/pages\/related['"]/)
+    expect(MESH_TS).toMatch(/getTagOverlapNeighbors\(/)
   })
 })

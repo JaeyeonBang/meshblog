@@ -9,6 +9,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { openReadonlyDb } from './pages/db'
+import { getTagOverlapNeighbors } from './pages/related'
 import { plainExcerpt } from './markdown/plain-excerpt'
 import { estimateReadingMinutes } from './reading-time'
 
@@ -57,7 +58,7 @@ export type MeshNode = {
   /** Count of inbound wikilink edges to this neighbor across the whole graph. Absent on center node. */
   backlinks?: number
   /** How this neighbor relates to the current article. Absent on center node. */
-  relationship?: 'backlink' | 'outbound' | 'entity'
+  relationship?: 'backlink' | 'outbound' | 'entity' | 'tag'
   /** Estimated reading time in integer minutes. Absent on center node. */
   readingMinutes?: number
 }
@@ -174,7 +175,7 @@ export function getHomeMeshNodes(withBase: (path: string) => string): MeshNode[]
 type NeighborSource = {
   slug: string
   title: string
-  sourceType: 'backlink' | 'outbound' | 'entity'
+  sourceType: 'backlink' | 'outbound' | 'entity' | 'tag'
 }
 
 /** Max neighbors returned (center node excluded). */
@@ -230,7 +231,23 @@ export function getNoteMeshNodes(opts: {
   // ── Tier 2: entity-overlap fallback ──────────────────────────────────────
   const centerNode: MeshNode = { label: noteTitle, kind: 'selected' as const }
   const entityNeighbors = getEntityNeighbors(noteId, withBase)
-  return [centerNode, ...entityNeighbors]
+  if (entityNeighbors.length > 0) {
+    return [centerNode, ...entityNeighbors]
+  }
+
+  // ── Tier 3: tag-overlap fallback ─────────────────────────────────────────
+  const tagRows = getTagOverlapNeighbors(noteId, MAX_NEIGHBORS)
+  if (tagRows.length > 0) {
+    const tagSources: NeighborSource[] = tagRows.map((r) => ({
+      slug: r.slug,
+      title: r.title,
+      sourceType: 'tag' as const,
+    }))
+    const tagNeighbors = enrichNeighborsFromDb(tagSources, withBase)
+    return [centerNode, ...tagNeighbors]
+  }
+
+  return [centerNode]
 }
 
 // ── Internal: wikilink path ─────────────────────────────────────────────────

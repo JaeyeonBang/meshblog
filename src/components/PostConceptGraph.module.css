@@ -1,0 +1,65 @@
+/* PostConceptGraph.module.css — scoped styles for inline-mode container
+ * and shared zoom-control buttons.
+ *
+ * Editorial invariants honoured:
+ *   #1 — no hex literals (all colours via tokens)
+ *   #2 — hairline 1px border only
+ *   #3 — hover-invert on zoom buttons (paper ↔ ink)
+ *   #5 — NO box-shadow
+ *   #6 — border-radius ≤ 4px (var(--r-xs))
+ */
+
+.inlineWrap {
+  position: relative;
+  width: 100%;
+  background: var(--paper-2);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-xs);
+  padding: var(--space-4);
+  overflow: hidden;
+}
+
+.zoomControls {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+}
+
+.zoomBtn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: var(--r-xs);
+  font-family: var(--f-mono);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.zoomBtn:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.zoomBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.zoomBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 780px) {
+  .zoomBtn { min-width: 44px; min-height: 44px; }
+}
