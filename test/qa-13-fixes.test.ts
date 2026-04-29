@@ -115,9 +115,17 @@ describe("#7 post page has related-mesh + concept-graph", () => {
 
   it("PostSidebar mounts PostConceptGraph (concept) under conceptGraph guard", () => {
     expect(POST_SIDEBAR).toMatch(/<PostConceptGraph[\s\S]*nodes=\{conceptGraph.nodes\}/)
-    // Require at least 2 nodes so single-concept posts don't render a degenerate
-    // "1 concepts · 0 links" widget (caught during /qa-13-fixes review).
+    // Two-tier degeneracy gate: ≥2 nodes AND ≥1 link. Tightened during /qa
+    // after a sweep of all 12 posts found 5/5 sampled posts shipping a useless
+    // "1-2 concepts · 0 links" widget (no edges = no graph).
     expect(POST_SIDEBAR).toMatch(/conceptGraph\.nodes\.length\s*>\s*1/)
+    expect(POST_SIDEBAR).toMatch(/conceptGraph\.links\.length\s*>\s*0/)
+  })
+
+  it("posts/[slug].astro article-header toggle uses the same nodes>1 + links>0 gate", () => {
+    expect(POST_SLUG).toMatch(
+      /conceptGraph\.nodes\.length\s*>\s*1\s*&&\s*conceptGraph\.links\.length\s*>\s*0/,
+    )
   })
 
   it("concept graph section keeps the .sticky-concept-section class (markup contract)", () => {

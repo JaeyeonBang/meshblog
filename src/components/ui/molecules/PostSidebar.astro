@@ -112,9 +112,10 @@ const sortedTags = [...tags].sort()
 <TOC label="contents" items={tocItems} />
 
 <!-- ── Sticky concept graph (Task 7-2) ──────────────────────────────────── -->
-{/* Single-node concept graph (e.g. "1 concepts · 0 links") reads as broken;
-    require ≥ 2 nodes so the section only appears when there is a real mesh. */}
-{conceptGraph && conceptGraph.nodes.length > 1 && (
+{/* Hide the section unless the graph is non-degenerate: ≥2 nodes AND ≥1 link.
+    Two unconnected circles read as broken; same gate as the article-header
+    toggle in posts/[slug].astro. */}
+{conceptGraph && conceptGraph.nodes.length > 1 && conceptGraph.links.length > 0 && (
   <section class="sidebar-section sticky-concept-section" aria-label="post concept graph">
     <div class="section-label">concepts in this post</div>
     <PostConceptGraph

@@ -196,7 +196,10 @@ const conceptGraph = getPostConceptGraph(post.id)
           </div>
         )}
 
-        {conceptGraph.nodes.length > 0 && (
+        {/* Article-header concept-graph toggle. Hide when the graph is
+            degenerate (≤1 node, or 0 links between nodes). A single floating
+            circle reads as broken; matches the sidebar gate (PostSidebar). */}
+        {conceptGraph.nodes.length > 1 && conceptGraph.links.length > 0 && (
           <details class="concept-toggle" data-concept-toggle>
             <summary>
               <span class="concept-toggle-label">concept 그래프 보기</span>
