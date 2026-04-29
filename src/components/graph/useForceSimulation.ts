@@ -42,6 +42,14 @@ const STAGGER_STEP_MS = 40
  *  CJK chars roughly 2x Latin width — count weighted accordingly. */
 const LABEL_MAX_LATIN = 28
 const LABEL_MAX_CJK = 14
+const LABEL_MAX_LATIN_MOBILE = 18
+
+/** Detect mobile viewport (≤780px). Re-evaluated each render via simulation
+ *  rebuild on resize is out of scope; this captures the snapshot at mount. */
+function isMobileViewport(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(max-width: 780px)').matches
+}
 
 /** Returns true when the codepoint falls inside the CJK ranges that render
  *  ~1em wide (vs ~0.55em for Latin in Pretendard). Mirrors the same ranges
@@ -56,15 +64,18 @@ function isCjkChar(ch: string): boolean {
 }
 
 /** Truncate a label so it fits inside the canvas. Preserves emphasis-marker
- *  prefixes (e.g. "← L2 · ") by walking from the end. CJK chars count 2x. */
-function truncateLabel(s: string): string {
+ *  prefixes (e.g. "← L2 · ") by walking from the end. CJK chars count 2x.
+ *  Tighter cap on mobile viewports (≤780px) so labels don't escape the
+ *  narrow canvas. */
+function truncateLabel(s: string, mobile: boolean = false): string {
+  const cap = mobile ? LABEL_MAX_LATIN_MOBILE : LABEL_MAX_LATIN
   let weight = 0
   let i = 0
   for (; i < s.length; i++) {
     const ch = s[i] ?? ''
     weight += isCjkChar(ch) ? 2 : 1
     // Mixed-content cap: scale to whichever bound binds first.
-    if (weight > LABEL_MAX_LATIN) break
+    if (weight > cap) break
   }
   if (i >= s.length) return s
   // Trim trailing whitespace + dangling punctuation before the ellipsis.
@@ -123,6 +134,7 @@ export function useForceSimulation(
 
     const width = opts.simParams?.canvasWidth ?? (svgEl.clientWidth || 800)
     const height = opts.simParams?.canvasHeight ?? (svgEl.clientHeight || 600)
+    const isMobile = isMobileViewport()
 
     // Clone nodes/links so d3 mutation doesn't bleed into React state
     const nodes: SimNode[] = graph.nodes.map(n => ({ ...n }))
@@ -334,7 +346,8 @@ export function useForceSimulation(
       .style('pointer-events', 'none')
       // In-canvas label: truncated to avoid viewBox overflow on long titles.
       // Full label remains in <title> + hover popover for discoverability.
-      .text(d => truncateLabel(labelOf(d)))
+      // Mobile viewport gets a tighter cap (LABEL_MAX_LATIN_MOBILE).
+      .text(d => truncateLabel(labelOf(d), isMobile))
 
     // Map node index → label text element for dim/focus
     const labelNodes = labelSel.nodes()
