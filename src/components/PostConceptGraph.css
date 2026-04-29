@@ -52,3 +52,7 @@
   letter-spacing: 0.04em;
   pointer-events: none;
 }
+
+/* Inline-mode container, zoom buttons → live in PostConceptGraph.module.css
+ * (CSS module, classes hashed). Keeping them out of this global sheet
+ * prevents stale duplicate rules when the module class names drift. */
