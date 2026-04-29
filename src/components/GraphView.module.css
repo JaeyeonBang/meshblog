@@ -283,6 +283,11 @@
   .root {
     touch-action: pan-x pan-y;
   }
+  /* Hide in-canvas stats on mobile — the toolbar already shows the same
+   * counter (#gcStats) and on a small canvas it just overlaps node labels. */
+  .stats {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {

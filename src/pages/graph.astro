@@ -412,6 +412,12 @@ import { withBase } from '../lib/url'
       grid-template-columns: 1fr;
       height: auto;
     }
+    /* On mobile, the canvas grid item collapses to its content height when
+     * height: auto. Force a tall enough viewport for the graph to be usable.
+     * 60vh leaves room for header + toolbar + stacked aside below. */
+    .graph-canvas {
+      min-height: 60vh;
+    }
   }
 
   /* ── Canvas ────────────────────────────────────────────── */
