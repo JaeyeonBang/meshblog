@@ -54,22 +54,17 @@ interface Props {
 
 const { currentCategory, tags, meshNodes, meshLinks, tocItems, conceptGraph } = Astro.props
 
+// Show only categories that actually have content. Empty taxonomies (e.g.
+// "design", "personal") generate dead /categories/<slug>/ links because
+// getStaticPaths in src/pages/categories/[slug].astro only emits routes for
+// categories with rows. Surfacing them produced 4 × 404s on every post page.
+//
+// Includes the current post's category even when the DB returns 0 for it,
+// since getStaticPaths still emitted the route (the post itself counts).
 const allCategories: CategoryRow[] = listCategories()
-
-// Hard-code the canonical 5 categories as fallback when DB returns empty
-// (e.g. fixture build without category data populated).
-const FALLBACK_CATEGORIES: CategoryRow[] = [
-  { slug: 'engineering', name: 'Engineering', noteCount: 0, postCount: 0 },
-  { slug: 'ai', name: 'AI', noteCount: 0, postCount: 0 },
-  { slug: 'writing', name: 'Writing', noteCount: 0, postCount: 0 },
-  { slug: 'design', name: 'Design', noteCount: 0, postCount: 0 },
-  { slug: 'personal', name: 'Personal', noteCount: 0, postCount: 0 },
-]
-
-// Merge DB categories with the fallback list so all 5 canonical categories
-// always appear; DB counts override fallback zero counts when present.
-const dbBySlug = new Map(allCategories.map((c) => [c.slug, c]))
-const categories: CategoryRow[] = FALLBACK_CATEGORIES.map((fb) => dbBySlug.get(fb.slug) ?? fb)
+const categories: CategoryRow[] = allCategories.filter(
+  (c) => (c.noteCount + c.postCount) > 0 || c.slug === Astro.props.currentCategory,
+)
 
 // Sort tags alphabetically for stable ordering
 const sortedTags = [...tags].sort()
@@ -117,7 +112,9 @@ const sortedTags = [...tags].sort()
 <TOC label="contents" items={tocItems} />
 
 <!-- ── Sticky concept graph (Task 7-2) ──────────────────────────────────── -->
-{conceptGraph && conceptGraph.nodes.length > 0 && (
+{/* Single-node concept graph (e.g. "1 concepts · 0 links") reads as broken;
+    require ≥ 2 nodes so the section only appears when there is a real mesh. */}
+{conceptGraph && conceptGraph.nodes.length > 1 && (
   <section class="sidebar-section sticky-concept-section" aria-label="post concept graph">
     <div class="section-label">concepts in this post</div>
     <PostConceptGraph
