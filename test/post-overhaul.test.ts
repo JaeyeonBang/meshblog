@@ -166,3 +166,43 @@ describe("post-overhaul: editorial invariants", () => {
     expect(sample).toContain("</svg>")
   })
 })
+
+// ── tag-filter encoding (regression: control char stripped by minifier) ─────
+//
+// PR #72 joined tags with a literal U+001F byte in source. Vite/esbuild
+// stripped that control character during minify, so the shipped JS became
+// `split("")` (split-by-empty-string) and chip clicks did nothing on the live
+// site. The fix (PR #76) stores the separator as a JS unicode escape sequence
+// `''` so the minifier preserves it. These regressions pin BOTH ends:
+// the source must use the escape (no raw control byte) AND the join/split
+// pair must agree.
+describe("post-overhaul: tag-filter data-tags separator", () => {
+  const POSTCARD_BYTES = readFileSync(
+    join(REPO_ROOT, "src/components/ui/molecules/PostCard.astro"),
+  )
+  const POSTS_INDEX_BYTES = readFileSync(
+    join(REPO_ROOT, "src/pages/posts/index.astro"),
+  )
+  const POSTCARD = POSTCARD_BYTES.toString("utf-8")
+  const POSTS_INDEX = POSTS_INDEX_BYTES.toString("utf-8")
+
+  it("PostCard joins tags via the \\u001F escape sequence (not a raw control byte)", () => {
+    expect(POSTCARD).toMatch(/tags\.join\(['"]\\u001F['"]\)/)
+  })
+
+  it("posts/index.astro splits data-tags on the same \\u001F escape", () => {
+    expect(POSTS_INDEX).toMatch(/getAttribute\(['"]data-tags['"]\)[^)]*\)\.split\(['"]\\u001F['"]\)/)
+  })
+
+  it("neither file contains a raw C0 control byte that the minifier would strip", () => {
+    // Any unescaped 0x00-0x1F (except common whitespace 0x09/0x0A/0x0D) inside the
+    // source means we're back to the original bug. The escape sequence above is
+    // text — six chars, none of them control bytes — so this stays clean.
+    const offenders = (buf: Buffer) =>
+      Array.from(buf).filter(
+        (b) => b <= 0x1f && b !== 0x09 && b !== 0x0a && b !== 0x0d,
+      )
+    expect(offenders(POSTCARD_BYTES)).toEqual([])
+    expect(offenders(POSTS_INDEX_BYTES)).toEqual([])
+  })
+})

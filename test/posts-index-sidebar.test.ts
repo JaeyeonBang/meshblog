@@ -95,10 +95,11 @@ describe('PostsIndexSidebar molecule', () => {
     expect(SIDEBAR).toMatch(/import\s+CategoryList\s+from/)
   })
 
-  it('renders CategoryList with limit={0} (show all, no active)', () => {
+  it('renders CategoryList with limit={0} and forwards activeCategory', () => {
     expect(SIDEBAR).toMatch(/<CategoryList[^/]*limit=\{0\}/)
-    // Should NOT pass an active prop
-    expect(SIDEBAR).not.toMatch(/<CategoryList[^/]*active=/)
+    // Forwards the activeCategory prop so /categories/[slug] can highlight
+    // the current row when reusing this sidebar.
+    expect(SIDEBAR).toMatch(/<CategoryList[^/]*active=\{activeCategory\}/)
   })
 
   it('renders a tags section with section-label', () => {

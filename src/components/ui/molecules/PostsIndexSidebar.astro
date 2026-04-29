@@ -22,9 +22,11 @@ import { withBase } from '../../../lib/url'
 interface Props {
   /** Full posts array already fetched by the page — avoid a second DB hit. */
   posts: PostRow[]
+  /** Highlight a row in CategoryList when rendered on /categories/[slug]. */
+  activeCategory?: string
 }
 
-const { posts } = Astro.props
+const { posts, activeCategory } = Astro.props
 
 const topTags = listTopTags(posts, 16)
 const meshNodes = getHomeMeshNodes(withBase)
@@ -32,7 +34,7 @@ const meshLinks: Array<{ source: string; target: string }> = []
 ---
 
 <!-- ── 1. Categories ──────────────────────────────────────────────────────── -->
-<CategoryList limit={0} />
+<CategoryList limit={0} active={activeCategory} />
 
 <!-- ── 2. Tags ────────────────────────────────────────────────────────────── -->
 {topTags.length > 0 && (
@@ -40,9 +42,9 @@ const meshLinks: Array<{ source: string; target: string }> = []
     <div class="section-label">tags</div>
     <div class="tag-cloud">
       {topTags.map(({ tag, count }) => (
-        <span class="sidebar-tag">
+        <a class="sidebar-tag" href={`${withBase('/posts')}?tag=${encodeURIComponent(tag)}`}>
           {tag}<span class="tag-count"> ({count})</span>
-        </span>
+        </a>
       ))}
     </div>
   </section>
@@ -89,8 +91,13 @@ const meshLinks: Array<{ source: string; target: string }> = []
     border-bottom: 1px solid var(--ink-5);
     display: inline-block;
     line-height: 1.4;
-    cursor: default;
+    text-decoration: none;
     transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  }
+
+  .sidebar-tag:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   /* hover-invert (editorial invariant #3) */
