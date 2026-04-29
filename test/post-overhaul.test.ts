@@ -102,15 +102,21 @@ describe("post-overhaul: PostSidebar molecule", () => {
     expect(SLUG_PAGE).toMatch(/<PostSidebar\b/)
   })
 
-  it("PostSidebar declares all 5 canonical categories as fallback", () => {
-    const slugs = ["engineering", "ai", "writing", "design", "personal"]
-    for (const s of slugs) {
-      expect(POST_SIDEBAR).toMatch(new RegExp(`slug:\\s*['"]${s}['"]`))
+  it("PostSidebar lists categories from listCategories (no hardcoded slugs)", () => {
+    // The old behaviour hard-coded engineering/ai/writing/design/personal as
+    // fallback rows. Live, only `ai` exists, so the other four shipped as
+    // dead /categories/<slug>/ links. The fix drops the FALLBACK and filters
+    // the DB list down to categories with content (qa-13-fixes #9).
+    expect(POST_SIDEBAR).not.toMatch(/FALLBACK_CATEGORIES\s*[:=]\s*\[/)
+    const deadSlugs = ["engineering", "writing", "design", "personal"]
+    for (const s of deadSlugs) {
+      expect(POST_SIDEBAR).not.toMatch(new RegExp(`slug:\\s*['"]${s}['"]`))
     }
   })
 
-  it("PostSidebar merges DB categories with fallback (always 5)", () => {
-    expect(POST_SIDEBAR).toMatch(/dbBySlug\.get\(fb\.slug\)\s*\?\?\s*fb/)
+  it("PostSidebar filters categories by total count (active OR currentCategory)", () => {
+    expect(POST_SIDEBAR).toMatch(/noteCount\s*\+\s*[\w.]*postCount\)\s*>\s*0/)
+    expect(POST_SIDEBAR).toMatch(/Astro\.props\.currentCategory/)
   })
 
   it("PostSidebar renders 4 sections: categories · tags · related · TOC", () => {
