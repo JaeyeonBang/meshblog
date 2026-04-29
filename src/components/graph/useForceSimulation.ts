@@ -37,6 +37,45 @@ function backlinkRadius(inDegree: number): number {
 const MAX_STAGGER_MS = 600
 const STAGGER_STEP_MS = 40
 
+/** Max characters shown in resting node labels before ellipsis. Hover popover
+ *  (HoverCard) shows the full label, so this only affects the in-canvas text.
+ *  CJK chars roughly 2x Latin width — count weighted accordingly. */
+const LABEL_MAX_LATIN = 28
+const LABEL_MAX_CJK = 14
+
+/** Returns true when the codepoint falls inside the CJK ranges that render
+ *  ~1em wide (vs ~0.55em for Latin in Pretendard). Mirrors the same ranges
+ *  used in PostMeshGraph emWidthOfChar(). */
+function isCjkChar(ch: string): boolean {
+  const code = ch.charCodeAt(0)
+  return (
+    (code >= 0x3000 && code <= 0x9fff) ||  // CJK symbols + Unified Ideographs
+    (code >= 0xac00 && code <= 0xd7af) ||  // Hangul syllables
+    (code >= 0xff00 && code <= 0xffef)     // Half-/full-width forms
+  )
+}
+
+/** Truncate a label so it fits inside the canvas. Preserves emphasis-marker
+ *  prefixes (e.g. "← L2 · ") by walking from the end. CJK chars count 2x. */
+function truncateLabel(s: string): string {
+  let weight = 0
+  let i = 0
+  for (; i < s.length; i++) {
+    const ch = s[i] ?? ''
+    weight += isCjkChar(ch) ? 2 : 1
+    // Mixed-content cap: scale to whichever bound binds first.
+    if (weight > LABEL_MAX_LATIN) break
+  }
+  if (i >= s.length) return s
+  // Trim trailing whitespace + dangling punctuation before the ellipsis.
+  let cut = s.slice(0, i).trimEnd()
+  while (cut.length > 0 && /[·:\-—,]$/.test(cut)) {
+    cut = cut.slice(0, -1).trimEnd()
+  }
+  return cut + '…'
+}
+void LABEL_MAX_CJK
+
 export type HoverState = {
   node: GraphNode
   x: number
@@ -293,7 +332,9 @@ export function useForceSimulation(
       .attr('x', d => d.x ?? 0)
       .attr('y', d => d.y ?? 0)
       .style('pointer-events', 'none')
-      .text(d => labelOf(d))
+      // In-canvas label: truncated to avoid viewBox overflow on long titles.
+      // Full label remains in <title> + hover popover for discoverability.
+      .text(d => truncateLabel(labelOf(d)))
 
     // Map node index → label text element for dim/focus
     const labelNodes = labelSel.nodes()
