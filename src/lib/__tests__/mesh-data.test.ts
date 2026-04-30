@@ -24,20 +24,29 @@ vi.mock('../pages/db', () => ({
 
 // We'll swap loadJson output by controlling existsSync + readFileSync.
 let __backlinkJson: string | null = null
+let __conceptL3Json: string | null = null
 
 vi.mock('node:fs', () => ({
   existsSync: (p: string) => {
     if (p.includes('backlinks.json')) return __backlinkJson !== null
+    if (p.includes('concept-l3.json')) return __conceptL3Json !== null
     return false
   },
   readFileSync: (p: string) => {
     if (p.includes('backlinks.json') && __backlinkJson !== null) return __backlinkJson
+    if (p.includes('concept-l3.json') && __conceptL3Json !== null) return __conceptL3Json
     throw new Error(`readFileSync mock: unexpected path ${p}`)
   },
 }))
 
 // Import AFTER mocks are registered.
-import { getNoteMeshNodes, getNoteMeshLinks, _resetBacklinksCache } from '../mesh-data'
+import {
+  getNoteMeshNodes,
+  getNoteMeshLinks,
+  getPostConceptGraph,
+  _resetBacklinksCache,
+  _resetConceptGraphCache,
+} from '../mesh-data'
 
 // ── Helper: create an in-memory SQLite DB with the minimal schema ─────────────
 
@@ -89,8 +98,10 @@ function wb(p: string) {
 
 beforeEach(() => {
   __backlinkJson = null
+  __conceptL3Json = null
   __mockDb = null
   _resetBacklinksCache()
+  _resetConceptGraphCache()
 })
 
 describe('getNoteMeshNodes', () => {
@@ -587,5 +598,173 @@ describe('getNoteMeshLinks', () => {
     const links = getNoteMeshLinks(['A', 'B', 'C'])
 
     expect(links).toEqual([])
+  })
+})
+
+// ── getPostConceptGraph: 1-hop neighbour expansion (PR #87) ──────────────────
+
+function makeConceptDb(): ReturnType<typeof Database> {
+  const db = new Database(':memory:')
+  db.exec(`
+    CREATE TABLE notes (
+      id TEXT PRIMARY KEY
+    );
+    CREATE TABLE entities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL
+    );
+    CREATE TABLE concepts (
+      id   TEXT PRIMARY KEY,
+      name TEXT NOT NULL
+    );
+    CREATE TABLE note_entities (
+      note_id   TEXT NOT NULL,
+      entity_id INTEGER NOT NULL,
+      PRIMARY KEY (note_id, entity_id)
+    );
+    CREATE TABLE concept_entities (
+      concept_id TEXT NOT NULL,
+      entity_id  INTEGER NOT NULL,
+      PRIMARY KEY (concept_id, entity_id)
+    );
+  `)
+  return db
+}
+
+function seedConcept(
+  db: ReturnType<typeof Database>,
+  conceptId: string,
+  name: string,
+  entities: { id: number; name: string }[],
+  noteId: string,
+) {
+  db.prepare('INSERT OR IGNORE INTO notes (id) VALUES (?)').run(noteId)
+  db.prepare('INSERT OR IGNORE INTO concepts (id, name) VALUES (?, ?)').run(conceptId, name)
+  for (const e of entities) {
+    db.prepare('INSERT OR IGNORE INTO entities (id, name) VALUES (?, ?)').run(e.id, e.name)
+    db.prepare('INSERT OR IGNORE INTO concept_entities (concept_id, entity_id) VALUES (?, ?)').run(conceptId, e.id)
+    db.prepare('INSERT OR IGNORE INTO note_entities (note_id, entity_id) VALUES (?, ?)').run(noteId, e.id)
+  }
+}
+
+describe('getPostConceptGraph (1-hop expansion)', () => {
+  it('returns {nodes:[], links:[]} when DB unavailable', () => {
+    __mockDb = null
+    expect(getPostConceptGraph('any')).toEqual({ nodes: [], links: [] })
+  })
+
+  it('returns {nodes:[], links:[]} when post has no entities mapped to concepts', () => {
+    const db = makeConceptDb()
+    db.prepare('INSERT INTO notes (id) VALUES (?)').run('orphan-post')
+    __mockDb = db
+    __conceptL3Json = JSON.stringify({ nodes: [], links: [] })
+
+    expect(getPostConceptGraph('orphan-post')).toEqual({ nodes: [], links: [] })
+  })
+
+  it('expands a single-seed post to include 1-hop neighbours', () => {
+    // Post mentions entity-1 (concept-rlpr only). Without expansion the post
+    // graph is one orphan node. With 1-hop expansion: rlpr + ppo + rlhf + 2 edges.
+    const db = makeConceptDb()
+    seedConcept(db, 'concept-rlpr', 'rlpr', [{ id: 1, name: 'rlpr' }], 'post-rlpr')
+    __mockDb = db
+
+    __conceptL3Json = JSON.stringify({
+      nodes: [
+        { id: 'concept-rlpr', label: 'rlpr', type: 'concept', cluster: 0, pagerank: 0.1 },
+        { id: 'concept-ppo',  label: 'ppo',  type: 'concept', cluster: 1, pagerank: 0.2 },
+        { id: 'concept-rlhf', label: 'rlhf', type: 'concept', cluster: 2, pagerank: 0.15 },
+        { id: 'concept-far',  label: 'far',  type: 'concept', cluster: 3, pagerank: 0.05 },
+      ],
+      links: [
+        { source: 'concept-rlpr', target: 'concept-ppo',  weight: 3 },
+        { source: 'concept-rlpr', target: 'concept-rlhf', weight: 2 },
+        { source: 'concept-ppo',  target: 'concept-far',  weight: 1 }, // 2-hop only
+      ],
+    })
+
+    const g = getPostConceptGraph('post-rlpr')
+
+    // Seed + 2 neighbours, no 2-hop concept (`far`)
+    expect(g.nodes.map((n) => n.id).sort()).toEqual(
+      ['concept-ppo', 'concept-rlhf', 'concept-rlpr'].sort(),
+    )
+    expect(g.nodes.find((n) => n.id === 'concept-rlpr')?.weight).toBe(1)        // seed
+    expect(g.nodes.find((n) => n.id === 'concept-ppo')?.weight).toBe(0)         // neighbour
+    // Both seed↔neighbour edges survive
+    expect(g.links).toHaveLength(2)
+  })
+
+  it('skips note-typed nodes during expansion (only concept↔concept)', () => {
+    const db = makeConceptDb()
+    seedConcept(db, 'concept-A', 'A', [{ id: 1, name: 'a' }], 'post-1')
+    __mockDb = db
+
+    __conceptL3Json = JSON.stringify({
+      nodes: [
+        { id: 'concept-A', label: 'A', type: 'concept' },
+        { id: 'concept-B', label: 'B', type: 'concept' },
+        { id: 'note-X',    label: 'NoteX', type: 'note' },
+      ],
+      links: [
+        { source: 'concept-A', target: 'concept-B', weight: 1 },
+        { source: 'concept-A', target: 'note-X', type: 'mentions', weight: 1 },
+      ],
+    })
+
+    const g = getPostConceptGraph('post-1')
+    expect(g.nodes.map((n) => n.id).sort()).toEqual(['concept-A', 'concept-B'])
+    // The mentions edge to note-X must NOT appear; only concept↔concept.
+    expect(g.links).toEqual([
+      expect.objectContaining({ source: 'concept-A', target: 'concept-B' }),
+    ])
+  })
+
+  it('caps expansion at MAX_CONCEPT_NODES (14) prioritising seeds', () => {
+    const db = makeConceptDb()
+    // Seed: concept-S1 (post mentions entity 1)
+    seedConcept(db, 'concept-S1', 's1', [{ id: 1, name: 'e1' }], 'post-1')
+    __mockDb = db
+
+    // 20 candidate neighbours, all linked to seed with descending weight.
+    const nodes = [
+      { id: 'concept-S1', label: 's1', type: 'concept' },
+    ]
+    const links: Array<{ source: string; target: string; weight: number }> = []
+    for (let i = 0; i < 20; i++) {
+      nodes.push({ id: `concept-N${i}`, label: `n${i}`, type: 'concept' })
+      links.push({ source: 'concept-S1', target: `concept-N${i}`, weight: 20 - i })
+    }
+    __conceptL3Json = JSON.stringify({ nodes, links })
+
+    const g = getPostConceptGraph('post-1')
+    // 1 seed + 13 neighbours = 14 total
+    expect(g.nodes).toHaveLength(14)
+    expect(g.nodes[0].id).toBe('concept-S1') // seed first
+    // Highest-weight neighbour wins the budget cut
+    const ids = g.nodes.map((n) => n.id)
+    expect(ids).toContain('concept-N0')   // weight 20
+    expect(ids).not.toContain('concept-N15') // weight 5, dropped at cap
+  })
+
+  it('does not duplicate edges when both endpoints are seeds', () => {
+    const db = makeConceptDb()
+    seedConcept(db, 'concept-A', 'A', [{ id: 1, name: 'ea' }], 'post-1')
+    seedConcept(db, 'concept-B', 'B', [{ id: 2, name: 'eb' }], 'post-1')
+    __mockDb = db
+
+    __conceptL3Json = JSON.stringify({
+      nodes: [
+        { id: 'concept-A', label: 'A', type: 'concept' },
+        { id: 'concept-B', label: 'B', type: 'concept' },
+      ],
+      links: [
+        { source: 'concept-A', target: 'concept-B', weight: 1 },
+      ],
+    })
+
+    const g = getPostConceptGraph('post-1')
+    expect(g.nodes).toHaveLength(2)
+    expect(g.links).toHaveLength(1)
   })
 })

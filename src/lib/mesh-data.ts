@@ -468,8 +468,18 @@ export function _resetConceptGraphCache(): void {
 }
 
 /**
- * Build a per-post concept subgraph mirroring `/graph?mode=concept&level=3`
- * but limited to concepts that share at least one entity with `noteId`.
+ * Build a per-post concept subgraph mirroring `/graph?mode=concept&level=3`.
+ *
+ * Strategy (post-PR #87):
+ *   1. Seed concepts — every concept that shares ≥1 entity with `noteId`.
+ *   2. 1-hop expansion — pull in adjacent concepts from the global concept
+ *      graph (concept-l3.json), so single-concept posts (e.g. one about
+ *      "PPO" only) still render as "PPO + RLHF + GPT-4" with edges, instead
+ *      of one orphan node.
+ *   3. Cap total nodes at MAX_CONCEPT_NODES, prioritising seeds.
+ *
+ * This makes the per-post "concept 그래프" useful even when Louvain assigns
+ * all the post's entities to a single community.
  */
 const MAX_CONCEPT_NODES = 14
 
@@ -478,9 +488,9 @@ export function getPostConceptGraph(noteId: string): PostConceptGraph {
   if (!db) return { nodes: [], links: [] }
 
   type ConceptRow = { id: string; name: string; weight: number }
-  let rows: ConceptRow[] = []
+  let seedRows: ConceptRow[] = []
   try {
-    rows = db
+    seedRows = db
       .prepare<[string, number]>(
         `SELECT c.id, c.name, COUNT(DISTINCT ce.entity_id) AS weight
          FROM concepts c
@@ -496,7 +506,7 @@ export function getPostConceptGraph(noteId: string): PostConceptGraph {
     db.close()
   }
 
-  if (rows.length === 0) return { nodes: [], links: [] }
+  if (seedRows.length === 0) return { nodes: [], links: [] }
 
   const conceptL3 = loadConceptL3()
   const globalById = new Map<string, ConceptL3Json['nodes'][number]>()
@@ -504,26 +514,69 @@ export function getPostConceptGraph(noteId: string): PostConceptGraph {
     for (const n of conceptL3.nodes) globalById.set(n.id, n)
   }
 
-  const idSet = new Set(rows.map((r) => r.id))
-  const nodes: ConceptGraphNode[] = rows.map((r) => {
+  // 1-hop neighbour expansion. For every seed concept, find adjacent concepts
+  // in the global graph (non-mentions edges). Ranked by edge weight so the
+  // strongest semantic neighbours win when we hit MAX_CONCEPT_NODES.
+  const seedIds = new Set(seedRows.map((r) => r.id))
+  const neighbourScore = new Map<string, number>()
+  if (conceptL3) {
+    for (const e of conceptL3.links) {
+      if (e.type === 'mentions' || e.source === e.target) continue
+      const w = e.weight ?? 1
+      // a→b: if a is seed and b is non-seed, b becomes a candidate neighbour
+      const consider = (candidate: string, anchor: string) => {
+        if (!seedIds.has(anchor) || seedIds.has(candidate)) return
+        if (!globalById.has(candidate)) return // must exist as a concept node
+        const g = globalById.get(candidate)
+        if (g?.type && g.type !== 'concept') return // skip note nodes
+        neighbourScore.set(candidate, (neighbourScore.get(candidate) ?? 0) + w)
+      }
+      consider(e.target, e.source)
+      consider(e.source, e.target)
+    }
+  }
+
+  const budget = Math.max(0, MAX_CONCEPT_NODES - seedRows.length)
+  const neighbourIds = [...neighbourScore.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, budget)
+    .map(([id]) => id)
+
+  const idSet = new Set([...seedIds, ...neighbourIds])
+
+  const nodes: ConceptGraphNode[] = []
+  for (const r of seedRows) {
     const g = globalById.get(r.id)
-    return {
+    nodes.push({
       id: r.id,
       label: g?.label ?? r.name,
       cluster: g?.cluster ?? 0,
       pagerank: g?.pagerank ?? 0,
       weight: r.weight,
-    }
-  })
+    })
+  }
+  for (const id of neighbourIds) {
+    const g = globalById.get(id)
+    if (!g) continue
+    nodes.push({
+      id,
+      label: g.label,
+      cluster: g.cluster ?? 0,
+      pagerank: g.pagerank ?? 0,
+      weight: 0, // neighbour, no direct entity overlap with this post
+    })
+  }
 
   const links: ConceptGraphLink[] = []
+  const seenEdge = new Set<string>()
   if (conceptL3) {
     for (const e of conceptL3.links) {
-      // concept-l3.json always serialises endpoints as strings; the type
-      // says so. No defensive cast needed.
       if (e.source === e.target) continue
       if (!idSet.has(e.source) || !idSet.has(e.target)) continue
       if (e.type === 'mentions') continue
+      const key = e.source < e.target ? `${e.source}|${e.target}` : `${e.target}|${e.source}`
+      if (seenEdge.has(key)) continue
+      seenEdge.add(key)
       links.push({ source: e.source, target: e.target, weight: e.weight ?? 1 })
     }
   }
