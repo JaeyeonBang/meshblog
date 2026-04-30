@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
 import Button from '../components/ui/atoms/Button.astro'
+import T from '../components/ui/atoms/T.astro'
 import NoteRow from '../components/ui/molecules/NoteRow.astro'
 import { listPosts, listNotes } from '../lib/pages/index.ts'
 import { withBase } from '../lib/url'
@@ -18,13 +19,13 @@ const recentNotes = listNotes().slice(0, 1)
     <div class="box">
       <div class="code">http · error · 404</div>
       <div class="big">404</div>
-      <h1>여기엔 아무 노트도 없어요.</h1>
-      <p>이 URL에 해당하는 글 또는 노트를 vault에서 찾을 수 없습니다. 글이 옮겨졌거나, 슬러그가 바뀌었을 수 있어요.</p>
+      <h1><T ko="여기엔 아무 노트도 없어요." en="Nothing here." /></h1>
+      <p><T ko="URL에 해당하는 글을 vault에서 찾을 수 없습니다." en="This page doesn't exist in the vault." /></p>
 
-      <Button variant="primary" href={withBase('/')}>← 홈으로</Button>
+      <Button variant="primary" href={withBase('/')}><T ko="← 홈으로" en="← home" /></Button>
 
       <div class="suggests">
-        <div class="suggests-label">혹시 이걸 찾으셨나요?</div>
+        <div class="suggests-label"><T ko="혹시 이걸 찾으셨나요?" en="Maybe you were looking for:" /></div>
 
         {recentPosts.map((post, i) => (
           <NoteRow

@@ -1,26 +1,27 @@
 ---
 import { withBase } from '../../../lib/url';
+import T from '../atoms/T.astro';
 ---
 <footer class="footer">
   <div class="footer-box">
     <div class="footer-col">
       <div class="brand">meshblog</div>
-      <div class="tagline">Obsidian vault로 키우고, 정적 사이트로 내보내는 2nd-brain 블로그.</div>
+      <div class="tagline"><T ko="2nd brain · public." en="2nd brain · public." /></div>
     </div>
     <div class="footer-col">
-      <div class="ch">read</div>
+      <div class="ch"><T ko="읽기" en="read" /></div>
       <a href={withBase('/posts')}>latest posts</a>
       <a href={withBase('/atom.xml')}>atom · rss</a>
     </div>
     <div class="footer-col">
-      <div class="ch">explore</div>
+      <div class="ch"><T ko="탐색" en="explore" /></div>
       <a href={withBase('/notes')}>notes</a>
       <a href={withBase('/categories')}>categories</a>
       <a href={withBase('/graph')}>graph</a>
       <a href={withBase('/graph?mode=concept')}>concept mesh</a>
     </div>
     <div class="footer-col">
-      <div class="ch">about</div>
+      <div class="ch"><T ko="소개" en="about" /></div>
       <a href={withBase('/about')}>about</a>
       <a href={withBase('/about#colophon')}>colophon</a>
       <a href="https://github.com/JaeyeonBang/meshblog" target="_blank" rel="noopener">github</a>

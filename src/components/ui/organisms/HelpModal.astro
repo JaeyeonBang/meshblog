@@ -6,7 +6,7 @@
 <div class="help-backdrop" id="help-backdrop" role="dialog" aria-modal="true" aria-label="Help and keyboard shortcuts" aria-hidden="true">
   <div class="help" id="help-panel">
     <div class="help-head">
-      <div class="help-title">도움말 · help</div>
+      <div class="help-title"><span class="t-ko" lang="ko">도움말</span><span class="t-en" lang="en">help</span></div>
       <button class="help-close" id="help-close" aria-label="Close help">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <path d="M1 1L13 13M13 1L1 13"/>
@@ -16,54 +16,52 @@
 
     <section class="help-section help-section--intro" aria-label="Meshblog overview">
       <p class="help-intro">
-        meshblog은 Obsidian 볼트를 정적 사이트로 내보내는 오픈소스 템플릿입니다.
-        Claude Code 스킬이 매일 벽장을 감사하고, 깨진 링크와 드래프트 누출을 잡아준다.
-        <br />
-        <span class="help-intro-en">meshblog turns your Obsidian vault into a public site. Claude Code skills audit it daily — broken links, draft leaks, stale metadata — and tell you what was fixed.</span>
+        <span class="t-ko" lang="ko">meshblog은 Obsidian 볼트를 정적 사이트로 내보내는 오픈소스 템플릿입니다. Claude Code 스킬이 매일 감사하고, 깨진 링크와 드래프트 누출을 잡아줍니다.</span>
+        <span class="t-en" lang="en">meshblog turns your Obsidian vault into a public site. Claude Code skills audit it daily — broken links, draft leaks — and tell you what was fixed.</span>
       </p>
     </section>
 
     <section class="help-section" aria-labelledby="help-s1">
-      <h3 class="help-eyebrow" id="help-s1">단축키 · shortcuts</h3>
+      <h3 class="help-eyebrow" id="help-s1"><span class="t-ko" lang="ko">단축키</span><span class="t-en" lang="en">shortcuts</span></h3>
       <ul class="help-keys">
-        <li><span class="kbd">⌘K</span> <span>검색 열기 · open search</span></li>
-        <li><span class="kbd">?</span> <span>도움말 · this help</span></li>
-        <li><span class="kbd">↑↓</span> <span>결과 탐색 · navigate results</span></li>
-        <li><span class="kbd">↵</span> <span>열기 · open</span></li>
-        <li><span class="kbd">esc</span> <span>닫기 · close</span></li>
+        <li><span class="kbd">⌘K</span> <span><span class="t-ko" lang="ko">검색 열기</span><span class="t-en" lang="en">open search</span></span></li>
+        <li><span class="kbd">?</span> <span><span class="t-ko" lang="ko">도움말</span><span class="t-en" lang="en">this help</span></span></li>
+        <li><span class="kbd">↑↓</span> <span><span class="t-ko" lang="ko">결과 탐색</span><span class="t-en" lang="en">navigate results</span></span></li>
+        <li><span class="kbd">↵</span> <span><span class="t-ko" lang="ko">열기</span><span class="t-en" lang="en">open</span></span></li>
+        <li><span class="kbd">esc</span> <span><span class="t-ko" lang="ko">닫기</span><span class="t-en" lang="en">close</span></span></li>
       </ul>
     </section>
 
     <section class="help-section" aria-labelledby="help-s2">
-      <h3 class="help-eyebrow" id="help-s2">meshblog 기초 · basics</h3>
+      <h3 class="help-eyebrow" id="help-s2"><span class="t-ko" lang="ko">meshblog 기초</span><span class="t-en" lang="en">basics</span></h3>
       <dl class="help-terms">
-        <div><dt>vault</dt><dd>Obsidian 볼트를 그대로 정적 사이트로 렌더. Claude Code 스킬이 매일 감사한다.</dd></div>
-        <div><dt>concept mesh</dt><dd>노트에서 자동 추출한 개념들이 같이 등장할 때 엣지로 연결된다.</dd></div>
-        <div><dt>backlinks</dt><dd>현재 노트를 <code>[[reference]]</code>로 가리키는 다른 노트들.</dd></div>
+        <div><dt>vault</dt><dd><span class="t-ko" lang="ko">Obsidian 볼트를 그대로 정적 사이트로 렌더. Claude Code 스킬이 매일 감사한다.</span><span class="t-en" lang="en">Your Obsidian vault rendered as a static site. Claude Code skills audit it daily.</span></dd></div>
+        <div><dt>concept mesh</dt><dd><span class="t-ko" lang="ko">노트에서 자동 추출한 개념들이 같이 등장할 때 엣지로 연결된다.</span><span class="t-en" lang="en">Concepts auto-extracted from notes, linked when they co-occur.</span></dd></div>
+        <div><dt>backlinks</dt><dd><span class="t-ko" lang="ko">현재 노트를 <code>[[reference]]</code>로 가리키는 다른 노트들.</span><span class="t-en" lang="en">Other notes pointing to this one via <code>[[reference]]</code>.</span></dd></div>
       </dl>
     </section>
 
     <section class="help-section help-section--fork" aria-labelledby="help-s3">
-      <h3 class="help-eyebrow" id="help-s3">이 템플릿 · fork this</h3>
+      <h3 class="help-eyebrow" id="help-s3"><span class="t-ko" lang="ko">이 템플릿 사용하기</span><span class="t-en" lang="en">fork this</span></h3>
       <ol class="help-steps">
         <li>
           <span class="help-step-num">1</span>
-          <span class="help-step-body">GitHub에서 포크 · <code>gh repo fork JaeyeonBang/meshblog</code></span>
+          <span class="help-step-body"><span class="t-ko" lang="ko">GitHub에서 포크: </span><span class="t-en" lang="en">Fork on GitHub: </span><code>gh repo fork JaeyeonBang/meshblog</code></span>
         </li>
         <li>
           <span class="help-step-num">2</span>
-          <span class="help-step-body">클론 + <code>claude /init</code> · vault 경로 연결</span>
+          <span class="help-step-body"><span class="t-ko" lang="ko">클론 후 </span><span class="t-en" lang="en">Clone, then </span><code>claude /init</code></span>
         </li>
         <li>
           <span class="help-step-num">3</span>
-          <span class="help-step-body"><code>git push origin main</code> · GitHub Pages가 자동 배포</span>
+          <span class="help-step-body"><code>git push origin main</code> → <span class="t-ko" lang="ko">GitHub Pages 자동 배포</span><span class="t-en" lang="en">GitHub Pages auto-deploys</span></span>
         </li>
       </ol>
-      <a class="help-fork-link" href="https://github.com/JaeyeonBang/meshblog" target="_blank" rel="noopener">Fork on GitHub →</a>
+      <a class="help-fork-link" href="https://github.com/JaeyeonBang/meshblog" target="_blank" rel="noopener"><span class="t-ko" lang="ko">GitHub에서 포크 →</span><span class="t-en" lang="en">Fork on GitHub →</span></a>
     </section>
 
     <div class="help-foot" aria-hidden="true">
-      <span><span class="kbd">esc</span> 닫기</span>
+      <span><span class="kbd">esc</span> <span class="t-ko" lang="ko">닫기</span><span class="t-en" lang="en">close</span></span>
     </div>
   </div>
 </div>
@@ -236,13 +234,6 @@
     font-size: var(--fs-sm);
     color: var(--ink);
     line-height: 1.55;
-  }
-  .help-intro-en {
-    display: block;
-    margin-top: 6px;
-    color: var(--ink-3);
-    font-size: var(--fs-xs);
-    font-style: italic;
   }
   .help-steps {
     margin: 0 0 10px;

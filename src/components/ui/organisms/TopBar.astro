@@ -27,6 +27,15 @@ const links = [
     ))}
   </nav>
   <button
+    class="btn btn-sm btn-icon lang-toggle"
+    id="lang-toggle"
+    aria-label="Toggle Korean / English"
+    aria-pressed="false"
+    title="Toggle KOR / ENG"
+  >
+    <span class="t-ko" lang="ko">KO</span><span class="t-en" lang="en">EN</span>
+  </button>
+  <button
     class="btn btn-sm btn-icon theme-toggle"
     id="theme-toggle"
     aria-label="Toggle dark mode"
@@ -104,6 +113,40 @@ const links = [
 
   document.addEventListener('DOMContentLoaded', initThemeToggle);
   document.addEventListener('astro:page-load', initThemeToggle);
+
+  function initLangToggle() {
+    const btn = document.getElementById('lang-toggle');
+    if (!btn) return;
+
+    function getEffectiveLang(): 'ko' | 'en' {
+      const stored = localStorage.getItem('lang');
+      if (stored === 'ko' || stored === 'en') return stored as 'ko' | 'en';
+      // G2: check entire navigator.languages array for Korean (not just primary)
+      const langs: readonly string[] = (navigator.languages && navigator.languages.length)
+        ? navigator.languages
+        : [navigator.language || 'en'];
+      return langs.some((l: string) => l.toLowerCase().startsWith('ko')) ? 'ko' : 'en';
+    }
+
+    function applyLang(lang: 'ko' | 'en') {
+      // G1: set data-lang only — never touch html[lang] (that's content-driven)
+      document.documentElement.setAttribute('data-lang', lang);
+      btn!.setAttribute('aria-pressed', String(lang === 'en'));
+    }
+
+    function toggleLang() {
+      const current = getEffectiveLang();
+      const next: 'ko' | 'en' = current === 'ko' ? 'en' : 'ko';
+      localStorage.setItem('lang', next);
+      applyLang(next);
+    }
+
+    applyLang(getEffectiveLang());
+    btn.addEventListener('click', toggleLang);
+  }
+
+  document.addEventListener('DOMContentLoaded', initLangToggle);
+  document.addEventListener('astro:page-load', initLangToggle);
 </script>
 
 <style>

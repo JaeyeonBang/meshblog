@@ -217,6 +217,9 @@ const conceptGraph = getPostConceptGraph(post.id)
         )}
       </header>
 
+      {/* EN-mode notice for Korean-only posts (PR1: unconditional; PR2 will gate by has_en) */}
+      <p class="lang-notice">This post is published in Korean. Toggle 한·영 in the top bar.</p>
+
       <HeroFigure
         src={withBase(`/og/posts/${post.slug}.svg`)}
         alt={post.title}
@@ -359,6 +362,20 @@ const conceptGraph = getPostConceptGraph(post.id)
     reveals.forEach((el) => observer.observe(el))
   })()
 </script>
+
+<style>
+  /* ── EN-mode lang notice ─────────────────────────────────── */
+  .lang-notice {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    font-style: italic;
+    letter-spacing: 0.03em;
+    margin: var(--space-4) 0;
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+</style>
 
 <style is:global>
   @import '../../styles/motion.css';

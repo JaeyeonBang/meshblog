@@ -8,6 +8,7 @@ import QaCard from '../components/ui/molecules/QaCard.astro'
 import PostMeshGraph from '../components/PostMeshGraph'
 import CategoryList from '../components/ui/molecules/CategoryList.astro'
 import Button from '../components/ui/atoms/Button.astro'
+import T from '../components/ui/atoms/T.astro'
 import QAChips from '../components/QAChips.tsx'
 import { listPosts, listNotes, getHomepageQa } from '../lib/pages/index.ts'
 import { withBase } from '../lib/url'
@@ -58,18 +59,7 @@ const meshLinks: Array<{ source: string; target: string }> = []
       <div class="home-hero fade-up">
         <div class="eyebrow">vault · public · 2026</div>
         <h1>두 번째 뇌를, 남들이 읽을 수 있게 <em>내보내기</em>.</h1>
-        <p class="sub">메모를 모으고, 개념을 잇고, 혼자 읽기 아까운 생각을 공개합니다. Think of it as an Obsidian vault you can read over my shoulder.</p>
-      </div>
-
-      <div class="home-wedge fade-up">
-        <div class="wedge-eyebrow">open source · fork + deploy</div>
-        <p class="wedge-sentence">Fork this vault as a template. Claude Code skills audit it daily.</p>
-        <a
-          class="wedge-link"
-          href="https://github.com/JaeyeonBang/meshblog"
-          target="_blank"
-          rel="noopener"
-        >Fork on GitHub →</a>
+        <p class="sub"><T ko="메모를 모으고, 개념을 잇고, 혼자 읽기 아까운 생각을 공개합니다." en="Collected notes, linked concepts, thoughts too good to keep private." /></p>
       </div>
 
       <div class="feed stagger">
@@ -87,7 +77,7 @@ const meshLinks: Array<{ source: string; target: string }> = []
             style={`--i: ${i}`}
           />
         )) : (
-          <p class="feed-empty">아직 올라온 글이 없습니다 · still drafting.</p>
+          <p class="feed-empty"><T ko="아직 글이 없습니다." en="still drafting." /></p>
         )}
 
         <SectionBreak label="notes · atomic" count={`${notes.length} entries`} />
@@ -101,11 +91,11 @@ const meshLinks: Array<{ source: string; target: string }> = []
             badge={getNoteBadge(note)}
           />
         )) : (
-          <p class="feed-empty">노트 준비 중 · notes incoming.</p>
+          <p class="feed-empty"><T ko="노트 준비 중." en="notes incoming." /></p>
         )}
 
         <div class="feed-cta">
-          <Button href={withBase('/notes')}>notes 전체 보기 →</Button>
+          <Button href={withBase('/notes')}><T ko="notes 전체 보기 →" en="all notes →" /></Button>
         </div>
       </div>
     </div>
@@ -123,9 +113,9 @@ const meshLinks: Array<{ source: string; target: string }> = []
 
       <TOC label="concept mesh">
         <PostMeshGraph nodes={meshNodes} links={meshLinks} client:idle />
-        <p class="mesh-caption"><span class="mesh-caption__tag">Concept mesh</span> <span class="mesh-caption__body">· 자주 등장하는 개념들이 서로를 끌어당긴다</span></p>
+        <p class="mesh-caption"><span class="mesh-caption__tag">Concept mesh</span> <span class="mesh-caption__body"><T ko="· 개념들이 서로를 끌어당긴다" en="· concepts attract each other" /></span></p>
         <div class="mesh-cta">
-          <Button href={withBase('/graph')}>전체 그래프 →</Button>
+          <Button href={withBase('/graph')}><T ko="전체 그래프 →" en="full graph →" /></Button>
         </div>
       </TOC>
 
@@ -221,55 +211,6 @@ const meshLinks: Array<{ source: string; target: string }> = []
     max-width: 52ch;
     font-weight: 400;
     margin: 0;
-  }
-
-  /* ── Home wedge (fork-and-use OSS signal) ─────────────────── */
-  .home-wedge {
-    padding: var(--space-8) 0 var(--space-8);
-    border-bottom: 1px solid var(--ink);
-    margin-bottom: var(--space-12);
-  }
-
-  .wedge-eyebrow {
-    font-family: var(--f-mono);
-    font-size: var(--fs-xs);
-    letter-spacing: var(--track-eyebrow);
-    text-transform: uppercase;
-    color: var(--ink-3);
-    margin-bottom: var(--space-3);
-  }
-
-  .wedge-sentence {
-    font-family: var(--f-disp);
-    font-size: var(--fs-xl);
-    color: var(--ink);
-    line-height: 1.4;
-    margin: 0 0 var(--space-5);
-    max-width: 46ch;
-  }
-
-  .wedge-link {
-    font-family: var(--f-mono);
-    font-size: var(--fs-sm);
-    letter-spacing: var(--track-eyebrow);
-    text-transform: uppercase;
-    color: var(--ink);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    display: inline-block;
-    padding: 2px 0;
-    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-  }
-
-  .wedge-link:hover {
-    background: var(--ink);
-    color: var(--paper);
-    text-decoration: none;
-  }
-
-  .wedge-link:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
   }
 
   /* ── Feed ──────────────────────────────────────────────────── */

@@ -66,6 +66,23 @@ const fontPreloadHref = `${BASE}/fonts/Pretendard-Regular.subset.91.woff2`
         document.documentElement.setAttribute('data-theme', theme);
       })();
     </script>
+    <!-- FOUC prevention: set data-lang before stylesheets paint (G1: data-lang only, never html[lang]) -->
+    <script is:inline>
+      (function() {
+        var stored = null;
+        try { stored = localStorage.getItem('lang'); } catch(e) {}
+        var lang;
+        if (stored === 'ko' || stored === 'en') {
+          lang = stored;
+        } else {
+          var langs = (navigator.languages && navigator.languages.length)
+            ? navigator.languages
+            : [navigator.language || 'en'];
+          lang = langs.some(function(l) { return l.toLowerCase().startsWith('ko'); }) ? 'ko' : 'en';
+        }
+        document.documentElement.setAttribute('data-lang', lang);
+      })();
+    </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
@@ -109,6 +126,17 @@ const fontPreloadHref = `${BASE}/fonts/Pretendard-Regular.subset.91.woff2`
     <slot name="head" />
 
     <style is:global>
+      /* ── Bilingual toggle (KOR/ENG) ────────────────────────────── */
+      /* Default: show Korean, hide English */
+      .t-en { display: none; }
+      /* When data-lang="en": swap visibility */
+      html[data-lang="en"] .t-ko { display: none; }
+      html[data-lang="en"] .t-en { display: revert; }
+
+      /* lang-notice: visible only in EN mode (PR1 shows unconditionally) */
+      .lang-notice { display: none; }
+      html[data-lang="en"] .lang-notice { display: revert; }
+
       /* ── Accessibility utilities ────────────────────────────────── */
       .sr-only {
         position: absolute;
