@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import type { GraphJson, Manifest, GraphNode, NodeKind } from './graph/types'
+import type { GraphJson, GraphLink, Manifest, GraphNode, NodeKind } from './graph/types'
 import { useForceSimulation } from './graph/useForceSimulation'
 import type { HoverState, ZoomController } from './graph/useForceSimulation'
 import { HoverCard } from './graph/HoverCard'
@@ -110,10 +110,33 @@ function backlinksToGraphJson(bl: BacklinksJson): GraphJson {
 // Inline import-binding for normalizeLabel happens at top of file.
 // Used by L1 below to render acronym-preserving labels (e.g. "RL" not "Rl").
 
+/** Filter a global edge list down to those connecting two nodes in the
+ *  visible (category-filtered) node set. Used at L2/L3 in notes mode so the
+ *  drill-down view shows post-to-post edges instead of a constellation of
+ *  disconnected dots. */
+function filterEdgesToNodeSet(
+  edges: ReadonlyArray<GraphLink>,
+  visibleIds: ReadonlySet<string>,
+): GraphLink[] {
+  const out: GraphLink[] = []
+  for (const e of edges) {
+    const src = typeof e.source === 'string' ? e.source : e.source.id
+    const tgt = typeof e.target === 'string' ? e.target : e.target.id
+    if (visibleIds.has(src) && visibleIds.has(tgt)) {
+      out.push({ source: src, target: tgt, weight: e.weight, ...(e.type ? { type: e.type } : {}), ...(e.alias !== undefined ? { alias: e.alias } : {}) })
+    }
+  }
+  return out
+}
+
 function categoryToGraphJson(
   data: CategoryGraphJson,
   level: Level,
   categorySlug?: string,
+  /** Global note-to-note edges (from note-l3.json). When supplied, L2/L3 views
+   *  filter to edges between visible category nodes; without it they render
+   *  as disconnected dots (the legacy bug). */
+  globalNoteEdges?: ReadonlyArray<GraphLink>,
 ): GraphJson {
   if (level === 1 || !categorySlug) {
     // L1: one node per category — pagerank drives circle radius
@@ -155,7 +178,9 @@ function categoryToGraphJson(
       pinned: false,
       categorySlug: p.categorySlug,
     }))
-    return { nodes, links: [] }
+    const visibleIds = new Set(posts.map(p => p.id))
+    const links = globalNoteEdges ? filterEdgesToNodeSet(globalNoteEdges, visibleIds) : []
+    return { nodes, links }
   }
 
   // level === 3
@@ -169,7 +194,9 @@ function categoryToGraphJson(
     pinned: false,
     categorySlug: n.categorySlug,
   }))
-  return { nodes, links: [] }
+  const visibleIds = new Set(notes.map(n => n.id))
+  const links = globalNoteEdges ? filterEdgesToNodeSet(globalNoteEdges, visibleIds) : []
+  return { nodes, links }
 }
 
 function getInitialLevel(): Level {
@@ -182,6 +209,10 @@ export default function GraphView() {
   const [taxonomy, setTaxonomy] = useState<TaxonomyPath>({ level: getInitialLevel() })
   const [graph, setGraph] = useState<GraphJson | null>(null)
   const [categoryData, setCategoryData] = useState<CategoryGraphJson | null>(null)
+  // Cached global note-to-note edges (from /graph/note-l3.json). Populated on
+  // first notes-mode load; reused for every category drill-down so L2/L3 show
+  // real post connections instead of disconnected dots.
+  const [globalNoteEdges, setGlobalNoteEdges] = useState<GraphLink[] | null>(null)
   const [manifest, setManifest] = useState<Manifest>({})
   const [status, setStatus] = useState<Status>('loading')
   const [retry, setRetry] = useState(0)
@@ -282,16 +313,26 @@ export default function GraphView() {
         return r.json() as Promise<GraphJson>
       })
     } else {
-      // notes mode — try categories.json first, fall back to note-l{level}.json
-      graphFetch = fetch(withBase('/graph/categories.json'))
-        .then(r => {
+      // notes mode — load categories.json + note-l3.json in parallel.
+      // categories.json drives the L1/L2/L3 drill-down node sets; note-l3.json
+      // supplies the global post-to-post edges that L2/L3 filter against so
+      // category drill-downs render real connections, not floating dots.
+      graphFetch = Promise.all([
+        fetch(withBase('/graph/categories.json')).then(r => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`)
           return r.json() as Promise<CategoryGraphJson>
-        })
-        .then(data => {
+        }),
+        // Edges-only fetch; tolerate failure by treating as empty edge set
+        // (preserves L1 spine + falls back to dots-only behaviour at L2/L3).
+        fetch(withBase('/graph/note-l3.json'))
+          .then(r => (r.ok ? (r.json() as Promise<GraphJson>) : { nodes: [], links: [] }))
+          .catch(() => ({ nodes: [], links: [] } as GraphJson)),
+      ])
+        .then(([data, noteGraph]) => {
           if (cancelled) return { nodes: [], links: [] } as GraphJson
           setCategoryData(data)
-          return categoryToGraphJson(data, taxonomy.level, taxonomy.categorySlug)
+          setGlobalNoteEdges(noteGraph.links)
+          return categoryToGraphJson(data, taxonomy.level, taxonomy.categorySlug, noteGraph.links)
         })
         .catch(() => {
           // Graceful fallback to old hop-distance files
@@ -373,7 +414,12 @@ export default function GraphView() {
   // When taxonomy changes and categoryData already loaded: recompute client-side (no refetch)
   useEffect(() => {
     if (mode !== 'note' || !categoryData) return
-    const g = categoryToGraphJson(categoryData, taxonomy.level, taxonomy.categorySlug)
+    const g = categoryToGraphJson(
+      categoryData,
+      taxonomy.level,
+      taxonomy.categorySlug,
+      globalNoteEdges ?? undefined,
+    )
     setGraph(g)
     const nextStatus: Status = g.nodes.length === 0 ? 'empty' : 'ready'
     setStatus(nextStatus)
