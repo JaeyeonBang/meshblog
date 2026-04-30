@@ -289,11 +289,12 @@ describe("reader-polish B: prose width and centring", () => {
     expect(designMd).toMatch(/w-prose:\s*"72ch"/)
   })
 
-  it(".prose declares margin-inline: auto so it centres in its column", () => {
+  it(".prose fills the article column so its edges line up with the hero figure", () => {
     const articleCss = read("src/styles/article.css")
     const proseRule = articleCss.match(/^\.prose\s*\{[\s\S]*?\}/m)?.[0] ?? ""
-    expect(proseRule).toMatch(/margin-inline:\s*auto/)
-    expect(proseRule).toMatch(/max-width:\s*var\(--w-prose\)/)
+    expect(proseRule).toMatch(/max-width:\s*100%/)
+    // Centring is no longer applied — column-wide prose makes margin-inline auto a no-op.
+    expect(proseRule).not.toMatch(/margin-inline:\s*auto/)
     // Drop the legacy 60ch fallback that pre-dated the token.
     expect(proseRule).not.toMatch(/max-width:\s*60ch/)
   })
