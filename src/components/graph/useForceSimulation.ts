@@ -211,15 +211,19 @@ export function useForceSimulation(
     }
 
     // --- Simulation ---
+    // Spacing tuned for breathing room: linkDistance 90 (was 60) opens up
+    // hub clusters; chargeStrength -260 (was -120) pushes peripheral nodes
+    // outward so leaves don't bunch on top of hubs. collide floor 14 (was 10)
+    // keeps minimum gap between tiny nodes consistent at default zoom.
     const linkDistance = isSparseCategoryView
       ? Math.min(width, height) * 0.32
-      : (opts.simParams?.linkDistance ?? 60)
+      : (opts.simParams?.linkDistance ?? 90)
     const chargeStrength = isSparseCategoryView
       ? -800
-      : (opts.simParams?.chargeStrength ?? -120)
+      : (opts.simParams?.chargeStrength ?? -260)
     const collideRadius = isSparseCategoryView
       ? 32
-      : (opts.simParams?.collideRadius ?? 10)
+      : (opts.simParams?.collideRadius ?? 14)
 
     const simulation = d3Force
       .forceSimulation<SimNode>(nodes)
@@ -239,9 +243,9 @@ export function useForceSimulation(
       // floor so the sparse-view tuning still wins when nodes are tiny.
       .force(
         'collide',
-        // +22 = label height (13px) + dy offset (14) - radius overlap allowance.
-        // Larger labels need more vertical breathing room or they crash again.
-        d3Force.forceCollide<SimNode>(d => Math.max(collideRadius, radiusOf(d) + 22)),
+        // +28 = label height (13px) + dy offset (14) + extra whitespace pad.
+        // Was +22; bumped to keep label gutters open as link distance widens.
+        d3Force.forceCollide<SimNode>(d => Math.max(collideRadius, radiusOf(d) + 28)),
       )
       .stop()
 
