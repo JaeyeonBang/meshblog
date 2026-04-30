@@ -173,8 +173,21 @@ describe("post-overhaul: editorial invariants", () => {
   })
 })
 
-// ── tag-filter encoding (regression: control char stripped by minifier) ─────
+// ── tag-filter encoding (regression: separator never reached the DOM) ──────
 //
+// History:
+//   PR #72 joined tags with a raw U+001F byte. Vite/esbuild stripped it during
+//   minify, so shipped JS became split-by-empty-string. PR #76 switched to a
+//   JS '' escape so the minifier preserved the byte in the bundle. Local
+//   asserts passed. But on the LIVE site `data-tags="aaabbb"` still rendered
+//   without a separator: Astro's HTML attribute serializer normalizes/strips
+//   C0 control chars (0x1F is not a valid HTML attribute char), so the
+//   separator never reached the DOM regardless of how clean the JS source was.
+//
+// Current fix: JSON-encode the array. Printable ASCII only, round-trips
+// through HTML cleanly, and the parser side is `JSON.parse` instead of split.
+//
+// Old context preserved for the curious:
 // PR #72 joined tags with a literal U+001F byte in source. Vite/esbuild
 // stripped that control character during minify, so the shipped JS became
 // `split("")` (split-by-empty-string) and chip clicks did nothing on the live
@@ -192,12 +205,14 @@ describe("post-overhaul: tag-filter data-tags separator", () => {
   const POSTCARD = POSTCARD_BYTES.toString("utf-8")
   const POSTS_INDEX = POSTS_INDEX_BYTES.toString("utf-8")
 
-  it("PostCard joins tags via the \\u001F escape sequence (not a raw control byte)", () => {
-    expect(POSTCARD).toMatch(/tags\.join\(['"]\\u001F['"]\)/)
+  it("PostCard serializes tags via JSON.stringify (printable ASCII, survives HTML attribute serialization)", () => {
+    expect(POSTCARD).toMatch(/JSON\.stringify\(tags\)/)
+    expect(POSTCARD).not.toMatch(/tags\.join\(/)
   })
 
-  it("posts/index.astro splits data-tags on the same \\u001F escape", () => {
-    expect(POSTS_INDEX).toMatch(/getAttribute\(['"]data-tags['"]\)[^)]*\)\.split\(['"]\\u001F['"]\)/)
+  it("posts/index.astro parses data-tags via JSON.parse", () => {
+    expect(POSTS_INDEX).toMatch(/JSON\.parse\(/)
+    expect(POSTS_INDEX).not.toMatch(/\.split\(['"]\\u001F['"]\)/)
   })
 
   it("neither file contains a raw C0 control byte that the minifier would strip", () => {

@@ -38,9 +38,13 @@ describe("#1 tag-filter on /posts", () => {
     expect(POSTS_INDEX).toMatch(/'data-tags'|"data-tags"/)
   })
 
-  it("PostCard joins tags with U+001F so embedded punctuation cannot mis-split", () => {
+  it("PostCard JSON-encodes tags so the separator survives HTML attribute serialization", () => {
+    // Earlier attempts used a U+001F separator. The byte was preserved in JS
+    // source (post-#76) but Astro's attribute serializer still stripped it on
+    // output, so the live DOM showed `data-tags="aaabbb"` with no separator
+    // and chip clicks produced 0 matches. JSON keeps everything printable.
     const card = read("src/components/ui/molecules/PostCard.astro")
-    expect(card).toMatch(/tags\.join\(['"`]\\u001F/)
+    expect(card).toMatch(/JSON\.stringify\(tags\)/)
   })
 })
 

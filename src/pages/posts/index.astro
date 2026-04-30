@@ -105,9 +105,12 @@ const latestDate = posts.length > 0
     function applyFilter(tag: string | null) {
       let visible = 0
       cards.forEach((card) => {
-        // Tags joined with U+001F (unit separator) so a literal "|" in a tag
-        // can't mis-split. Empty data-tags (no tags) → empty array.
-        const tags = (card.getAttribute('data-tags') || '').split('\u001F').filter(Boolean)
+        // Tags are JSON-encoded by PostCard.astro. Empty/missing → [].
+        let tags: string[] = []
+        try {
+          const raw = card.getAttribute('data-tags')
+          if (raw) tags = JSON.parse(raw)
+        } catch { tags = [] }
         const match = !tag || tags.includes(tag)
         card.hidden = !match
         if (match) {
