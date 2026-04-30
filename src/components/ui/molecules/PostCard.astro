@@ -95,6 +95,14 @@ const tagsAttr = JSON.stringify(tags);
     display: block;
     color: inherit;
   }
+  /* Tag-filter on /posts toggles the hidden DOM property to remove non-matching
+     cards. Author-level `display: block` above out-specifies the UA's
+     `[hidden] { display: none }` (both have specificity 0,1,0 but author wins),
+     so the cards stayed visible even with hidden=true. Re-assert with class +
+     attribute (specificity 0,2,0) to guarantee the filter actually hides. */
+  .post-card[hidden] {
+    display: none;
+  }
   .post-card-link {
     display: block;
     text-decoration: none;
