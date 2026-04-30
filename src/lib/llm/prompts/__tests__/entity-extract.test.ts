@@ -20,6 +20,17 @@ describe("buildEntityExtractionPrompt", () => {
     expect(system.content).toMatch(/Return ONLY the JSON/i)
   })
 
+  it("system prompt mandates extracting cited methods + baselines (cross-pollination)", () => {
+    const [system] = buildEntityExtractionPrompt("x")
+    expect(system.content).toMatch(/cited methods.*baselines.*predecessors/i)
+  })
+
+  it("system prompt asks for canonical short forms (PPO not Proximal Policy Optimization)", () => {
+    const [system] = buildEntityExtractionPrompt("x")
+    expect(system.content).toMatch(/PPO.*not.*Proximal Policy Optimization/i)
+    expect(system.content).toMatch(/RLHF.*not.*Reinforcement Learning from Human Feedback/i)
+  })
+
   it("strips HTML tags from note content", () => {
     const [, user] = buildEntityExtractionPrompt("<p>hello</p> <b>world</b>")
     expect(user.content).not.toMatch(/</)
