@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS notes (
   graph_status  TEXT NOT NULL DEFAULT 'pending', -- pending | done | failed
   level_pin     INTEGER,                  -- frontmatter override: 1 | 2 | 3 | NULL
   category_slug TEXT,                     -- optional category; NULL = uncategorized
+  has_en        INTEGER NOT NULL DEFAULT 0, -- 1 when a *.en.md companion exists
+  body_en       TEXT,                     -- body markdown from companion *.en.md
+  title_en      TEXT,                     -- title from companion frontmatter (if set)
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );

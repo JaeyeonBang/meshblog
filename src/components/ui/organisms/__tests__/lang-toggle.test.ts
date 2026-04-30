@@ -2,10 +2,16 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 
-const topBarSrc = readFileSync(join(__dirname, '../TopBar.astro'), 'utf8')
+// Anchor file reads to the repo root (via cwd) so this test isn't dependent
+// on a specific __dirname resolution under vitest's ESM/import.meta layering.
+const REPO_ROOT = process.cwd()
+const topBarSrc = readFileSync(
+  join(REPO_ROOT, 'src/components/ui/organisms/TopBar.astro'),
+  'utf8',
+)
 const baseSrc = readFileSync(
-  join(__dirname, '../../../../layouts/Base.astro'),
-  'utf8'
+  join(REPO_ROOT, 'src/layouts/Base.astro'),
+  'utf8',
 )
 
 // ── Structural tests (source-level) ─────────────────────────────────────────

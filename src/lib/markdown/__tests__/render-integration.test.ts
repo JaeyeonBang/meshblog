@@ -12,7 +12,10 @@ const resolver: WikilinkResolver = (target) => {
   return null
 }
 
-describe('renderMarkdownToHtml — wikilink pipeline integration', () => {
+// Bumped per-test timeout to 15s: the first run pays a rehypeShiki cold-start
+// (loads github-light + github-dark theme JSON + Oniguruma WASM), which can
+// exceed vitest's 5s default in CI.
+describe('renderMarkdownToHtml — wikilink pipeline integration', { timeout: 15_000 }, () => {
   it('resolved wikilink survives through remark+rehype as a real anchor with .wikilink class', async () => {
     const html = await renderMarkdownToHtml('See [[Linked Note|details]] here.', {
       resolver,

@@ -26,7 +26,10 @@ const stubExtract = async (db: any, id: string, _content: string) => {
     ],
     "philosophy-on-writing": [{ name: "글쓰기", type: "concept" }],
   }
-  const entities = entitiesByNote[id] ?? []
+  // Fallback: if the note id isn't pre-mapped, emit one synthetic entity so
+  // the build-index smoke test stays decoupled from the real content tree.
+  // Without this the test falsely reports "no entities" after content churn.
+  const entities = entitiesByNote[id] ?? [{ name: `stub-${id}`, type: "concept" }]
   const normalizeName = (s: string) => {
     const c = s.toLowerCase().trim()
     const aliases: Record<string, string> = { "next.js": "nextjs", "ts": "typescript" }

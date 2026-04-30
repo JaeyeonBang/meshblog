@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /** Current schema version. Increment when adding new tables or altering columns. */
-const SCHEMA_VERSION = 5
+const SCHEMA_VERSION = 6
 
 export function applyMigrations(db: Database.Database): void {
   // WAL + busy timeout (Amendment A / DX #3)
@@ -43,6 +43,16 @@ export function applyMigrations(db: Database.Database): void {
       // Phase 4 → Phase 5: category_slug
       if (!cols.has("category_slug")) {
         db.exec("ALTER TABLE notes ADD COLUMN category_slug TEXT")
+      }
+      // Phase 5 → Phase 6: bilingual companion columns
+      if (!cols.has("has_en")) {
+        db.exec("ALTER TABLE notes ADD COLUMN has_en INTEGER NOT NULL DEFAULT 0")
+      }
+      if (!cols.has("body_en")) {
+        db.exec("ALTER TABLE notes ADD COLUMN body_en TEXT")
+      }
+      if (!cols.has("title_en")) {
+        db.exec("ALTER TABLE notes ADD COLUMN title_en TEXT")
       }
     }
   }

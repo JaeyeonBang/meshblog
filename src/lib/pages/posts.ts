@@ -22,6 +22,9 @@ export type PostRow = {
   updated_at: string
   level_pin: number | null
   category_slug: string | null
+  has_en: number
+  body_en: string | null
+  title_en: string | null
 }
 
 const POSTS_FOLDER = 'content/posts'
@@ -39,7 +42,7 @@ export function listPosts(): PostRow[] {
   try {
     const rows = db
       .prepare(
-        `SELECT id, slug, title, content, tags, created_at, updated_at, level_pin, category_slug
+        `SELECT id, slug, title, content, tags, created_at, updated_at, level_pin, category_slug, has_en, body_en, title_en
          FROM notes
          WHERE folder_path = ?
          ORDER BY created_at DESC`
@@ -112,7 +115,7 @@ export function getPostBySlug(slug: string): PostRow | null {
   try {
     const row = db
       .prepare(
-        `SELECT id, slug, title, content, tags, created_at, updated_at, level_pin, category_slug
+        `SELECT id, slug, title, content, tags, created_at, updated_at, level_pin, category_slug, has_en, body_en, title_en
          FROM notes
          WHERE slug = ? AND folder_path = ?
          LIMIT 1`
