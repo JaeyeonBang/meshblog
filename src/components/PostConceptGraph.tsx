@@ -203,7 +203,15 @@ function GraphCanvas({ nodes, links, mode }: { nodes: ConceptNode[]; links: Conc
         return !target?.closest('circle')
       })
       .on('zoom', (event) => {
+        // Counter-scale visual elements so zoom changes inter-node distance
+        // but keeps node radii + label font-size constant in screen pixels.
+        const k = event.transform.k
         root.attr('transform', event.transform.toString())
+        nodeSel.attr('r', (d) => radiusOf(d, mode) / k)
+        linkSel.attr('stroke-width', (d) => Math.max(1, 0.7 + Math.sqrt(d.weight) * 0.6) / k)
+        labelSel
+          .attr('font-size', mode.fontSize / k)
+          .attr('dy', (d) => (radiusOf(d, mode) + 12) / k)
       })
 
     // Attach to ref before calling svg.call so buttons can use it

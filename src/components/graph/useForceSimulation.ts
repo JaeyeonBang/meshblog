@@ -438,11 +438,23 @@ export function useForceSimulation(
     void labelNodes
 
     // --- Zoom ---
+    // Counter-scale nodes, labels, and edge strokes by 1/k so zooming changes
+    // the *distance* between nodes (positions scale with k) but the visual
+    // size of each circle and label stays constant. Without this counter-
+    // scale the user just sees a uniform scale-up that gives no information.
+    const BASE_LABEL_FONT_PX = 10
+    const BASE_LABEL_OFFSET_PX = 12
     const zoomBehavior = d3Zoom
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent(opts.simParams?.scaleExtent ?? [0.1, 8])
       .on('zoom', (event: d3Zoom.D3ZoomEvent<SVGSVGElement, unknown>) => {
+        const k = event.transform.k
         g.attr('transform', event.transform.toString())
+        nodeSel.attr('r', d => radiusOf(d) / k)
+        linkSel.attr('stroke-width', d => Math.max(1.0, 0.7 + Math.sqrt(d.weight) * 0.65) / k)
+        labelSel
+          .attr('font-size', BASE_LABEL_FONT_PX / k)
+          .attr('dy', d => (radiusOf(d) + BASE_LABEL_OFFSET_PX) / k)
       })
 
     svg.call(zoomBehavior)
