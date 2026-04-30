@@ -233,7 +233,14 @@ export function useForceSimulation(
       )
       .force('charge', d3Force.forceManyBody<SimNode>().strength(chargeStrength))
       .force('center', d3Force.forceCenter(width / 2, height / 2))
-      .force('collide', d3Force.forceCollide<SimNode>(collideRadius))
+      // Per-node collide reserves space for each label (~14px below circle)
+      // so neighbours don't crash labels into each other or into adjacent
+      // circles. `collideRadius` (10 default, 32 sparse-category) acts as a
+      // floor so the sparse-view tuning still wins when nodes are tiny.
+      .force(
+        'collide',
+        d3Force.forceCollide<SimNode>(d => Math.max(collideRadius, radiusOf(d) + 18)),
+      )
       .stop()
 
     // Deterministic layout: run 60 ticks synchronously (Patch C3)
@@ -331,14 +338,20 @@ export function useForceSimulation(
         return `${delay}ms`
       })
 
-    // Labels — rendered; visibility toggled via CSS class on hover
+    // Labels — rendered; visibility toggled via CSS class on hover.
+    //
+    // font-size set via inline .style() (NOT .attr()) so the zoom counter-
+    // scale below can override it. CSS rule `.labels text { font-size: 10px }`
+    // wins against the SVG attribute but loses to inline style. Without this,
+    // zooming visually scales label text along with the camera (the bug from
+    // PR #89).
     const labelSel = g
       .append('g')
       .attr('class', 'labels')
       .selectAll<SVGTextElement, SimNode>('text')
       .data(nodes)
       .join('text')
-      .attr('font-size', 10)
+      .style('font-size', '10px')
       .attr('text-anchor', 'middle')
       .attr('dy', d => radiusOf(d) + 12)
       .attr('x', d => d.x ?? 0)
@@ -452,8 +465,9 @@ export function useForceSimulation(
         g.attr('transform', event.transform.toString())
         nodeSel.attr('r', d => radiusOf(d) / k)
         linkSel.attr('stroke-width', d => Math.max(1.0, 0.7 + Math.sqrt(d.weight) * 0.65) / k)
+        // font-size via inline .style() so it beats the CSS rule on .labels text
         labelSel
-          .attr('font-size', BASE_LABEL_FONT_PX / k)
+          .style('font-size', `${BASE_LABEL_FONT_PX / k}px`)
           .attr('dy', d => (radiusOf(d) + BASE_LABEL_OFFSET_PX) / k)
       })
 
