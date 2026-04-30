@@ -14,6 +14,9 @@ function makePost(tags: string[]): PostRow {
     updated_at: '2026-01-01T00:00:00Z',
     level_pin: null,
     category_slug: null,
+    has_en: 0,
+    body_en: null,
+    title_en: null,
   }
 }
 

@@ -1,7 +1,7 @@
 import dotenv from "dotenv"
 dotenv.config({ path: ".env.local" })
 
-import { readFileSync } from "node:fs"
+import { readFileSync, existsSync } from "node:fs"
 import { basename, extname } from "node:path"
 import { createHash, randomUUID } from "node:crypto"
 import matter from "gray-matter"
@@ -214,7 +214,7 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
   let processed = 0
   let skipped = 0
 
-  for (const { path, folder } of files) {
+  for (const { path, folder, companionEnPath } of files) {
     const raw = readFileSync(path, "utf-8")
     const { data: fm, content } = matter(raw)
 
@@ -242,6 +242,23 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
       (fm.category as string | undefined)?.toLowerCase().trim() ??
       deriveCategoryFromTags(rawTags)
 
+    // ── Bilingual companion ingestion (G4 / G6) ─────────────────────────────
+    // has_en: companion file presence takes precedence; fallback to frontmatter field.
+    let hasEn = 0
+    let bodyEn: string | null = null
+    let titleEn: string | null = null
+    if (companionEnPath && existsSync(companionEnPath)) {
+      const compRaw = readFileSync(companionEnPath, "utf-8")
+      const { data: compFm, content: compContent } = matter(compRaw)
+      hasEn = 1
+      bodyEn = compContent
+      titleEn = (compFm.title as string | undefined) ?? null
+      console.log(`[build-index] companion: ${companionEnPath} → has_en=1`)
+    } else if (fm.has_en === true) {
+      // Author manually set has_en: true in frontmatter (no companion file yet)
+      hasEn = 1
+    }
+
     const existing = queryOne<{ content_hash: string }>(
       db,
       "SELECT content_hash FROM notes WHERE id = ?",
@@ -250,8 +267,8 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
 
     execute(
       db,
-      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, level_pin, category_slug)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, level_pin, category_slug, has_en, body_en, title_en)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          title         = excluded.title,
          content       = excluded.content,
@@ -260,8 +277,11 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
          tags          = excluded.tags,
          level_pin     = excluded.level_pin,
          category_slug = excluded.category_slug,
+         has_en        = excluded.has_en,
+         body_en       = excluded.body_en,
+         title_en      = excluded.title_en,
          updated_at    = datetime('now')`,
-      [id, slug, title, content, hash, folder, tags, levelPin, categorySlug],
+      [id, slug, title, content, hash, folder, tags, levelPin, categorySlug, hasEn, bodyEn, titleEn],
     )
 
     const hashChanged = !existing || existing.content_hash !== hash

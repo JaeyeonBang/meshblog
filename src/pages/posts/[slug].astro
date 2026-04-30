@@ -115,6 +115,16 @@ const contentHtml = await renderMarkdownToHtml(stripLeadingH1(post.content), {
 
 const ledeHtml = injectLedeClass(contentHtml)
 
+// Bilingual body: render EN companion if present
+let ledeHtmlEn: string | null = null
+if (post.has_en && post.body_en) {
+  const contentHtmlEn = await renderMarkdownToHtml(stripLeadingH1(post.body_en), {
+    resolver: wikilinkResolver,
+    hrefFor: (slug) => withBase(`/notes/${slug}`),
+  })
+  ledeHtmlEn = injectLedeClass(contentHtmlEn)
+}
+
 // All posts list for pager
 const allPosts = listPosts()
 const currentIndex = allPosts.findIndex((p) => p.slug === post.slug)
@@ -217,8 +227,10 @@ const conceptGraph = getPostConceptGraph(post.id)
         )}
       </header>
 
-      {/* EN-mode notice for Korean-only posts (PR1: unconditional; PR2 will gate by has_en) */}
-      <p class="lang-notice">This post is published in Korean. Toggle 한·영 in the top bar.</p>
+      {/* EN-mode lang notice: shown only when no EN companion exists */}
+      {!post.has_en && (
+        <p class="lang-notice">This post is published in Korean. Toggle 한·영 in the top bar.</p>
+      )}
 
       <HeroFigure
         src={withBase(`/og/posts/${post.slug}.svg`)}
@@ -226,9 +238,14 @@ const conceptGraph = getPostConceptGraph(post.id)
         label={`hero · ${post.slug}`}
       />
 
-      <div class="prose">
+      <div class="t-ko prose" lang="ko">
         <div set:html={ledeHtml} />
       </div>
+      {post.has_en && ledeHtmlEn && (
+        <div class="t-en prose" lang="en">
+          <div set:html={ledeHtmlEn} />
+        </div>
+      )}
 
       {allQa.length > 0 && (
         <div class="page-qa-wrapper">

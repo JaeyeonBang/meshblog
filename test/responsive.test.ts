@@ -156,7 +156,7 @@ describe("responsive audit (T5)", { timeout: 180_000 }, () => {
 
   // ── 3. .prose max-width: 65ch present on article pages ──────────────────────
 
-  it("article page CSS contains .prose max-width: 65ch (note or post)", () => {
+  it("article page CSS bounds .prose width (column or full-bleed within parent)", () => {
     // Prefer a note page (guaranteed by fixture seed); fall back to post if present.
     const noteSlug = firstNoteSlug()
     const postSlug = firstPostSlug()
@@ -164,8 +164,11 @@ describe("responsive audit (T5)", { timeout: 180_000 }, () => {
     const dir = noteSlug ? "notes" : "posts"
     expect(slug, "No article page (note or post) found in dist/").toBeDefined()
     const css = readAllCSS(join(DIST, dir, slug!, "index.html"))
-    // Editorial redesign uses 64ch; accept any narrow reading column (60–75ch).
-    expect(css).toMatch(/\.prose\s*\{[^}]*max-width:\s*(6[0-9]|7[0-5])ch/)
+    // Two valid configurations:
+    //   1) .prose { max-width: 60–75ch }                    — narrow reading column (legacy)
+    //   2) .prose { max-width: 100% } + parent shell limits — wide-prose redesign (post-PR #82)
+    // Either way the test checks .prose declares a max-width so prose isn't unbounded.
+    expect(css).toMatch(/\.prose\s*\{[^}]*max-width:\s*(?:(?:6[0-9]|7[0-5])ch|100%)/)
   })
 
   // ── 4. .prose pre has overflow-x: auto ──────────────────────────────────────

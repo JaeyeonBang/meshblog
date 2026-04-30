@@ -140,6 +140,16 @@ const contentHtml = await renderMarkdownToHtml(stripLeadingH1(note.content), {
 
 const ledeHtml = injectLedeClass(contentHtml)
 
+// Bilingual body: render EN companion if present
+let ledeHtmlEn: string | null = null
+if (note.has_en && note.body_en) {
+  const contentHtmlEn = await renderMarkdownToHtml(stripLeadingH1(note.body_en), {
+    resolver: wikilinkResolver,
+    hrefFor: (slug) => withBase(`/notes/${slug}`),
+  })
+  ledeHtmlEn = injectLedeClass(contentHtmlEn)
+}
+
 // All notes for pager
 const allNotes = listNotes()
 const currentIndex = allNotes.findIndex((n) => n.slug === note.slug)
@@ -215,17 +225,24 @@ const meshLinks = getNoteMeshLinks(neighborSlugs)
         )}
       </header>
 
-      {/* EN-mode notice for Korean-only notes (PR1: unconditional; PR2 will gate by has_en) */}
-      <p class="lang-notice">This note is published in Korean. Toggle 한·영 in the top bar.</p>
+      {/* EN-mode lang notice: shown only when no EN companion exists */}
+      {!note.has_en && (
+        <p class="lang-notice">This note is published in Korean. Toggle 한·영 in the top bar.</p>
+      )}
 
       {isPrivate
         ? <PrivatePlaceholder title={note.title} />
         : (
           <>
             <!-- Note variant: no HeroFigure, prose width 52ch -->
-            <div class="prose note-prose">
+            <div class="t-ko prose note-prose" lang="ko">
               <div set:html={ledeHtml} />
             </div>
+            {note.has_en && ledeHtmlEn && (
+              <div class="t-en prose note-prose" lang="en">
+                <div set:html={ledeHtmlEn} />
+              </div>
+            )}
 
             {allQa.length > 0 && (
               <div class="page-qa-wrapper">

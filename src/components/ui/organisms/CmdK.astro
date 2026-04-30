@@ -4,34 +4,65 @@ import { listPosts, listNotes } from '../../../lib/pages/index';
 
 // Build-time search index — slug + title only. Keeps JSON small, client
 // filter O(n) fast, no server trip. SQLite FTS is a v2 upgrade.
+// Each item has a `lang` field: bilingual notes produce two items (ko + en).
+// Client-side filter by document.documentElement.dataset.lang before scoring.
 type SearchItem = {
   id: string
   kind: 'post' | 'note'
   title: string
   href: string
   meta: string
+  lang: 'ko' | 'en'
 }
 
 let items: SearchItem[] = []
 try {
   const posts = listPosts()
   const notes = listNotes()
-  items = [
-    ...posts.map((p) => ({
+  const postItems: SearchItem[] = []
+  for (const p of posts) {
+    postItems.push({
       id: `post-${p.slug}`,
-      kind: 'post' as const,
+      kind: 'post',
       title: p.title,
       href: withBase(`/posts/${p.slug}`),
       meta: `${Math.max(1, Math.round((p.content?.length ?? 0) / 1000))} min`,
-    })),
-    ...notes.map((n, i) => ({
+      lang: 'ko',
+    })
+    if (p.has_en) {
+      postItems.push({
+        id: `post-${p.slug}-en`,
+        kind: 'post',
+        title: p.title_en || p.title,
+        href: withBase(`/posts/${p.slug}`),
+        meta: `${Math.max(1, Math.round((p.content?.length ?? 0) / 1000))} min`,
+        lang: 'en',
+      })
+    }
+  }
+  const noteItems: SearchItem[] = []
+  for (let i = 0; i < notes.length; i++) {
+    const n = notes[i]
+    noteItems.push({
       id: `note-${n.slug}`,
-      kind: 'note' as const,
+      kind: 'note',
       title: n.title,
       href: withBase(`/notes/${n.slug}`),
       meta: `N / ${String(i + 1).padStart(2, '0')}`,
-    })),
-  ]
+      lang: 'ko',
+    })
+    if (n.has_en) {
+      noteItems.push({
+        id: `note-${n.slug}-en`,
+        kind: 'note',
+        title: n.title_en || n.title,
+        href: withBase(`/notes/${n.slug}`),
+        meta: `N / ${String(i + 1).padStart(2, '0')}`,
+        lang: 'en',
+      })
+    }
+  }
+  items = [...postItems, ...noteItems]
 } catch {
   // DB unreachable (zero-key preview without fixture) — palette degrades to empty.
   items = []
@@ -310,6 +341,17 @@ const noteCount = items.filter(i => i.kind === 'note').length
     title: string
     href: string
     meta: string
+    lang: 'ko' | 'en'
+  }
+
+  function currentLang(): 'ko' | 'en' {
+    const v = document.documentElement.dataset.lang
+    return v === 'en' ? 'en' : 'ko'
+  }
+
+  function filterByLang(items: SearchItem[]): SearchItem[] {
+    const lang = currentLang()
+    return items.filter(it => it.lang === lang)
   }
 
   function loadIndex(): SearchItem[] {
@@ -325,13 +367,13 @@ const noteCount = items.filter(i => i.kind === 'note').length
   function filterItems(items: SearchItem[], q: string): SearchItem[] {
     const needle = q.toLowerCase().trim()
     if (!needle) return []
-    return items
+    return filterByLang(items)
       .filter(it => it.title.toLowerCase().includes(needle))
       .slice(0, 20)
   }
 
   function recentItems(items: SearchItem[]): SearchItem[] {
-    return items.slice(0, 5)
+    return filterByLang(items).slice(0, 5)
   }
 
   function escapeHtml(s: string): string {
@@ -400,18 +442,36 @@ const noteCount = items.filter(i => i.kind === 'note').length
     // Sync placeholder to current lang
     updateInputPlaceholder(inp);
 
-    // Re-sync when lang-toggle fires (data-lang changes on html element)
-    const langObserver = new MutationObserver(() => updateInputPlaceholder(inp!));
-    langObserver.observe(document.documentElement, { attributeFilter: ['data-lang'] });
-
     const items = loadIndex()
     let activeIdx = -1
+
+    function refreshResults() {
+      const q = inp!.value
+      if (!q.trim()) {
+        renderSuggestions(results!, items)
+        const recent = recentItems(items)
+        activeIdx = recent.length > 0 ? 0 : -1
+      } else {
+        const filtered = filterItems(items, q)
+        renderResults(results!, filtered, q)
+        activeIdx = filtered.length > 0 ? 0 : -1
+      }
+      updateActive()
+    }
+
+    // Re-sync placeholder + re-render results when lang-toggle fires (data-lang changes)
+    const langObserver = new MutationObserver(() => {
+      updateInputPlaceholder(inp!)
+      if (bd!.classList.contains('open')) refreshResults()
+    });
+    langObserver.observe(document.documentElement, { attributeFilter: ['data-lang'] });
 
     function open() {
       bd!.classList.add('open');
       bd!.setAttribute('aria-hidden', 'false');
       renderSuggestions(results!, items)
-      activeIdx = items.slice(0, 5).length > 0 ? 0 : -1
+      const recent = recentItems(items)
+      activeIdx = recent.length > 0 ? 0 : -1
       updateActive()
       setTimeout(() => inp!.focus(), 50);
     }
@@ -421,7 +481,8 @@ const noteCount = items.filter(i => i.kind === 'note').length
       bd!.setAttribute('aria-hidden', 'true');
       inp!.value = '';
       renderSuggestions(results!, items)
-      activeIdx = items.slice(0, 5).length > 0 ? 0 : -1
+      const recent = recentItems(items)
+      activeIdx = recent.length > 0 ? 0 : -1
       updateActive()
     }
 
