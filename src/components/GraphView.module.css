@@ -205,11 +205,13 @@
 
 /* ── Labels: visible by default, dim siblings on hover ──────────── */
 
-/* Labels always visible at rest */
+/* Labels always visible at rest. font-size is set via inline .style() in
+   useForceSimulation.ts so the zoom counter-scale can override it; the
+   value below is a fallback for tooling/SSR snapshots only. */
 .svg :global(.labels text) {
   fill: var(--ink);
   font-family: var(--f-mono);
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.04em;
   opacity: 1;
   pointer-events: none;

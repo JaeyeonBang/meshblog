@@ -239,7 +239,9 @@ export function useForceSimulation(
       // floor so the sparse-view tuning still wins when nodes are tiny.
       .force(
         'collide',
-        d3Force.forceCollide<SimNode>(d => Math.max(collideRadius, radiusOf(d) + 18)),
+        // +22 = label height (13px) + dy offset (14) - radius overlap allowance.
+        // Larger labels need more vertical breathing room or they crash again.
+        d3Force.forceCollide<SimNode>(d => Math.max(collideRadius, radiusOf(d) + 22)),
       )
       .stop()
 
@@ -351,9 +353,9 @@ export function useForceSimulation(
       .selectAll<SVGTextElement, SimNode>('text')
       .data(nodes)
       .join('text')
-      .style('font-size', '10px')
+      .style('font-size', '13px')
       .attr('text-anchor', 'middle')
-      .attr('dy', d => radiusOf(d) + 12)
+      .attr('dy', d => radiusOf(d) + 14)
       .attr('x', d => d.x ?? 0)
       .attr('y', d => d.y ?? 0)
       .style('pointer-events', 'none')
@@ -455,8 +457,8 @@ export function useForceSimulation(
     // the *distance* between nodes (positions scale with k) but the visual
     // size of each circle and label stays constant. Without this counter-
     // scale the user just sees a uniform scale-up that gives no information.
-    const BASE_LABEL_FONT_PX = 10
-    const BASE_LABEL_OFFSET_PX = 12
+    const BASE_LABEL_FONT_PX = 13
+    const BASE_LABEL_OFFSET_PX = 14
     const zoomBehavior = d3Zoom
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent(opts.simParams?.scaleExtent ?? [0.1, 8])

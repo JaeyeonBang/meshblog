@@ -7,11 +7,32 @@ interface Props {
 }
 const { mode, level, nodeCount = 0, edgeCount = 0 } = Astro.props;
 
-const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
-  1: { label: 'L1 · 카테고리 overview', title: 'top-level categories' },
-  2: { label: 'L2 · 포스트 in category', title: 'posts within selected category' },
-  3: { label: 'L3 · 노트 in category', title: 'individual notes within selected category' },
+// Level labels are context-sensitive. Note mode drills down by category;
+// concept mode drills down by pagerank tier (top concepts → full graph).
+// The seg label stays compact ("L1 · 카테고리 overview") for note mode and
+// switches to a concept-mode-friendly variant ("L1 · 핵심 컨셉") otherwise.
+// The full description is in the title attribute for hover discoverability.
+const levelLabels: Record<1 | 2 | 3, { noteLabel: string; conceptLabel: string; noteTitle: string; conceptTitle: string }> = {
+  1: {
+    noteLabel: 'L1 · 카테고리 overview',
+    conceptLabel: 'L1 · 핵심 컨셉',
+    noteTitle: 'top-level categories',
+    conceptTitle: 'top concepts (highest pagerank only)',
+  },
+  2: {
+    noteLabel: 'L2 · 포스트 in category',
+    conceptLabel: 'L2 · 확장 컨셉',
+    noteTitle: 'posts within selected category',
+    conceptTitle: 'concepts + immediate neighbours',
+  },
+  3: {
+    noteLabel: 'L3 · 노트 in category',
+    conceptLabel: 'L3 · 전체 그래프',
+    noteTitle: 'individual notes within selected category',
+    conceptTitle: 'full concept graph (all clusters)',
+  },
 }
+const isConceptMode = mode === 'concept'
 ---
 <div class="graph-controls">
   <div class="controls-row">
@@ -58,10 +79,14 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
           <button
             class:list={['seg', level === l && 'seg--active']}
             data-level={l}
+            data-note-label={levelLabels[l].noteLabel}
+            data-concept-label={levelLabels[l].conceptLabel}
+            data-note-title={levelLabels[l].noteTitle}
+            data-concept-title={levelLabels[l].conceptTitle}
             role="radio"
             aria-checked={level === l}
-            title={levelLabels[l].title}
-          >{levelLabels[l].label}</button>
+            title={isConceptMode ? levelLabels[l].conceptTitle : levelLabels[l].noteTitle}
+          >{isConceptMode ? levelLabels[l].conceptLabel : levelLabels[l].noteLabel}</button>
         ))}
       </div>
     </div>
@@ -341,6 +366,12 @@ const levelLabels: Record<1 | 2 | 3, { label: string; title: string }> = {
     z-index: 20;
     display: flex;
     flex-direction: column;
+  }
+  /* `display: flex` above out-specifies the UA `[hidden] { display: none }`,
+     so the menu would render open on every fresh load. Same specificity fix
+     as .post-card[hidden] / .filter-bar[hidden]. */
+  .overflow-menu[hidden] {
+    display: none;
   }
 
   .overflow-item {

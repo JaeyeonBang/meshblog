@@ -52,7 +52,7 @@ type Mode = {
 
 const COMPACT_MODE: Mode = {
   canvas: 280,
-  fontSize: 10,
+  fontSize: 12,
   baseRadius: 6,
   linkDistance: 60,
   chargeStrength: -180,
@@ -60,7 +60,7 @@ const COMPACT_MODE: Mode = {
 
 const INLINE_MODE: Mode = {
   canvas: 720,
-  fontSize: 12,
+  fontSize: 14,
   baseRadius: 7,
   linkDistance: 90,
   chargeStrength: -260,
@@ -68,7 +68,7 @@ const INLINE_MODE: Mode = {
 
 const EXPANDED_MODE: Mode = {
   canvas: 720,
-  fontSize: 12,
+  fontSize: 14,
   baseRadius: 8,
   linkDistance: 110,
   chargeStrength: -380,
