@@ -139,6 +139,30 @@ describe("export-graph", () => {
     }
   })
 
+  it("buildConceptGraph synthesises concept↔concept edges via note co-occurrence", () => {
+    // Fixture: c1{e1,e2}, c2{e3}, c3{e4}.
+    // note-1 has e1,e2 (only c1) → no cross-concept pair.
+    // note-2 has e1,e3 (c1+c2) → c1↔c2 edge.
+    // note-3 has e2,e3 (c1+c2) → another co-occurrence; weight should be 2.
+    // c3 only co-occurs with itself (notes 4,5 each have only e4) → orphan.
+    const g = buildConceptGraph(db)
+
+    // 3 concept nodes
+    expect(g.order).toBe(3)
+    expect(g.hasNode("concept-1")).toBe(true)
+    expect(g.hasNode("concept-2")).toBe(true)
+    expect(g.hasNode("concept-3")).toBe(true)
+
+    // Exactly one edge: c1 ↔ c2 (Louvain communities are disjoint, so the
+    // OLD shared-entity query would have produced 0 edges here — this test
+    // pins the co-occurrence-via-notes contract).
+    expect(g.size).toBe(1)
+    expect(g.hasEdge("concept-1", "concept-2") || g.hasEdge("concept-2", "concept-1")).toBe(true)
+
+    const edge = g.edges("concept-1", "concept-2")[0] ?? g.edges("concept-2", "concept-1")[0]
+    expect(g.getEdgeAttribute(edge, "weight")).toBe(2)
+  })
+
   it("level_pin frontmatter overrides PageRank level", async () => {
     // Pin note-5 to level 1
     execute(db, "UPDATE notes SET level_pin = 1 WHERE id = 'note-5'", [])
