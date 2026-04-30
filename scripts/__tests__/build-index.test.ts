@@ -153,4 +153,46 @@ describe("build-index smoke (mocked LLM)", () => {
     expect(mc2).toBe(mc1)
     expect(r2.skipped).toBe(r1.processed)
   })
+
+  it("--force re-extracts hash-skipped notes (used by /re-extract skill)", async () => {
+    // First run: cold start, extracts everything
+    const r1 = await runBuildIndex({
+      dbPath: TMP_DB,
+      baseDirs: FIXTURE_DIRS,
+      extract: stubExtract,
+      skipEmbed: true,
+      skipConcepts: true,
+    })
+    expect(r1.processed).toBeGreaterThan(0)
+    expect(r1.skipped).toBe(0)
+
+    // Second run without --force: hash unchanged → all skipped
+    const r2 = await runBuildIndex({
+      dbPath: TMP_DB,
+      baseDirs: FIXTURE_DIRS,
+      extract: stubExtract,
+      skipEmbed: true,
+      skipConcepts: true,
+    })
+    expect(r2.skipped).toBe(r1.processed)
+    expect(r2.processed).toBe(r1.processed) // counter increments even when skipped
+
+    // Third run WITH --force: every note re-extracted, even though hash unchanged.
+    // Track extract() invocations via a counter wrapper around stubExtract.
+    let extractCalls = 0
+    const countingExtract = async (db: any, id: string, content: string) => {
+      extractCalls++
+      return stubExtract(db, id, content)
+    }
+    const r3 = await runBuildIndex({
+      dbPath: TMP_DB,
+      baseDirs: FIXTURE_DIRS,
+      extract: countingExtract,
+      skipEmbed: true,
+      skipConcepts: true,
+      force: true,
+    })
+    expect(r3.skipped).toBe(0)              // none skipped under --force
+    expect(extractCalls).toBe(r1.processed) // every note re-extracted
+  })
 })

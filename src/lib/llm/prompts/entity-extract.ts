@@ -20,7 +20,7 @@ Rules:
 - Only extract entities that are explicitly mentioned in the text
 - Keep descriptions under 50 characters
 - Relationships should describe how entities relate (e.g., "used_in", "created_by", "part_of", "related_to")
-- Return at most 10 entities and 10 relationships
+- Return up to 25 entities and 25 relationships. Prefer richer coverage — extract every distinct technical concept, person, paper, model, method, and tool mentioned, even if it appears once. Granular entities make the knowledge graph denser and more useful.
 - If the note has no extractable entities, return {"entities": [], "relationships": []}
 - Return ONLY the JSON object, no markdown or explanation`
 
@@ -29,7 +29,7 @@ export function buildEntityExtractionPrompt(noteContent: string): ChatMessage[] 
     .replace(/<[^>]*>/g, "")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 8000)
+    .slice(0, 16000)
 
   return [
     { role: "system", content: SYSTEM_PROMPT },
