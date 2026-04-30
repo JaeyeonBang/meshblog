@@ -50,28 +50,32 @@ type Mode = {
   chargeStrength: number
 }
 
+// Spacing tuned for whitespace + readability. Each mode pushes nodes farther
+// apart than the previous tuning so labels stop crashing into adjacent circles.
+// Compact stays modest (sidebar canvas is small); inline + expanded get bigger
+// bumps because they have room to breathe.
 const COMPACT_MODE: Mode = {
   canvas: 280,
   fontSize: 12,
   baseRadius: 6,
-  linkDistance: 60,
-  chargeStrength: -180,
+  linkDistance: 78,
+  chargeStrength: -240,
 }
 
 const INLINE_MODE: Mode = {
   canvas: 720,
   fontSize: 14,
   baseRadius: 7,
-  linkDistance: 90,
-  chargeStrength: -260,
+  linkDistance: 120,
+  chargeStrength: -360,
 }
 
 const EXPANDED_MODE: Mode = {
   canvas: 720,
   fontSize: 14,
   baseRadius: 8,
-  linkDistance: 110,
-  chargeStrength: -380,
+  linkDistance: 150,
+  chargeStrength: -500,
 }
 
 function radiusOf(n: ConceptNode, mode: Mode): number {
@@ -113,9 +117,10 @@ function GraphCanvas({ nodes, links, mode }: { nodes: ConceptNode[]; links: Conc
       )
       .force('charge', d3Force.forceManyBody<SimNode>().strength(mode.chargeStrength))
       .force('center', d3Force.forceCenter(mode.canvas / 2, mode.canvas / 2))
-      // +18 reserves vertical space for the label (font ~10–12px + dy=12 offset).
-      // Without this padding adjacent labels overlap when communities cluster.
-      .force('collide', d3Force.forceCollide<SimNode>((d) => radiusOf(d, mode) + 18))
+      // +24 reserves vertical space for the label (font 12–14px + dy=12 offset)
+      // plus extra whitespace gutter so neighbouring concepts don't visually
+      // crash. Bumped from +18 alongside the wider linkDistance values.
+      .force('collide', d3Force.forceCollide<SimNode>((d) => radiusOf(d, mode) + 24))
       .stop()
 
     for (let i = 0; i < 200; i++) sim.tick()
