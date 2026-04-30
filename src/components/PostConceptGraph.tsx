@@ -113,7 +113,9 @@ function GraphCanvas({ nodes, links, mode }: { nodes: ConceptNode[]; links: Conc
       )
       .force('charge', d3Force.forceManyBody<SimNode>().strength(mode.chargeStrength))
       .force('center', d3Force.forceCenter(mode.canvas / 2, mode.canvas / 2))
-      .force('collide', d3Force.forceCollide<SimNode>((d) => radiusOf(d, mode) + 6))
+      // +18 reserves vertical space for the label (font ~10–12px + dy=12 offset).
+      // Without this padding adjacent labels overlap when communities cluster.
+      .force('collide', d3Force.forceCollide<SimNode>((d) => radiusOf(d, mode) + 18))
       .stop()
 
     for (let i = 0; i < 200; i++) sim.tick()
@@ -153,13 +155,15 @@ function GraphCanvas({ nodes, links, mode }: { nodes: ConceptNode[]; links: Conc
 
     nodeSel.append('title').text((d) => d.label)
 
+    // font-size via inline .style() so the zoom counter-scale below can
+    // override the CSS rule without specificity conflicts.
     const labelSel = root
       .append('g')
       .attr('class', 'labels')
       .selectAll<SVGTextElement, SimNode>('text')
       .data(simNodes)
       .join('text')
-      .attr('font-size', mode.fontSize)
+      .style('font-size', `${mode.fontSize}px`)
       .attr('text-anchor', 'middle')
       .attr('dy', (d) => radiusOf(d, mode) + 12)
       .attr('x', (d) => d.x ?? 0)
@@ -210,7 +214,7 @@ function GraphCanvas({ nodes, links, mode }: { nodes: ConceptNode[]; links: Conc
         nodeSel.attr('r', (d) => radiusOf(d, mode) / k)
         linkSel.attr('stroke-width', (d) => Math.max(1, 0.7 + Math.sqrt(d.weight) * 0.6) / k)
         labelSel
-          .attr('font-size', mode.fontSize / k)
+          .style('font-size', `${mode.fontSize / k}px`)
           .attr('dy', (d) => (radiusOf(d, mode) + 12) / k)
       })
 
