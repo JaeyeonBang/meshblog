@@ -243,6 +243,14 @@ const latestDate = posts.length > 0
     margin-bottom: var(--space-8);
     max-width: var(--w-prose);
   }
+  /* SSR'd with the `hidden` attribute and toggled via `bar.hidden = ...`.
+     `display: flex` above out-specifies the UA `[hidden] { display: none }`,
+     so the bar would render empty on every fresh load. Re-assert with class
+     + attribute (specificity 0,2,0) so the filter actually disappears when
+     no tag is active. Same fix as .post-card[hidden]. */
+  .filter-bar[hidden] {
+    display: none;
+  }
   .filter-label {
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
