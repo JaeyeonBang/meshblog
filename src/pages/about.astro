@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'
-import { withBase } from '../lib/url'
+import T from '../components/ui/atoms/T.astro'
 ---
 
 <Base
@@ -14,47 +14,48 @@ import { withBase } from '../lib/url'
       <div class="eyebrow">about · 소개</div>
       <h1>meshblog</h1>
       <p class="sub">
-        Jaeyeon Bang의 이중언어 독서실 — 두 번째 뇌를 공개합니다.
+        <T ko="재연 방의 이중언어 독서실 — 두 번째 뇌를 공개합니다." en="Jaeyeon Bang's bilingual reading room — a second brain made public." />
       </p>
     </header>
 
     <!-- ── Opening stanza ─────────────────────────────────────── -->
     <section class="about-section">
       <p class="about-body">
-        meshblog is Jaeyeon Bang's bilingual reading room — a second brain compiled into a public site.
-        Written in Korean and English, cross-linked in both.
-        meshblog는 재연 방의 이중언어 독서실입니다. 두 언어로 쓰고, 두 언어로 연결합니다.
+        <T ko="메모를 모으고, 개념을 잇고, 공개합니다." en="Collecting notes, linking concepts, making them public." />
       </p>
     </section>
 
     <!-- ── Coined terms glossary ───────────────────────────────── -->
     <section class="about-section" id="glossary" aria-labelledby="glossary-heading">
-      <h2 class="section-eyebrow" id="glossary-heading">Coined terms · 용어</h2>
+      <h2 class="section-eyebrow" id="glossary-heading"><T ko="용어" en="Coined terms" /></h2>
       <dl class="glossary">
         <div class="gloss-entry">
           <dt><strong>vault</strong> <span class="gloss-ko">볼트</span></dt>
           <dd>
-            The full collection of notes. Obsidian's term; here it means everything under
-            <code>content/notes/</code>. Think of it as the raw filing cabinet — every note lives here
-            before it is published.
+            <T
+              ko="노트 전체 컬렉션. content/notes/ 아래의 모든 파일."
+              en="The full collection of notes — everything under content/notes/."
+            />
           </dd>
         </div>
 
         <div class="gloss-entry">
           <dt><strong>concept mesh</strong> <span class="gloss-ko">개념 메시</span></dt>
           <dd>
-            The second-order graph — not the notes themselves, but the concepts extracted from them.
-            Shown on the home sidebar and accessible at <a href={withBase('/graph?mode=concept')}>graph · concept mode</a>.
-            Where the vault is a filing cabinet, the concept mesh is the index of ideas pinned to a corkboard.
+            <T
+              ko="노트에서 추출한 개념들의 그래프. 홈 사이드바와 graph · concept mode에서 볼 수 있다."
+              en="Second-order graph of concepts extracted from notes. See it at graph · concept mode."
+            />
           </dd>
         </div>
 
         <div class="gloss-entry">
           <dt><strong>backlinks</strong> <span class="gloss-ko">역링크</span></dt>
           <dd>
-            Inbound wikilinks — who pointed here. If Note A links to Note B, then Note B's backlinks include A.
-            Visible in the reader aside on every note page, and as a dedicated graph mode at
-            <a href={withBase('/graph?mode=backlinks')}>graph · backlinks</a>.
+            <T
+              ko="이 노트를 가리키는 다른 노트들. graph · backlinks에서 탐색할 수 있다."
+              en="Inbound wikilinks — who pointed here. Explore at graph · backlinks."
+            />
           </dd>
         </div>
 
@@ -65,49 +66,38 @@ import { withBase } from '../lib/url'
             <strong>L3 · 클러스터</strong>
           </dt>
           <dd>
-            Graph depth. L1 shows direct links only (immediate neighbors of the selected node).
-            L2 shows two-hop neighbors — neighbors of neighbors.
-            L3 shows the full community cluster the node belongs to.
-            Toggle depth with the seg buttons in the <a href={withBase('/graph')}>graph</a> controls bar.
+            <T
+              ko="그래프 깊이. L1은 직접 연결, L2는 2-hop, L3는 전체 클러스터."
+              en="Graph depth. L1 direct links, L2 two-hop neighbors, L3 full community cluster."
+            />
           </dd>
         </div>
 
         <div class="gloss-entry">
           <dt><strong>knowledge mesh</strong> <span class="gloss-ko">지식 메시</span></dt>
           <dd>
-            The full graph of notes + concepts + backlinks combined. Accessible at
-            <a href={withBase('/graph')}>graph</a>. It is the whole web — every node and every edge
-            in the vault — rendered as a navigable canvas.
+            <T
+              ko="노트 + 개념 + 역링크를 모두 합친 전체 그래프."
+              en="The full graph combining notes, concepts, and backlinks — every node and edge in the vault."
+            />
           </dd>
         </div>
 
         <div class="gloss-entry">
           <dt><strong>ask the vault</strong> <span class="gloss-ko">볼트에 묻기</span></dt>
           <dd>
-            The command-K search palette — type any phrase and it answers across notes and Q&amp;A cards.
-            Keyboard shortcut: <kbd>⌘K</kbd> on macOS or <kbd>Ctrl+K</kbd> on Windows/Linux.
-            검색은 SQLite full-text, 의미 매칭은 OpenAI 임베딩(키가 있을 때). 둘 다 로컬 볼트에서 돈다.
+            <T
+              ko="⌘K 검색 팔레트 — 노트와 Q&A 카드를 가로질러 답한다."
+              en="The ⌘K search palette — answers across notes and Q&A cards."
+            />
           </dd>
         </div>
       </dl>
     </section>
 
-    <!-- ── Why it's built this way ────────────────────────────── -->
-    <section class="about-section" aria-labelledby="why-heading">
-      <h2 class="section-eyebrow" id="why-heading">Why it's built this way · 이렇게 만든 이유</h2>
-      <p class="about-body">
-        meshblog is an AI-native daily-repair harness for Obsidian power users — a fork-and-use
-        open-source template. Every night a GitHub Action reviews the vault: broken wikilinks,
-        draft notes that leaked to <code>main</code>, stale backlink caches. It opens a pull request
-        with a Markdown report, so the vault repairs itself while you sleep.
-        This is what separates meshblog from Obsidian Publish or Quartz — those tools ship your notes
-        once. meshblog ships them and then watches them.
-      </p>
-    </section>
-
     <!-- ── Colophon ────────────────────────────────────────────── -->
     <section class="about-section" id="colophon" aria-labelledby="colophon-heading">
-      <h2 class="section-eyebrow" id="colophon-heading">Colophon · 콜로폰</h2>
+      <h2 class="section-eyebrow" id="colophon-heading"><T ko="콜로폰" en="Colophon" /></h2>
       <dl class="colophon-list">
         <div class="coloph-entry">
           <dt>Typefaces</dt>

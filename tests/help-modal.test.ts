@@ -16,10 +16,14 @@ describe('HelpModal.astro', () => {
     expect(src).toMatch(/id="help-close"/)
   })
 
-  it('contains all three section eyebrows (KO · EN)', () => {
-    expect(src).toMatch(/단축키 · shortcuts/)
-    expect(src).toMatch(/meshblog 기초 · basics/)
-    expect(src).toMatch(/이 템플릿 · fork this/)
+  it('contains all three section eyebrows (KO + EN toggle)', () => {
+    // Sections now use .t-ko / .t-en toggle pattern
+    expect(src).toMatch(/단축키/)
+    expect(src).toMatch(/shortcuts/)
+    expect(src).toMatch(/meshblog 기초/)
+    expect(src).toMatch(/basics/)
+    expect(src).toMatch(/이 템플릿/)
+    expect(src).toMatch(/fork this/)
   })
 
   it('lists the five core shortcuts', () => {
@@ -63,7 +67,8 @@ describe('HelpModal.astro', () => {
   it('contains the "what is meshblog" intro section', () => {
     expect(src).toMatch(/help-section--intro/)
     expect(src).toMatch(/Obsidian 볼트를 정적 사이트로/)
-    expect(src).toMatch(/help-intro-en/)
+    // help-intro-en replaced by .t-en toggle pattern
+    expect(src).toMatch(/t-en/)
     expect(src).toMatch(/Claude Code skills audit it daily/)
   })
 

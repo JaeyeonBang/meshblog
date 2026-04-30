@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro'
+import T from '../../components/ui/atoms/T.astro'
 import { listCategories } from '../../lib/pages/index.ts'
 import type { CategoryRow } from '../../lib/pages/index.ts'
 import { withBase } from '../../lib/url'
@@ -23,7 +24,7 @@ const totalPosts = categories.reduce((s, c) => s + c.postCount, 0)
     </header>
 
     <main class="index-main">
-      <h2 class="section-label">all categories</h2>
+      <h2 class="section-label"><T ko="전체 카테고리" en="all categories" /></h2>
       {categories.length > 0 ? (
         <ul class="cat-list" role="list">
           {categories.map((cat) => (
@@ -40,7 +41,7 @@ const totalPosts = categories.reduce((s, c) => s + c.postCount, 0)
           ))}
         </ul>
       ) : (
-        <p class="empty">no categories yet · check back soon.</p>
+        <p class="empty"><T ko="카테고리가 아직 없습니다." en="no categories yet." /></p>
       )}
     </main>
   </div>

@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro'
 import GraphControls from '../components/ui/organisms/GraphControls.astro'
 import GraphLegend from '../components/ui/molecules/GraphLegend.astro'
 import Button from '../components/ui/atoms/Button.astro'
+import T from '../components/ui/atoms/T.astro'
 import GraphView from '../components/GraphView'
 import { withBase } from '../lib/url'
 ---
@@ -33,7 +34,7 @@ import { withBase } from '../lib/url'
         <!-- loading-state shown on initial paint -->
         <div class="loading-state" id="graphLoadingState" aria-hidden="false">
           <p class="empty-eyebrow">loading</p>
-          <p class="empty-body">그래프 불러오는 중 · fetching mesh…</p>
+          <p class="empty-body"><T ko="그래프 불러오는 중…" en="fetching mesh…" /></p>
         </div>
 
         <!-- empty-state shown when graph has no nodes.
@@ -48,7 +49,7 @@ import { withBase } from '../lib/url'
         <!-- error-state: shown when data fetch fails -->
         <div class="error-state" id="graphErrorState" aria-hidden="true" hidden>
           <p class="empty-eyebrow">load failed</p>
-          <p class="empty-body">볼트를 불러오지 못했습니다 · couldn't load the vault.</p>
+          <p class="empty-body"><T ko="볼트를 불러오지 못했습니다." en="Couldn't load the vault." /></p>
           <button class="retry-btn" id="graphRetryBtn">retry</button>
         </div>
 
@@ -63,7 +64,7 @@ import { withBase } from '../lib/url'
         <div class="block">
           <div class="block-label">selected · post</div>
           <p class="selected-title" id="graphSelectedTitle">—</p>
-          <p class="block-meta" id="graphSelectedMeta">노드를 클릭하세요 · click a node</p>
+          <p class="block-meta" id="graphSelectedMeta"><T ko="노드를 클릭하세요" en="click a node" /></p>
           <p class="block-excerpt" id="graphSelectedExcerpt"></p>
           <Button
             variant="primary"
@@ -72,7 +73,7 @@ import { withBase } from '../lib/url'
             id="graphOpenBtn"
             aria-disabled="true"
             style="pointer-events:none;opacity:0.4"
-          >글 열기 →</Button>
+          ><T ko="글 열기 →" en="open →" /></Button>
         </div>
 
         <div class="block">

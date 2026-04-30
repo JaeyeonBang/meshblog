@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro'
 import NoteRow from '../../components/ui/molecules/NoteRow.astro'
+import T from '../../components/ui/atoms/T.astro'
 import { listNotes } from '../../lib/pages/index.ts'
 import type { NoteRow as NoteRowType } from '../../lib/pages/index.ts'
 import { withBase } from '../../lib/url'
@@ -38,12 +39,12 @@ const latestDate = notes.length > 0
     <header class="index-header">
       <p class="eyebrow">atomic{latestDate ? ` · ${latestDate}` : ''}</p>
       <h1>notes</h1>
-      <p class="stats">{count} {count === 1 ? 'entry' : 'entries'}</p>
+      <p class="stats">{count} <T ko={count === 1 ? '편' : '편'} en={count === 1 ? 'entry' : 'entries'} /></p>
     </header>
 
     <main class="index-main">
       <!-- h2 bridges h1 → h3 inside NoteRow to prevent heading-skip violation -->
-      <h2 class="section-label">all notes</h2>
+      <h2 class="section-label"><T ko="전체 노트" en="all notes" /></h2>
       {notes.length > 0 ? notes.map((note, i) => (
         <NoteRow
           number={`N / ${String(i + 1).padStart(2, '0')}`}
@@ -56,7 +57,7 @@ const latestDate = notes.length > 0
           badge={getNoteBadge(note)}
         />
       )) : (
-        <p class="empty">노트 준비 중 · notes incoming.</p>
+        <p class="empty"><T ko="노트 준비 중." en="notes incoming." /></p>
       )}
     </main>
   </div>

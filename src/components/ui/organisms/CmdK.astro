@@ -53,6 +53,8 @@ const noteCount = items.filter(i => i.kind === 'note').length
         type="search"
         id="cmdk-input"
         placeholder="검색…"
+        data-placeholder-ko="검색…"
+        data-placeholder-en="search…"
         autocomplete="off"
         aria-label="Search"
       />
@@ -68,9 +70,9 @@ const noteCount = items.filter(i => i.kind === 'note').length
     </div>
 
     <div class="footer" aria-hidden="true">
-      <span><span class="kbd">↑↓</span> navigate</span>
-      <span><span class="kbd">↵</span> open</span>
-      <span><span class="kbd">esc</span> close</span>
+      <span><span class="kbd">↑↓</span> <span class="t-ko" lang="ko">탐색</span><span class="t-en" lang="en">navigate</span></span>
+      <span><span class="kbd">↵</span> <span class="t-ko" lang="ko">열기</span><span class="t-en" lang="en">open</span></span>
+      <span><span class="kbd">esc</span> <span class="t-ko" lang="ko">닫기</span><span class="t-en" lang="en">close</span></span>
       <span><span class="kbd">?</span> help</span>
     </div>
   </div>
@@ -381,11 +383,26 @@ const noteCount = items.filter(i => i.kind === 'note').length
     )
   }
 
+  function updateInputPlaceholder(inp: HTMLInputElement) {
+    const lang = document.documentElement.dataset.lang ?? 'ko'
+    const placeholder = lang === 'en'
+      ? (inp.dataset.placeholderEn ?? 'search…')
+      : (inp.dataset.placeholderKo ?? '검색…')
+    inp.placeholder = placeholder
+  }
+
   function initCmdK() {
     const bd = document.getElementById('cmdk-backdrop') as HTMLElement | null;
     const inp = document.getElementById('cmdk-input') as HTMLInputElement | null;
     const results = document.getElementById('cmdk-results') as HTMLElement | null;
     if (!bd || !inp || !results) return;
+
+    // Sync placeholder to current lang
+    updateInputPlaceholder(inp);
+
+    // Re-sync when lang-toggle fires (data-lang changes on html element)
+    const langObserver = new MutationObserver(() => updateInputPlaceholder(inp!));
+    langObserver.observe(document.documentElement, { attributeFilter: ['data-lang'] });
 
     const items = loadIndex()
     let activeIdx = -1

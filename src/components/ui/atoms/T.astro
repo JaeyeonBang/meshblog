@@ -1,0 +1,26 @@
+---
+/**
+ * T.astro — bilingual text helper (KOR/ENG toggle)
+ *
+ * Emits two sibling elements with class .t-ko / .t-en and the corresponding
+ * lang attribute. The global CSS in Base.astro hides one based on
+ * html[data-lang], preventing FOUC.
+ *
+ * Wrap convention (F4 / §C7):
+ *   - DO wrap user-visible prose, button labels, section headings, body copy.
+ *   - Do NOT wrap mono eyebrows, badges, or single English code-words;
+ *     those are language-neutral (e.g. "vault · public · 2026", "posts", "notes").
+ *
+ * Interpolation:
+ *   Parent computes both strings and passes them in — e.g.:
+ *   <T ko={`전체 ${count}편`} en={`All ${count} entries`} />
+ */
+interface Props {
+  ko: string
+  en: string
+  tag?: string
+}
+const { ko, en, tag = 'span' } = Astro.props
+const Tag = tag as any
+---
+<Tag class="t-ko" lang="ko">{ko}</Tag><Tag class="t-en" lang="en">{en}</Tag>
