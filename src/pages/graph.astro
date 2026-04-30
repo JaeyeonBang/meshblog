@@ -143,8 +143,10 @@ import { withBase } from '../lib/url'
     if (lnEl) lnEl.textContent = String(noteN)
     if (lcEl) lcEl.textContent = String(conceptN)
 
-    // Backlinks + concept modes: hide depth disclosure entirely
-    const hideDepth = detail.mode === 'backlinks' || detail.mode === 'concept'
+    // Backlinks mode has no level concept (it's a flat directed graph). Note
+    // and concept modes both expose L1/L2/L3 — for concept mode these mean
+    // "top by pagerank" (L1) → "full graph" (L3) instead of category drill-down.
+    const hideDepth = detail.mode === 'backlinks'
     const depthBtn = document.getElementById('gcDepthToggle') as HTMLButtonElement | null
     const levelGroup = document.getElementById('level-group') as HTMLElement | null
     const levelCaption = document.querySelector<HTMLElement>('.graph-controls .level-caption')
@@ -166,11 +168,19 @@ import { withBase } from '../lib/url'
       btn.setAttribute('aria-checked', String(isActive))
     })
 
-    // Toggle seg--active on level buttons
+    // Toggle seg--active on level buttons + swap label/title for concept mode.
+    // Each seg button stores both note-mode and concept-mode labels in data
+    // attributes (data-note-label, data-concept-label, etc.) so we can flip
+    // them in place without re-rendering the controls.
+    const useConceptLabels = detail.mode === 'concept'
     document.querySelectorAll<HTMLElement>('.graph-controls [data-level]').forEach(btn => {
       const isActive = Number(btn.dataset.level) === detail.level
       btn.classList.toggle('seg--active', isActive)
       btn.setAttribute('aria-checked', String(isActive))
+      const label = useConceptLabels ? btn.dataset.conceptLabel : btn.dataset.noteLabel
+      const title = useConceptLabels ? btn.dataset.conceptTitle : btn.dataset.noteTitle
+      if (label) btn.textContent = label
+      if (title) btn.setAttribute('title', title)
     })
 
     // If list is currently visible, re-render it with latest nodes
