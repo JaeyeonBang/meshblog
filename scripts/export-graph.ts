@@ -87,14 +87,19 @@ export function buildConceptGraph(db: Database.Database): Graph {
 
   if (concepts.length < 2) return g
 
-  // Edges: two concepts co-occurring in ≥M notes (via shared entities)
+  // Edges: two concepts that co-occur in the same note. Louvain partitions
+  // entities into disjoint communities, so the previous "shared entity" query
+  // structurally returned ~0 edges (concepts never share entities by design).
+  // Co-occurrence-via-notes is the correct topology: if note N mentions an
+  // entity in concept A and another entity in concept B, A↔B is connected.
   const pairs = queryMany<{ a: string; b: string; shared: number }>(
     db,
-    `SELECT ce1.concept_id AS a, ce2.concept_id AS b, COUNT(DISTINCT ne.note_id) AS shared
-     FROM concept_entities ce1
-     JOIN concept_entities ce2 ON ce1.entity_id = ce2.entity_id AND ce1.concept_id < ce2.concept_id
-     JOIN note_entities ne ON ne.entity_id = ce1.entity_id
-     GROUP BY ce1.concept_id, ce2.concept_id
+    `SELECT a.concept_id AS a, b.concept_id AS b, COUNT(DISTINCT ne_a.note_id) AS shared
+     FROM concept_entities a
+     JOIN note_entities ne_a ON ne_a.entity_id = a.entity_id
+     JOIN concept_entities b ON a.concept_id < b.concept_id
+     JOIN note_entities ne_b ON ne_b.entity_id = b.entity_id AND ne_b.note_id = ne_a.note_id
+     GROUP BY a.concept_id, b.concept_id
      HAVING shared >= ?`,
     [CONCEPT_EDGE_MIN_SHARED],
   )
