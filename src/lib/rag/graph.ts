@@ -10,13 +10,32 @@ const entitySchema = z.object({
 })
 
 export const extractionResultSchema = z.object({
-  entities: z.array(entitySchema).max(10).default([]),
+  entities: z.array(entitySchema).max(25).default([]),
   relationships: z.array(z.object({
     source: z.string().min(1),
     target: z.string().min(1),
     relationship: z.string().min(1),
-  })).max(10).default([]),
+  })).max(25).default([]),
 })
+
+const DEFAULT_MODEL = "anthropic/claude-haiku-4-5"
+
+/**
+ * Pull the first complete JSON object out of an LLM response. Handles:
+ *   - Plain JSON
+ *   - ```json ... ``` fences
+ *   - Prose prefix: "Here's the result:\n{...}"
+ *   - Trailing prose: "{...}\nLet me know if..."
+ */
+function extractJsonObject(content: string): string {
+  const stripped = content.replace(/^```json?\n?/m, "").replace(/\n?```$/m, "").trim()
+  const firstBrace = stripped.indexOf("{")
+  const lastBrace = stripped.lastIndexOf("}")
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) return stripped
+  return stripped.slice(firstBrace, lastBrace + 1)
+}
+
+export { extractJsonObject }
 
 export type ExtractionResult = z.infer<typeof extractionResultSchema>
 
@@ -66,15 +85,15 @@ export async function extractEntities(
       const messages = buildEntityExtractionPrompt(noteContent)
       const response = await callOpenRouter({
         messages,
-        model: "openai/gpt-4o-mini",
-        maxTokens: 1500,
+        model: process.env.MESHBLOG_LLM_MODEL ?? DEFAULT_MODEL,
+        maxTokens: 3000,
         temperature: 0.3,
       })
 
       const json = await response.json()
       const content = json.choices?.[0]?.message?.content ?? ""
 
-      const jsonStr = content.replace(/^```json?\n?/m, "").replace(/\n?```$/m, "").trim()
+      const jsonStr = extractJsonObject(content)
       const parsed = JSON.parse(jsonStr)
       const result = extractionResultSchema.parse(parsed)
 

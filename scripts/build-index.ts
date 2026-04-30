@@ -129,6 +129,12 @@ export type BuildIndexOptions = {
   baseDirs?: string[]
   skipEmbed?: boolean
   skipConcepts?: boolean
+  /**
+   * Re-extract entities even when content_hash is unchanged. Used by
+   * `/re-extract` skill after model swap, when DB has notes from a previous
+   * build but the LLM model has changed and we want fresh entities.
+   */
+  force?: boolean
   extract?: (
     db: ReturnType<typeof createDb>,
     id: string,
@@ -177,6 +183,7 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
   const baseDirs = options.baseDirs ?? CONTENT_DIRS
   const skipEmbed = options.skipEmbed ?? false
   const skipConcepts = options.skipConcepts ?? false
+  const force = options.force ?? false
   const extract = options.extract ?? extractEntities
   const embedNote = options.embedNote ?? defaultEmbedNote
 
@@ -259,11 +266,14 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
 
     const hashChanged = !existing || existing.content_hash !== hash
 
-    if (!hashChanged) {
+    if (!hashChanged && !force) {
       console.log(`[build-index] (${++processed}/${files.length}) "${title}" → skipped (unchanged)`)
       skipped++
       // Still may need embeddings if they were deleted (reconcile separately below)
       continue
+    }
+    if (force && !hashChanged) {
+      console.log(`[build-index] (${++processed}/${files.length}) "${title}" → re-extracting (--force)`)
     }
 
     console.log(`[build-index] (${++processed}/${files.length}) extracting entities for "${title}"`)
@@ -436,6 +446,7 @@ if (isMainModule) {
   const opts: BuildIndexOptions = {
     skipEmbed: args.includes("--skip-embed"),
     skipConcepts: args.includes("--skip-concepts"),
+    force: args.includes("--force"),
   }
   runBuildIndex(opts).catch((err) => {
     console.error("[build-index] FATAL:", err)
