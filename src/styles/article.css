@@ -5,8 +5,7 @@
 /* ── Prose container ──────────────────────────────────────────────────────── */
 
 .prose {
-  max-width: var(--w-prose);
-  margin-inline: auto;
+  max-width: 100%;
   font-family: var(--f-serif);
   font-size: var(--fs-lg);
   line-height: 1.7;
