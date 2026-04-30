@@ -278,14 +278,15 @@ const latestDate = posts.length > 0
   /* ── 2-column grid (main list + right aside) ─────────────────── */
   /*
    * Width math: page 1280, padding 2×32=64 → content 1216
-   * Aside 240 (--w-reader-side), gap 48 (--space-12)
-   * Main column: 1216 - 240 - 48 = 928. Cards cap at --w-post-list (770px).
-   * Intentional left-lean within the 928px column — editorial asymmetry.
+   * Aside 240 (--w-reader-side), gap 24 (--space-6, halved from --space-12).
+   * Main column: 1216 - 240 - 24 = 952. Cards cap at --w-post-list + --space-6
+   * (770 + 24 = 794) so the column absorbs the gap reduction instead of
+   * leaving more dead-space between cards and the right rail.
    */
   .index-layout {
     display: grid;
     grid-template-columns: 1fr var(--w-reader-side);
-    gap: var(--space-12);
+    gap: var(--space-6);
     align-items: start;
   }
 
@@ -303,11 +304,13 @@ const latestDate = posts.length > 0
   /* ── Main post list ─────────────────────────────────────────── */
   /* --w-post-list (design.md → tokens.css). Wider than --w-prose
      because PostCards carry a 160px thumb + 28px gap on the left.
-     Editorial asymmetry preserved on the 1280px page. */
+     Editorial asymmetry preserved on the 1280px page.
+     +--space-6 absorbs the halved layout gap so the sidebar moves
+     closer without leaving more whitespace beside the cards. */
   .index-main {
     display: flex;
     flex-direction: column;
-    max-width: var(--w-post-list);
+    max-width: calc(var(--w-post-list) + var(--space-6));
   }
 
   /* ── Right aside ─────────────────────────────────────────────── */
