@@ -16,7 +16,7 @@
  *   - notes/[slug].astro inline aside
  *
  * Editorial invariants honoured: #1 no hex, #2 hairline 1px, #3 hover-invert,
- *   #4 mono eyebrow 10px + letter-spacing:0.2em uppercase, #5 no shadow, #6 ≤4px radius.
+ *   #4 mono eyebrow 10px + var(--track-eyebrow) uppercase, #5 no shadow, #6 ≤4px radius.
  */
 
 import TOC from './TOC.astro'
@@ -209,7 +209,7 @@ const sortedTags = [...tags].sort()
     font-family: var(--f-mono);
     font-size: var(--fs-xs);
     color: var(--ink-3);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--track-caption);
     transition: color var(--dur-fast) var(--ease);
   }
 

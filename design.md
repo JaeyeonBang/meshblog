@@ -110,6 +110,8 @@ tracking:
   eyebrow: "0.2em"
   badge:   "0.14em"
   nav:     "0.1em"
+  caption: "0.04em"   # mono captions, kbd, secondary labels in molecules
+  wide:    "0.08em"   # graph stage labels, mode toggles
 ---
 
 # Editorial B&W
