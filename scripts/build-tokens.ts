@@ -255,10 +255,12 @@ ${radiusTokens}
   --w-search-box:    ${layout['w-search-box']};
   --w-post-list:     ${layout['w-post-list']};
 ${Object.keys(tracking).length > 0 ? `
-  /* ── letter-spacing (3 semantic tracking tokens) ─────────────────────── */
+  /* ── letter-spacing (semantic tracking tokens) ───────────────────────── */
   --track-eyebrow: ${tracking.eyebrow ?? '0.2em'};   /* free-standing eyebrow labels */
   --track-badge:   ${tracking.badge   ?? '0.14em'};  /* pill badges */
-  --track-nav:     ${tracking.nav     ?? '0.1em'};   /* TopBar nav-link (documented exception) */` : ''}
+  --track-nav:     ${tracking.nav     ?? '0.1em'};   /* TopBar nav-link (documented exception) */
+  --track-caption: ${tracking.caption ?? '0.04em'};  /* mono captions, kbd, molecule secondary labels */
+  --track-wide:    ${tracking.wide    ?? '0.08em'};  /* graph stage labels, mode toggles */` : ''}
 ${Object.keys(categorical).length > 0 ? `
   /* ── categorical (graph nodes per category) ──────────────────────────── */
 ${Object.entries(categorical).map(([k, v]) => `  --${k}: ${v};`).join('\n')}` : ''}

@@ -212,7 +212,7 @@
   fill: var(--ink);
   font-family: var(--f-mono);
   font-size: 13px;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-caption);
   opacity: 1;
   pointer-events: none;
   transition: opacity var(--dur-fast) var(--ease);
@@ -265,7 +265,7 @@
   font-family: var(--f-mono);
   font-size: var(--fs-xs);
   color: var(--ink-3);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-caption);
   margin-top: var(--space-3);
   position: absolute;
   bottom: var(--space-3);
@@ -308,7 +308,7 @@
   left: var(--space-4);
   font-family: var(--f-mono);
   font-size: var(--fs-xs);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-wide);
   text-transform: uppercase;
   font-weight: 500;
   line-height: 1;
@@ -338,7 +338,7 @@
 .retryBtn {
   font-family: var(--f-mono);
   font-size: var(--fs-xs);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-wide);
   text-transform: uppercase;
   font-weight: 500;
   padding: 6px 12px;

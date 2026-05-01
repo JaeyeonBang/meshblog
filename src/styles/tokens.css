@@ -74,10 +74,12 @@
   --w-search-box:    760px;
   --w-post-list:     770px;
 
-  /* ── letter-spacing (3 semantic tracking tokens) ─────────────────────── */
+  /* ── letter-spacing (semantic tracking tokens) ───────────────────────── */
   --track-eyebrow: 0.2em;   /* free-standing eyebrow labels */
   --track-badge:   0.14em;  /* pill badges */
   --track-nav:     0.1em;   /* TopBar nav-link (documented exception) */
+  --track-caption: 0.04em;  /* mono captions, kbd, molecule secondary labels */
+  --track-wide:    0.08em;  /* graph stage labels, mode toggles */
 
   /* ── categorical (graph nodes per category) ──────────────────────────── */
   --cat-engineering: oklch(64% 0.14 250);

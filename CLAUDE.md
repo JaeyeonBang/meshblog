@@ -92,7 +92,7 @@ Full contract: `design-ref/SPEC.md`. Handoff prototype: `design-ref/handoff/proj
 Before committing UI changes, every file under `src/` must satisfy:
 
 1. No hex literals outside `tokens.css` + `fonts.css`.
-2. Hairlines only — `border: 1px solid` default; `3px` reserved for emphasis (pull-quote top, page-qa top, footer top).
+2. Hairlines only — `border: 1px solid` default; `3px` reserved for emphasis. Allowlist (enforced by `bun run audit`): `PullQuote.astro`, `PageQa.astro`, `QaCard.astro`, `QAChips.module.css`, `styles/article.css` (blockquote left rule + footnote top rule).
 3. Hover-invert — interactive surfaces flip `background/color` on `:hover` (paper ↔ ink), not subtle opacity. **Documented exception:** `MeshStrip` neighbor labels use typographic-only hover (color + weight shift) because the strip is a wayfinding aid, not a button surface. Mirrors Obsidian Publish's TOC active-state pattern.
 4. Mono eyebrows — uppercase labels use `var(--f-mono)` + `letter-spacing: 0.2em` + 10–11px + `var(--ink-3)`.
 5. One shadow only — `var(--shadow-hard)` on modal panels (`.cmdk`, `.help`, `.mesh-popover`) exclusively. No other shadows anywhere.
