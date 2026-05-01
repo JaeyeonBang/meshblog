@@ -23,6 +23,7 @@
   --f-mono:  'JetBrains Mono', 'Pretendard', ui-monospace, Menlo, monospace;
 
   /* ── type scale ───────────────────────────────────────────────────────── */
+  --fs-xxs:  10px;
   --fs-xs:   12px;
   --fs-sm:   14px;
   --fs-base: 17px;

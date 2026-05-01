@@ -38,7 +38,7 @@ const { label, items = [], mesh = false } = Astro.props;
   }
   .toc-label {
     font-family: var(--f-mono);
-    font-size: 10px;
+    font-size: var(--fs-xxs);
     letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     color: var(--ink);
@@ -53,7 +53,7 @@ const { label, items = [], mesh = false } = Astro.props;
   }
   li {
     font-family: var(--f-serif);
-    font-size: 14px;
+    font-size: var(--fs-sm);
     padding: 5px 0;
     color: var(--ink-3);
     cursor: pointer;
@@ -68,7 +68,7 @@ const { label, items = [], mesh = false } = Astro.props;
     position: absolute;
     left: 0;
     color: var(--ink-4);
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
   li.active {
     color: var(--ink);

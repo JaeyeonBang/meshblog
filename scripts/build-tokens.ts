@@ -85,6 +85,7 @@ const spaceTokens = scale.space
 
 const t = scale.type;
 const typeTokens = [
+  `  --fs-xxs:  ${t.xxs ?? 10}px;`,
   `  --fs-xs:   ${t.xs}px;`,
   `  --fs-sm:   ${t.sm}px;`,
   `  --fs-base: ${t.base}px;`,
