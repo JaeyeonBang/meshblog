@@ -15,7 +15,11 @@ import { join } from "node:path"
 import { createDb } from "../../src/lib/db/index.ts"
 
 const REPO_ROOT = join(import.meta.dirname, "../..")
-const TEST_DB = join(REPO_ROOT, ".data/test-fixture-mode.db")
+// Per-test DB path. better-sqlite3 in WAL mode on WSL occasionally holds the
+// file lock briefly after db.close(), which causes SQLITE_BUSY when a
+// subsequent test in the same file unlinks-and-recreates the same path.
+// Unique paths per test sidestep the race entirely.
+let TEST_DB: string
 
 function runCmd(cmd: string): string {
   return execSync(cmd, {
@@ -25,22 +29,24 @@ function runCmd(cmd: string): string {
   })
 }
 
-describe("FIXTURE_ONLY mode", () => {
-  beforeEach(() => {
-    if (existsSync(TEST_DB)) unlinkSync(TEST_DB)
-    // Cleanup WAL/SHM sidecar files if present
-    for (const ext of ["-shm", "-wal"]) {
-      const f = TEST_DB + ext
-      if (existsSync(f)) unlinkSync(f)
+function cleanupDb(path: string) {
+  for (const ext of ["", "-shm", "-wal"]) {
+    const f = path + ext
+    if (existsSync(f)) {
+      try { unlinkSync(f) } catch { /* may already be gone */ }
     }
+  }
+}
+
+describe("FIXTURE_ONLY mode", () => {
+  beforeEach(({ task }) => {
+    const slug = task.name.replace(/[^a-z0-9]+/gi, "-").slice(0, 40)
+    TEST_DB = join(REPO_ROOT, `.data/test-fixture-mode-${slug}.db`)
+    cleanupDb(TEST_DB)
   })
 
   afterEach(() => {
-    if (existsSync(TEST_DB)) unlinkSync(TEST_DB)
-    for (const ext of ["-shm", "-wal"]) {
-      const f = TEST_DB + ext
-      if (existsSync(f)) unlinkSync(f)
-    }
+    cleanupDb(TEST_DB)
   })
 
   it("build-index exits 0 and seeds DB with correct row counts", { timeout: 30000 }, () => {
