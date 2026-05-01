@@ -69,6 +69,7 @@ scale:
     pill: 999
   space: [4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 96]
   type:
+    xxs:  10
     xs:   12
     sm:   14
     base: 17

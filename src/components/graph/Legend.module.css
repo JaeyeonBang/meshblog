@@ -50,7 +50,7 @@
 
 .title {
   font-family: var(--f-mono);
-  font-size: 10px;
+  font-size: var(--fs-xxs);
   letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
   color: var(--ink-3);
@@ -130,7 +130,7 @@
 
 .itemLabel {
   font-family: var(--f-mono);
-  font-size: 10px;
+  font-size: var(--fs-xxs);
   letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
   color: var(--ink-3);
@@ -156,7 +156,7 @@
     align-items: center;
     gap: var(--space-2);
     font-family: var(--f-mono);
-    font-size: 10px;
+    font-size: var(--fs-xxs);
     letter-spacing: var(--track-eyebrow);
     text-transform: uppercase;
     color: var(--ink-3);

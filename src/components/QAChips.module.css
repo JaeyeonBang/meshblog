@@ -9,7 +9,7 @@
   width: 100%;
   padding: 10px 16px;
   font-family: var(--f-sans);
-  font-size: 14px;
+  font-size: var(--fs-sm);
   border: 1px solid var(--ink);
   background: var(--paper);
   color: var(--ink);
@@ -67,7 +67,7 @@
   border: none;
   cursor: pointer;
   font-family: var(--f-serif);
-  font-size: 14px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--ink);
   line-height: 1.4;

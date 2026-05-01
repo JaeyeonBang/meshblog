@@ -48,7 +48,7 @@
 .labels text {
   fill: var(--ink);
   font-family: var(--f-mono);
-  font-size: 10px;
+  font-size: var(--fs-xxs);
   letter-spacing: var(--track-caption);
   pointer-events: none;
 }

@@ -106,7 +106,7 @@
 .prose h2::before {
   content: "§ ";
   font-family: var(--f-mono);
-  font-size: 14px;
+  font-size: var(--fs-sm);
   color: var(--ink-3);
   vertical-align: 0.4em;
   font-weight: 400;
