@@ -120,10 +120,6 @@ export async function synthesizeWikiArticle(
     .map((r) => `- ${r.relationship}: [[${r.target_name}]] (confidence: ${r.confidence.toFixed(1)})`)
     .join("\n")
 
-  const noteContext = notes
-    .map((n) => `## ${n.title}\n${n.content.slice(0, 500)}`)
-    .join("\n\n---\n\n")
-
   // Stub synthesis: markdown summary from notes
   // TODO(Phase 4): replace with Claude Code CLI call
   const content = `# ${entity.name}

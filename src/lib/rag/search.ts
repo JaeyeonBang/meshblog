@@ -1,7 +1,7 @@
 import { queryMany, type Database } from "../db/index.ts"
 import { generateEmbedding, blobToEmbedding } from "./embed.ts"
 import { topKByCosine } from "../llm/cosine.ts"
-import { conceptSearch, type ConceptSearchResult } from "./concepts.ts"
+import { conceptSearch } from "./concepts.ts"
 import { getTemporalContext, type TemporalResult } from "./temporal.ts"
 import { getEpisodicContext } from "./episodic.ts"
 
@@ -115,9 +115,6 @@ export async function hybridSearch(
   query: string
 ): Promise<{ results: SearchResult[]; details: RetrievalDetails }> {
   const vectorResults = await semanticSearch(db, query, 3, 0.5)
-
-  const tags = vectorResults.flatMap((r) => r.tags).filter(Boolean)
-  const uniqueTags = [...new Set(tags)]
 
   // Simple entity extraction from query: lowercase words > 3 chars
   const queryEntities = query

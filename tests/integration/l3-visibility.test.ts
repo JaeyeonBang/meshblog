@@ -11,7 +11,7 @@
  */
 import { describe, it, expect, afterAll, vi } from "vitest"
 import { execSync } from "node:child_process"
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 vi.setConfig({ testTimeout: 180_000 })
@@ -43,6 +43,10 @@ function restoreConfig() {
 }
 
 function runBuild(): void {
+  // Wipe dist before each build. Astro re-uses content-hashed prerender chunks
+  // across builds, and a stale chunk left in dist/.prerender will fail to
+  // resolve under the new build's hash, surfacing as ERR_MODULE_NOT_FOUND.
+  rmSync(join(ROOT, "dist"), { recursive: true, force: true })
   execSync("bun run build:fixture", {
     cwd: ROOT,
     stdio: "pipe",

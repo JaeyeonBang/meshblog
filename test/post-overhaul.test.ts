@@ -13,7 +13,7 @@
  * post-deploy curl probes.
  */
 import { describe, it, expect } from "vitest"
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 
 const REPO_ROOT = join(import.meta.dirname, "..")
