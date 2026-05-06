@@ -16,25 +16,11 @@ import { createInterface } from 'node:readline'
 
 // ── exported helpers (used by tests) ─────────────────────────────────────────
 
-/**
- * Convert a free-form title to a URL-safe kebab-case slug.
- * 1. Normalise unicode (NFC).
- * 2. Strip emoji and non-BMP characters.
- * 3. Lowercase.
- * 4. Replace non-alphanumeric runs with a single hyphen.
- * 5. Trim leading/trailing hyphens.
- */
-export function slugify(title: string): string {
-  return title
-    .normalize('NFC')
-    // Remove emoji / surrogate pairs (characters outside BMP)
-    .replace(/[\u{1F000}-\u{10FFFF}]/gu, '')
-    .toLowerCase()
-    // Replace any sequence of non-alphanumeric, non-ASCII chars with '-'
-    .replace(/[^a-z0-9\u00C0-\u024F]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    || 'untitled'
-}
+// slugify lives in `scripts/lib/slugify.ts` so other scripts can import it
+// without also triggering this file's `isMainModule` block under Bun's
+// resolver. Re-exported here to keep the existing public API intact.
+import { slugify } from "./lib/slugify.ts"
+export { slugify }
 
 /**
  * Build the frontmatter + body template string for a new note.

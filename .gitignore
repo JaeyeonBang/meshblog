@@ -52,6 +52,10 @@ content/.obsidian/
 
 .gstack/
 
+# Phase 2 ingest pipeline — drop raw files into _inbox/, archived to .cache/sources/
+_inbox/
+.cache/
+
 # graphify: keep the knowledge-graph artifacts so other clones can navigate
 # the same graph state without rebuilding. The per-machine extraction cache
 # stays ignored — `graphify update .` repopulates it on demand.
