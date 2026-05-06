@@ -198,4 +198,28 @@ describe("build-index smoke (mocked LLM)", () => {
     expect(r3.skipped).toBe(0)              // none skipped under --force
     expect(extractCalls).toBe(r1.processed) // every note re-extracted
   })
+
+  it("persists aliases from frontmatter into notes.aliases column", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "build-index-aliases-"))
+    writeFileSync(
+      join(dir, "09-ppo.md"),
+      "---\ntitle: Proximal Policy Optimization\naliases:\n  - PPO\n  - ProxPol\n---\nbody content",
+    )
+    try {
+      await runBuildIndex({
+        dbPath: TMP_DB,
+        baseDirs: [dir],
+        extract: stubExtract,
+        skipEmbed: true,
+        skipConcepts: true,
+      })
+      const db = createDb(TMP_DB)
+      const row = db.prepare("SELECT aliases FROM notes WHERE id = ?").get("09-ppo") as { aliases: string } | undefined
+      expect(row).toBeDefined()
+      expect(JSON.parse(row!.aliases)).toEqual(["PPO", "ProxPol"])
+      db.close()
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
 })

@@ -189,3 +189,80 @@ describe("build-backlinks: SET NULL on target deletion", () => {
     expect(after[0].target_raw).toBe("target")
   })
 })
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Test 4: Alias resolution — [[PPO]] in note B resolves to note A via alias
+// ──────────────────────────────────────────────────────────────────────────────
+describe("build-backlinks: alias resolution", () => {
+  let db: ReturnType<typeof createDb>
+
+  beforeEach(() => {
+    db = createDb(join(TMP_DIR, `alias-${Date.now()}.db`))
+  })
+
+  function seedNoteWithAliases(
+    d: ReturnType<typeof createDb>,
+    id: string,
+    content: string,
+    title: string,
+    aliases: string[],
+  ): void {
+    execute(
+      d,
+      `INSERT OR REPLACE INTO notes (id, slug, title, content, content_hash, graph_status, aliases)
+       VALUES (?, ?, ?, ?, ?, 'done', ?)`,
+      [id, id, title, content, `hash-${id}`, JSON.stringify(aliases)],
+    )
+  }
+
+  it("[[PPO]] in note B resolves to note A (via alias)", () => {
+    // note A declares alias "PPO"
+    seedNoteWithAliases(db, "09-ppo", "Proximal Policy Optimization content.", "PPO Paper", ["PPO"])
+    // note B mentions [[PPO]]
+    seedNoteWithAliases(db, "note-b", "See also [[PPO]] for details.", "Note B", [])
+
+    runBuildBacklinks({ db, outputDir: join(TMP_DIR, "out-alias") })
+
+    const rows = queryMany<WikilinkRow>(
+      db,
+      "SELECT source_id, target_id, target_raw FROM wikilinks WHERE source_id = 'note-b'",
+      [],
+    )
+    expect(rows).toHaveLength(1)
+    expect(rows[0].target_id).toBe("09-ppo")
+    expect(rows[0].target_raw).toBe("ppo")
+  })
+
+  it("alias collision → [[PPO]] resolves to null; stderr warns", () => {
+    // Both note-a and note-c claim alias "PPO" → collision, neither resolves
+    seedNoteWithAliases(db, "note-a", "Note A content.", "Note A", ["PPO"])
+    seedNoteWithAliases(db, "note-c", "Note C content.", "Note C", ["PPO"])
+    seedNoteWithAliases(db, "note-b", "Mentions [[PPO]] in body.", "Note B", [])
+
+    const stderrChunks: string[] = []
+    const originalWrite = process.stderr.write.bind(process.stderr)
+    process.stderr.write = (chunk: any, ...args: any[]) => {
+      stderrChunks.push(typeof chunk === "string" ? chunk : chunk.toString())
+      return originalWrite(chunk, ...args)
+    }
+
+    try {
+      runBuildBacklinks({ db, outputDir: join(TMP_DIR, "out-alias-collision") })
+    } finally {
+      process.stderr.write = originalWrite
+    }
+
+    const stderrOut = stderrChunks.join("")
+    expect(stderrOut).toContain("alias collision")
+    expect(stderrOut).toContain("ppo")
+
+    const rows = queryMany<WikilinkRow>(
+      db,
+      "SELECT source_id, target_id FROM wikilinks WHERE source_id = 'note-b'",
+      [],
+    )
+    expect(rows).toHaveLength(1)
+    // target_id is NULL because the alias was contested
+    expect(rows[0].target_id).toBeNull()
+  })
+})
