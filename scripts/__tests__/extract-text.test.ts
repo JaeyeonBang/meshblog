@@ -5,18 +5,26 @@ import { join } from "node:path"
 
 // We mock pdf-parse and officeparser at module level so the tests don't need
 // real PDFs/Office files on disk. The MD/TXT path uses fs directly.
-vi.mock("pdf-parse", () => ({
-  default: vi.fn(),
-}))
+//
+// pdf-parse v2 ships a `PDFParse` class. The mock needs a real constructor
+// (vi.fn().mockImplementation does NOT produce one — `new` on a plain
+// function-via-mockImplementation throws "is not a constructor").
+const mockGetText = vi.fn()
+class MockPDFParse {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  constructor(_options: unknown) {}
+  getText(): unknown {
+    return mockGetText()
+  }
+}
+vi.mock("pdf-parse", () => ({ PDFParse: MockPDFParse }))
 vi.mock("officeparser", () => ({
-  parseOfficeAsync: vi.fn(),
+  parseOffice: vi.fn(),
 }))
 
-import pdfParse from "pdf-parse"
 import * as officeparser from "officeparser"
 import { extractText, SCANNED_PDF_THRESHOLD } from "../lib/ingest-helpers/extract-text.ts"
 
-const mockedPdfParse = vi.mocked(pdfParse)
 const mockedOffice = vi.mocked(officeparser)
 
 describe("extractText", () => {
@@ -51,17 +59,17 @@ describe("extractText", () => {
   it("calls pdf-parse for .pdf and returns extracted text", async () => {
     const p = join(scratch, "doc.pdf")
     writeFileSync(p, Buffer.from("not-a-real-pdf"))
-    mockedPdfParse.mockResolvedValueOnce({ text: "long enough extracted text from a real PDF document" } as any)
+    mockGetText.mockResolvedValueOnce({ text: "long enough extracted text from a real PDF document" })
     const r = await extractText(p)
     expect(r.format).toBe("pdf")
     expect(r.text).toContain("extracted text")
-    expect(mockedPdfParse).toHaveBeenCalledTimes(1)
+    expect(mockGetText).toHaveBeenCalledTimes(1)
   })
 
   it("emits scanned-pdf warning when extracted PDF text < threshold", async () => {
     const p = join(scratch, "scanned.pdf")
     writeFileSync(p, Buffer.from("not-a-real-pdf"))
-    mockedPdfParse.mockResolvedValueOnce({ text: "tiny" } as any)
+    mockGetText.mockResolvedValueOnce({ text: "tiny" })
     const r = await extractText(p)
     expect(r.warnings.some((w) => w.includes("[scanned-pdf]"))).toBe(true)
     expect(SCANNED_PDF_THRESHOLD).toBeGreaterThan("tiny".length)
@@ -70,7 +78,7 @@ describe("extractText", () => {
   it("calls officeparser for .docx", async () => {
     const p = join(scratch, "doc.docx")
     writeFileSync(p, Buffer.from("fake-docx"))
-    mockedOffice.parseOfficeAsync.mockResolvedValueOnce("docx body")
+    ;(mockedOffice.parseOffice as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce("docx body")
     const r = await extractText(p)
     expect(r.format).toBe("docx")
     expect(r.text).toBe("docx body")
@@ -79,7 +87,7 @@ describe("extractText", () => {
   it("calls officeparser for .pptx", async () => {
     const p = join(scratch, "deck.pptx")
     writeFileSync(p, Buffer.from("fake-pptx"))
-    mockedOffice.parseOfficeAsync.mockResolvedValueOnce("slide content")
+    ;(mockedOffice.parseOffice as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce("slide content")
     const r = await extractText(p)
     expect(r.format).toBe("pptx")
     expect(r.text).toBe("slide content")

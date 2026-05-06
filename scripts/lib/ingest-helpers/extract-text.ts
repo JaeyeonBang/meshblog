@@ -63,9 +63,10 @@ export async function extractText(filePath: string): Promise<ExtractedText> {
   }
 
   if (format === "pdf") {
-    const pdfParse = (await import("pdf-parse")).default
+    const { PDFParse } = await import("pdf-parse")
     const buffer = readFileSync(filePath)
-    const result = await pdfParse(buffer)
+    const parser = new PDFParse({ data: buffer })
+    const result = await parser.getText()
     const text = result.text ?? ""
     if (text.trim().length < SCANNED_PDF_THRESHOLD) {
       warnings.push(
@@ -75,9 +76,9 @@ export async function extractText(filePath: string): Promise<ExtractedText> {
     return { text, format, warnings }
   }
 
-  // docx / pptx — both via officeparser
+  // docx / pptx — both via officeparser (parseOffice returns a Promise<string>).
   const officeparser = await import("officeparser")
-  const text = await officeparser.parseOfficeAsync(filePath, {
+  const text = await officeparser.parseOffice(filePath, {
     outputErrorToConsole: false,
   })
   return { text: typeof text === "string" ? text : "", format, warnings }

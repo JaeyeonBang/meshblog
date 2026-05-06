@@ -1,8 +1,9 @@
 import { z } from "zod"
 import type { ChatMessage } from "../openrouter"
+import { loadStyleBlock } from "./loader.ts"
 
 /** Bump when the system prompt changes — invalidates downstream caches. */
-export const CONCEPT_NAMING_PROMPT_VERSION = "v1"
+export const CONCEPT_NAMING_PROMPT_VERSION = "v2"
 
 /**
  * Zod schema for LLM-generated concept name + description.
@@ -24,10 +25,11 @@ export const conceptNameSchema = z.object({
 
 export type ConceptName = z.infer<typeof conceptNameSchema>
 
-const SYSTEM_PROMPT = `You are a knowledge graph labeling system. Given a list of entity names (and optional descriptions) that belong to the same Louvain community cluster, produce a single high-level concept label.
-
-Return ONLY a JSON object with this exact structure:
-{ "name": string, "description": string }
+/**
+ * USER-EDITABLE STYLE block (override via `prompts/concept-naming.md`).
+ * Voice and labeling rules. The CONTRACT block below is TS-locked.
+ */
+export const CONCEPT_NAMING_STYLE = `You are a knowledge graph labeling system. Given a list of entity names (and optional descriptions) that belong to the same Louvain community cluster, produce a single high-level concept label.
 
 Rules for "name":
 - 2-5 words, capitalized like a section heading (Title Case).
@@ -38,51 +40,55 @@ Rules for "name":
 Rules for "description":
 - One sentence, ≤ 200 characters.
 - Name the unifying concept and mention 2-3 key members.
-- No period required at end, but allowed.
+- No period required at end, but allowed.`
+
+/**
+ * TS-LOCKED CONTRACT block — output JSON shape aligned to conceptNameSchema.
+ * NEVER edited via prompts/. Always appended to the resolved STYLE.
+ */
+const CONCEPT_NAMING_CONTRACT = `Return ONLY a JSON object with this exact structure:
+{ "name": string, "description": string }
 
 Return ONLY the JSON object — no markdown fences, no prose, no explanation.`
 
-/**
- * Build the prompt messages for concept community naming.
- * @param memberNames - Entity names in the community (capped at 20).
- * @param memberDescriptions - Optional descriptions parallel to memberNames.
- */
-export function buildConceptNamingPrompt(
+function buildSystemPrompt(): string {
+  const style = loadStyleBlock("concept-naming", CONCEPT_NAMING_STYLE)
+  return `${style.body}\n\n${CONCEPT_NAMING_CONTRACT}`
+}
+
+function buildUserContent(
   memberNames: string[],
-  memberDescriptions?: string[]
-): ChatMessage[] {
+  memberDescriptions?: string[],
+): string {
   const capped = memberNames.slice(0, 20)
   const cappedDescs = memberDescriptions?.slice(0, 20)
-
   const lines = capped.map((name, i) => {
     const desc = cappedDescs?.[i]
     return desc ? `- ${name}: ${desc}` : `- ${name}`
   })
+  return `Community members:\n${lines.join("\n")}`
+}
 
-  const userContent = `Community members:\n${lines.join("\n")}`
-
+/**
+ * Build the prompt messages for concept community naming.
+ */
+export function buildConceptNamingPrompt(
+  memberNames: string[],
+  memberDescriptions?: string[],
+): ChatMessage[] {
   return [
-    { role: "system", content: SYSTEM_PROMPT },
-    { role: "user", content: userContent },
+    { role: "system", content: buildSystemPrompt() },
+    { role: "user", content: buildUserContent(memberNames, memberDescriptions) },
   ]
 }
 
 /**
- * Build a single-string prompt for `claude -p` subprocess invocation.
- * Used by `nameCommunity()` which shells out to the Claude Code CLI
- * (PGR-3 — no OpenRouter, uses local Claude Code session auth).
+ * Single-string prompt for `claude -p` subprocess invocation. Currently unused
+ * (concepts.ts uses OpenRouter), retained for future flexibility.
  */
 export function buildConceptNamingPromptString(
   memberNames: string[],
-  memberDescriptions?: string[]
+  memberDescriptions?: string[],
 ): string {
-  const capped = memberNames.slice(0, 20)
-  const cappedDescs = memberDescriptions?.slice(0, 20)
-
-  const lines = capped.map((name, i) => {
-    const desc = cappedDescs?.[i]
-    return desc ? `- ${name}: ${desc}` : `- ${name}`
-  })
-
-  return `${SYSTEM_PROMPT}\n\n---\n\nCommunity members:\n${lines.join("\n")}`
+  return `${buildSystemPrompt()}\n\n---\n\n${buildUserContent(memberNames, memberDescriptions)}`
 }

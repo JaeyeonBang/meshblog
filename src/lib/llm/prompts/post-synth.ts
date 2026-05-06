@@ -2,12 +2,22 @@
  * post-synth.ts — LLM prompt for /draft-post long-form synthesis from N source notes.
  *
  * Bump POST_SYNTH_PROMPT_VERSION when the system prompt changes.
+ *
+ * The system prompt is split into:
+ *   POST_SYNTH_STYLE — voice/format rules; user-editable via prompts/post-synth.md
+ *   POST_SYNTH_CONTRACT — output JSON shape aligned to postSynthSchema; TS-locked
+ *
+ * Rationale: Opus outer voice review (2026-05-07) flagged that full-prompt
+ * overrides let users break the JSON contract and confuse Zod failures with
+ * prompt typos. Splitting the contract out keeps the override surface
+ * low-risk while still letting users tune voice freely.
  */
 
 import { z } from "zod"
 import type { ChatMessage } from "../openrouter"
+import { loadStyleBlock } from "./loader.ts"
 
-export const POST_SYNTH_PROMPT_VERSION = "v1"
+export const POST_SYNTH_PROMPT_VERSION = "v2"
 
 export const postSynthSchema = z.object({
   title: z.string().min(1).max(200),
@@ -40,9 +50,24 @@ function clampBody(body: string): string {
   return body.slice(0, MAX_SOURCE_BODY_CHARS) + "\n\n[...truncated]"
 }
 
-const SYSTEM_PROMPT = `You are an editorial synthesizer. Given a target topic and N source notes, produce a long-form post (800-1500 words total) that draws on those sources.
+/**
+ * USER-EDITABLE STYLE block (override via `prompts/post-synth.md`).
+ * Voice, banned phrases, length budget. The CONTRACT block below is
+ * TS-locked and always appended to whatever style is resolved.
+ */
+export const POST_SYNTH_STYLE = `You are an editorial synthesizer. Given a target topic and N source notes, produce a long-form post (800-1500 words total) that draws on those sources.
 
-Return ONLY a JSON object with this exact structure (no markdown fences, no prose):
+Style rules:
+- Use only facts present in the sources. Do not invent claims, papers, or quotes.
+- Concise, editorial voice. Mix one-sentence paragraphs with 2-3 sentence runs. Be direct.
+- Banned phrases: "in conclusion", "furthermore", "moreover", "delve into", "let's break this down", "here's the kicker", "make no mistake", "can't stress this enough", "tapestry", "landscape", "underscore".
+- Be opinionated where the sources support it; be cautious where they don't.`
+
+/**
+ * TS-LOCKED CONTRACT block — output JSON shape aligned to postSynthSchema.
+ * NEVER edited via prompts/. Always appended to the resolved STYLE.
+ */
+const POST_SYNTH_CONTRACT = `Return ONLY a JSON object with this exact structure (no markdown fences, no prose):
 {
   "title": string,
   "lede": string,
@@ -50,14 +75,16 @@ Return ONLY a JSON object with this exact structure (no markdown fences, no pros
   "conclusion": string
 }
 
-Rules:
+Hard rules (do not relax):
 - 2-8 sections. Each section body MUST cite at least one source via Markdown wikilink: [[<source-slug>|<surface>]]. Sections without a citation will be rejected.
-- Use only facts present in the sources. Do not invent claims, papers, or quotes.
 - Do NOT include a "Sources" or "References" section in your output — the post template appends one automatically.
 - Do NOT include a "Conclusion" heading in sections — the conclusion field is rendered separately.
-- Style: concise, editorial, no AI-slop phrases. Banned: "in conclusion", "furthermore", "moreover", "delve into", "let's break this down", "here's the kicker", "make no mistake", "can't stress this enough", "tapestry", "landscape", "underscore". Mix one-sentence paragraphs with 2-3 sentence runs. Be direct.
-- Be opinionated where the sources support it; be cautious where they don't.
 - Output ONLY the JSON object. No prose. No markdown fences.`
+
+function buildSystemPrompt(): string {
+  const style = loadStyleBlock("post-synth", POST_SYNTH_STYLE)
+  return `${style.body}\n\n${POST_SYNTH_CONTRACT}`
+}
 
 export function buildPostSynthPrompt(topic: string, sources: SourceNote[]): ChatMessage[] {
   const sourceBlocks = sources
@@ -77,7 +104,7 @@ export function buildPostSynthPrompt(topic: string, sources: SourceNote[]): Chat
     `--- sources ---\n${sourceBlocks}`
 
   return [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: buildSystemPrompt() },
     { role: "user", content: userContent },
   ]
 }
