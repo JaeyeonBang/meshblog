@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS notes (
   has_en        INTEGER NOT NULL DEFAULT 0, -- 1 when a *.en.md companion exists
   body_en       TEXT,                     -- body markdown from companion *.en.md
   title_en      TEXT,                     -- title from companion frontmatter (if set)
+  aliases       TEXT NOT NULL DEFAULT '[]', -- JSON array of alternate lookup names
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );

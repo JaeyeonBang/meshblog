@@ -132,7 +132,7 @@ const { words: wordCount } = getReadingStats(note.content)
 const updatedDate = new Date(note.updated_at)
 const updatedYYYYMM = `${updatedDate.getFullYear()}-${String(updatedDate.getMonth() + 1).padStart(2, '0')}`
 const excerpt = plainExcerpt(note.content, 160)
-const wikilinkResolver = buildNoteResolver(listAllLinkable())
+const { resolve: wikilinkResolver } = buildNoteResolver(listAllLinkable())
 const contentHtml = await renderMarkdownToHtml(stripLeadingH1(note.content), {
   resolver: wikilinkResolver,
   hrefFor: (slug) => withBase(`/notes/${slug}`),

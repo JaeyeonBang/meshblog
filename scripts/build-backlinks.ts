@@ -11,6 +11,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { createDb, queryMany, type Database } from "../src/lib/db/index.ts"
 import { loadMeshblogConfig, getL3NoteSlugs } from "../src/lib/config.ts"
+import { buildNoteResolver } from "../src/lib/markdown/wikilink-resolver.ts"
 
 // Reuse the canonical regex from strip-wikilinks.ts (D2).
 // We need a fresh RegExp per call (lastIndex is stateful on /g regexes).
@@ -23,25 +24,18 @@ const GRAPH_DIR = "public/graph"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-export type NoteStub = { id: string; title: string; content: string; category_slug?: string | null }
+export type NoteStub = {
+  id: string
+  title: string
+  content: string
+  category_slug?: string | null
+  /** JSON-serialised string[] — e.g. '["PPO","RLHF"]'. Defaults to '[]'. */
+  aliases?: string
+}
 
 export type BacklinksJson = {
   nodes: Array<{ id: string; title: string; categorySlug?: string }>
   edges: Array<{ source: string; target: string; alias?: string }>
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-/**
- * Build a map from lowercased slug → note id for target resolution.
- * Both `id` and `slug` are the same in this schema, so we key by id.toLowerCase().
- */
-function buildSlugMap(notes: NoteStub[]): Map<string, string> {
-  const map = new Map<string, string>()
-  for (const note of notes) {
-    map.set(note.id.toLowerCase(), note.id)
-  }
-  return map
 }
 
 // ── Core runner ────────────────────────────────────────────────────────────────
@@ -60,11 +54,32 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
   // 1. Load all notes if not provided
   const allNotes: NoteStub[] =
     opts.notes ??
-    queryMany<NoteStub>(db, "SELECT id, title, content, category_slug FROM notes", [])
+    queryMany<NoteStub>(db, "SELECT id, title, content, category_slug, aliases FROM notes", [])
 
-  const slugMap = buildSlugMap(allNotes)
+  // 2. Build alias-aware resolver using shared factory
+  const notesForResolver = allNotes.map((n) => {
+    let aliases: string[] = []
+    if (n.aliases) {
+      try {
+        const parsed = JSON.parse(n.aliases)
+        if (Array.isArray(parsed)) aliases = parsed
+      } catch {
+        aliases = []
+      }
+    }
+    return { slug: n.id, title: n.title, aliases }
+  })
 
-  // 2. Parse wikilinks from all note content
+  const { resolve, collisions } = buildNoteResolver(notesForResolver)
+
+  // Log any alias collisions to stderr
+  for (const c of collisions) {
+    process.stderr.write(
+      `[build-backlinks] alias collision: "${c.alias}" claimed by [${c.claimers.join(", ")}] — neither resolves\n`,
+    )
+  }
+
+  // 3. Parse wikilinks from all note content
   type WikilinkRow = {
     source_id: string
     target_id: string | null
@@ -93,7 +108,9 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
       const targetRaw = rawTarget.trim().toLowerCase()
       if (!targetRaw) continue
 
-      const resolvedId = slugMap.get(targetRaw) ?? null
+      // Use shared resolver: bySlug → byTitle → byAlias → null
+      const resolved = resolve(rawTarget.trim())
+      const resolvedId = resolved?.slug ?? null
 
       rows.push({
         source_id: note.id,
@@ -105,7 +122,7 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
     }
   }
 
-  // 3. Write to DB in a single transaction
+  // 4. Write to DB in a single transaction
   if (!dryRun && sourceIds.size > 0) {
     const sourceIdList = [...sourceIds]
     const placeholders = sourceIdList.map(() => "?").join(",")
@@ -135,7 +152,7 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
     )
   }
 
-  // 4. Build backlinks.json — only resolved edges (target_id IS NOT NULL)
+  // 5. Build backlinks.json — only resolved edges (target_id IS NOT NULL)
   //    In 'hidden' mode, drop L3 nodes and any edges incident to them.
   const { l3Visibility } = loadMeshblogConfig()
   const l3Slugs = l3Visibility === "hidden" ? getL3NoteSlugs(db) : new Set<string>()

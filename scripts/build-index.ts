@@ -234,6 +234,8 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
     const title = (fm.title as string) ?? slug
     const rawTags: string[] = fm.tags ?? []
     const tags = JSON.stringify(rawTags)
+    const rawAliases: string[] = Array.isArray(fm.aliases) ? fm.aliases : []
+    const aliases = JSON.stringify(rawAliases)
     const levelPin = (fm.level_pin as number | undefined) ?? null
     const hash = sha256(content)
 
@@ -267,21 +269,22 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
 
     execute(
       db,
-      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, level_pin, category_slug, has_en, body_en, title_en)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, aliases, level_pin, category_slug, has_en, body_en, title_en)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          title         = excluded.title,
          content       = excluded.content,
          content_hash  = excluded.content_hash,
          folder_path   = excluded.folder_path,
          tags          = excluded.tags,
+         aliases       = excluded.aliases,
          level_pin     = excluded.level_pin,
          category_slug = excluded.category_slug,
          has_en        = excluded.has_en,
          body_en       = excluded.body_en,
          title_en      = excluded.title_en,
          updated_at    = datetime('now')`,
-      [id, slug, title, content, hash, folder, tags, levelPin, categorySlug, hasEn, bodyEn, titleEn],
+      [id, slug, title, content, hash, folder, tags, aliases, levelPin, categorySlug, hasEn, bodyEn, titleEn],
     )
 
     const hashChanged = !existing || existing.content_hash !== hash
@@ -375,9 +378,9 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
   // ── Stage 4: Backlinks (D4) ───────────────────────────────────────────────
   try {
     const { runBuildBacklinks } = await import("./build-backlinks.ts")
-    const allNotes = queryMany<{ id: string; title: string; content: string }>(
+    const allNotes = queryMany<{ id: string; title: string; content: string; category_slug: string | null; aliases: string }>(
       db,
-      "SELECT id, title, content FROM notes",
+      "SELECT id, title, content, category_slug, aliases FROM notes",
       [],
     )
     runBuildBacklinks({ db, notes: allNotes })

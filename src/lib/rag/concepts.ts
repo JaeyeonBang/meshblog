@@ -1,6 +1,9 @@
 import { queryOne, queryMany, execute, type Database } from "../db/index.ts"
 import { z } from "zod"
 import { computeEntityCommunities } from "./graph-topology.ts"
+import { callOpenRouter } from "../llm/openrouter.ts"
+import { buildConceptNamingPrompt, conceptNameSchema } from "../llm/prompts/concept-naming.ts"
+import { extractJsonObject } from "./graph.ts"
 
 // --- Schema validation ---
 
@@ -28,20 +31,70 @@ export type ConceptResult = z.infer<typeof conceptSchema>
 export type ContradictionResult = z.infer<typeof contradictionSchema>
 
 // --- Community Naming ---
-// NOTE: LLM calls (OpenRouter / Claude Code) are Agent C's domain.
-// nameCommunity uses a simple heuristic fallback when no LLM is configured.
+//
+// We use OpenRouter (Haiku 4.5) for concept naming, NOT the Claude Code CLI
+// subprocess (`claude -p`). Reasoning measured 2026-05-05 on this machine:
+//   • `claude -p` with default Opus 4.7 1M: ~$0.348/call (55K cache tokens)
+//   • `claude -p --model haiku`:             ~$0.099/call (79K cache tokens)
+//   • OpenRouter Haiku 4.5:                  ~$0.001/call
+// Concept naming runs 5-15× per refresh. OpenRouter is 50-100× cheaper for
+// this per-refresh workload. The `--bare` flag would help but requires
+// ANTHROPIC_API_KEY (Claude Code OAuth/keychain auth is blocked under --bare).
+//
+// Keyless mode: if OPENROUTER_API_KEY is missing, fall back to heuristic.
 
-async function nameCommunity(
-  memberNames: string[]
-): Promise<{ name: string; description: string }> {
-  // Cap at 20 members to avoid token limits
-  const capped = memberNames.slice(0, 20)
-  // Fallback: derive a concept name from most-common words in member names
-  // (Phase 4 /ask will wire in Claude Code CLI here)
-  const name = capped[0] ?? "Unknown"
+const CONCEPT_LLM_MODEL = process.env.MESHBLOG_LLM_MODEL ?? "anthropic/claude-haiku-4-5"
+
+/** Keyless / fallback heuristic: use first member name as concept name. */
+function heuristicName(memberNames: string[]): { name: string; description: string } {
+  const first = memberNames[0] ?? "Unknown"
   return {
-    name: name.slice(0, 100),
-    description: `Concept cluster: ${capped.slice(0, 5).join(", ")}`.slice(0, 500),
+    name: first.slice(0, 100),
+    description: `Concept cluster: ${memberNames.slice(0, 5).join(", ")}`.slice(0, 500),
+  }
+}
+
+/**
+ * Name a Louvain community via OpenRouter (with 1 retry + heuristic fallback).
+ * Exported for testing; internal callers pass memberDescriptions for richer context.
+ */
+export async function nameCommunity(
+  memberNames: string[],
+  memberDescriptions?: string[]
+): Promise<{ name: string; description: string }> {
+  if (!process.env.OPENROUTER_API_KEY) {
+    return heuristicName(memberNames)
+  }
+
+  async function attempt(temperature: number): Promise<{ name: string; description: string }> {
+    const messages = buildConceptNamingPrompt(memberNames, memberDescriptions)
+    const response = await callOpenRouter({
+      messages,
+      model: CONCEPT_LLM_MODEL,
+      maxTokens: 200,
+      temperature,
+    })
+    const json = await response.json() as { choices: { message: { content: string } }[] }
+    const content = json.choices[0].message.content
+    const jsonStr = extractJsonObject(content)
+    const parsed = JSON.parse(jsonStr) as unknown
+    const validated = conceptNameSchema.parse(parsed)
+    return validated
+  }
+
+  try {
+    const result = await attempt(0.3)
+    console.info(`[concepts] LLM-named: ${result.name}`)
+    return result
+  } catch {
+    try {
+      const result = await attempt(0.1)
+      console.info(`[concepts] LLM-named (retry): ${result.name}`)
+      return result
+    } catch (err) {
+      console.error(`[concepts] LLM failed, using heuristic: ${memberNames[0] ?? "Unknown"}`, err)
+      return heuristicName(memberNames)
+    }
   }
 }
 
@@ -104,7 +157,8 @@ export async function clusterEntities(
     const results = await Promise.allSettled(
       batch.map(async ([, members]) => {
         const memberNames = members.map((e) => e.name)
-        const named = await nameCommunity(memberNames)
+        const memberDescriptions = members.map((e) => e.description)
+        const named = await nameCommunity(memberNames, memberDescriptions)
         return {
           name: named.name,
           description: named.description,
@@ -238,7 +292,8 @@ export async function buildConceptsFromCommunities(
     const results = await Promise.allSettled(
       batch.map(async ([, members]) => {
         const memberNames = members.map((e) => e.name)
-        const named = await nameCommunity(memberNames)
+        const memberDescriptions = members.map((e) => e.description)
+        const named = await nameCommunity(memberNames, memberDescriptions)
         return {
           name: named.name,
           description: named.description,

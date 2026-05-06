@@ -107,7 +107,7 @@ const formattedDate = createdDate.toLocaleDateString('ko-KR', {
   day: '2-digit',
 })
 const excerpt = plainExcerpt(post.content, 160)
-const wikilinkResolver = buildNoteResolver(listAllLinkable())
+const { resolve: wikilinkResolver } = buildNoteResolver(listAllLinkable())
 const contentHtml = await renderMarkdownToHtml(stripLeadingH1(post.content), {
   resolver: wikilinkResolver,
   hrefFor: (slug) => withBase(`/notes/${slug}`),
