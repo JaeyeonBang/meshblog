@@ -28,7 +28,10 @@ Idempotent: re-running on an already-published file logs `SKIP` and exits 0 for 
 # single file
 bun run promote content/notes/some-paper.md
 
-# directory (all .md files inside)
+# multiple files (each path is a file or directory; deduped)
+bun run promote content/notes/a.md content/notes/b.md content/posts/
+
+# directory (all .md files inside, non-recursive)
 bun run promote content/notes/
 
 # preview only

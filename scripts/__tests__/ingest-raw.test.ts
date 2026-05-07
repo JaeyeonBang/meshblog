@@ -246,7 +246,8 @@ describe("ingestOne — single file end-to-end (mocked LLM)", () => {
       { callOpenRouter, vocab: [], existingTags: [] },
     )
     expect(r.status).toBe("skipped")
-    expect(r.reason).toMatch(/exists/)
+    expect(r.reason).toMatch(/slug collision/)
+    expect(r.reason).toMatch(/--title/)
   })
 
   it("scanned-pdf warning short-circuits before LLM call", async () => {

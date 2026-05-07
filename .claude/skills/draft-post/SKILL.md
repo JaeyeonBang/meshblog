@@ -34,7 +34,19 @@ bun run scripts/draft-post.ts \
 ## Prerequisites
 
 - `.data/index.db` must exist with the source slugs already ingested. Run `bun run build-index --skip-embed` (or full `bun run refresh`) first.
+- **Source notes must be promoted (`draft: false`).** `build-index` excludes drafts. If a slug exists on disk but you get `source slugs not found in DB`, the most likely cause is that you forgot to run `/promote` on it after `/ingest-raw`.
 - Source slugs are the file IDs (= filename without extension) under `content/notes/` or `content/posts/`.
+
+The expected flow when starting from raw files:
+
+```
+/ingest-raw raw/some-paper.pdf
+  → content/notes/some-paper.md (draft:true)
+/promote content/notes/some-paper.md
+  → draft:false, refresh updates index
+/draft-post --title "..." --notes some-paper,other-note
+  → content/posts/<slug>.md (draft:true) — still needs /promote to publish
+```
 
 ## Cost
 
