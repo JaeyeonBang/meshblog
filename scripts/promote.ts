@@ -179,14 +179,14 @@ export function spawnRefresh(): Promise<void> {
 
 // ── CLI entry ─────────────────────────────────────────────────────────────────
 
-function parseArgs(argv: string[]): { pathArg: string; options: PromoteOptions } {
+export function parseArgs(argv: string[]): { pathArgs: string[]; options: PromoteOptions } {
   const args = argv.slice(2)
   const positional = args.filter((a) => !a.startsWith("--"))
   if (positional.length === 0) {
-    throw new Error("usage: bun run promote <path> [--dry-run] [--no-refresh]")
+    throw new Error("usage: bun run promote <path>... [--dry-run] [--no-refresh]")
   }
   return {
-    pathArg: positional[0],
+    pathArgs: positional,
     options: {
       dryRun: args.includes("--dry-run"),
       refresh: !args.includes("--no-refresh"),
@@ -200,19 +200,23 @@ const isMainModule =
 
 if (isMainModule) {
   ;(async () => {
-    let pathArg: string
+    let pathArgs: string[]
     let options: PromoteOptions
     try {
-      ({ pathArg, options } = parseArgs(process.argv))
+      ({ pathArgs, options } = parseArgs(process.argv))
     } catch (err) {
       console.error(`[promote] ${(err as Error).message}`)
       process.exit(1)
       return
     }
 
-    let inputs: string[]
+    const inputs: string[] = []
     try {
-      inputs = collectInputs(pathArg)
+      for (const p of pathArgs) {
+        for (const f of collectInputs(p)) {
+          if (!inputs.includes(f)) inputs.push(f)
+        }
+      }
     } catch (err) {
       console.error(`[promote] ${(err as Error).message}`)
       process.exit(1)
@@ -220,7 +224,7 @@ if (isMainModule) {
     }
 
     if (inputs.length === 0) {
-      console.error(`[promote] no markdown files in ${pathArg}`)
+      console.error(`[promote] no markdown files in ${pathArgs.join(", ")}`)
       process.exit(1)
       return
     }

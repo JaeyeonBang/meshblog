@@ -23,6 +23,7 @@ import {
   promoteOne,
   todayISO,
   isSafePath,
+  parseArgs,
 } from "../promote.ts"
 
 const DRAFT_NOTE = `---
@@ -254,6 +255,48 @@ describe("isDraft + composePromoted + promoteOne", () => {
     writeFileSync("d.md", DRAFT_NOTE)
     const out = composePromoted("d.md", "2026-05-07")
     expect(() => matter(out)).not.toThrow()
+  })
+})
+
+describe("parseArgs", () => {
+  it("requires at least one positional path", () => {
+    expect(() => parseArgs(["node", "promote.ts"])).toThrow(/usage/)
+  })
+
+  it("returns a single positional as a one-element pathArgs array", () => {
+    const r = parseArgs(["node", "promote.ts", "content/notes/a.md"])
+    expect(r.pathArgs).toEqual(["content/notes/a.md"])
+    expect(r.options.dryRun).toBe(false)
+    expect(r.options.refresh).toBe(true)
+  })
+
+  it("collects multiple positionals", () => {
+    const r = parseArgs([
+      "node",
+      "promote.ts",
+      "content/notes/a.md",
+      "content/notes/b.md",
+      "content/posts/",
+    ])
+    expect(r.pathArgs).toEqual([
+      "content/notes/a.md",
+      "content/notes/b.md",
+      "content/posts/",
+    ])
+  })
+
+  it("flags interleaved with positionals are correctly split", () => {
+    const r = parseArgs([
+      "node",
+      "promote.ts",
+      "--dry-run",
+      "content/notes/a.md",
+      "--no-refresh",
+      "content/notes/b.md",
+    ])
+    expect(r.pathArgs).toEqual(["content/notes/a.md", "content/notes/b.md"])
+    expect(r.options.dryRun).toBe(true)
+    expect(r.options.refresh).toBe(false)
   })
 })
 

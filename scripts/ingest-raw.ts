@@ -211,7 +211,13 @@ export async function ingestOne(
   const targetPath = join(NOTES_DIR, `${slug}.md`)
 
   if (existsSync(targetPath) && !options.force) {
-    return { status: "skipped", reason: `target exists: ${targetPath} (use --force to overwrite)` }
+    return {
+      status: "skipped",
+      reason:
+        `slug collision: target exists at ${targetPath}. ` +
+        `In directory mode this happens when the LLM picks the same title for multiple files. ` +
+        `Re-run on this file alone with --title "Some Distinct Title", or pass --force to overwrite.`,
+    }
   }
 
   let body = enriched.body
@@ -336,14 +342,22 @@ if (isMainModule) {
       }
     }
 
+    const collisions = result.skipped.filter((s) => s.reason.startsWith("slug collision:"))
+    const otherSkips = result.skipped.filter((s) => !s.reason.startsWith("slug collision:"))
+
     console.log("\n[ingest-raw] summary:")
     console.log(`  written: ${result.written.length}`)
-    console.log(`  skipped: ${result.skipped.length}`)
+    console.log(`  skipped: ${result.skipped.length}${collisions.length > 0 ? ` (${collisions.length} slug collisions)` : ""}`)
     if (options.estimate) {
       const total = result.estimates!.reduce((s, e) => s + e.estCostUsd, 0)
       console.log(`  estimated total cost: ~$${total.toFixed(4)}`)
     }
-    for (const s of result.skipped) console.log(`    SKIP ${s.path}: ${s.reason}`)
+    for (const s of otherSkips) console.log(`    SKIP ${s.path}: ${s.reason}`)
+    if (collisions.length > 0) {
+      console.log(`\n[ingest-raw] ${collisions.length} file(s) skipped due to slug collisions:`)
+      for (const s of collisions) console.log(`    COLLISION ${s.path}`)
+      console.log(`  → re-run each with --title "Distinct Title" to ingest, or accept the loss.`)
+    }
 
     if (result.written.length > 0 && options.refresh && !options.dryRun) {
       console.log("\n[ingest-raw] running bun run refresh...")

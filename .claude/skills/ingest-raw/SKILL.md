@@ -52,6 +52,34 @@ Haiku 4.5 input ~$0.001 / 1K tokens. Body cap is 16K chars. Per file: ~$0.001-0.
 
 Why Haiku not `claude -p`: measured `claude -p --model haiku` at ~$0.099 / call (79K cache tokens loaded each spawn) vs OpenRouter Haiku ~$0.001 / call. 100× cost ratio. Same rationale documented in `src/lib/rag/concepts.ts`.
 
+## Next step: review + promote
+
+Ingested notes land with `draft: true`, which means **`build-index` excludes them from the search index**. They will not appear in `/draft-post` source lookups, the graph, or the live site until promoted.
+
+Workflow:
+
+1. `/ingest-raw <path>` — produces `content/notes/<slug>.md` (`draft: true`)
+2. Review the note: tags sensible? body cleaned? auto-link targets correct?
+3. `/promote content/notes/<slug>.md` — flips `draft: false`, sets `published_at`, runs refresh
+4. Now usable as a `--notes` source for `/draft-post`
+
+This is intentional: `/ingest-raw` is meant to be cheap and reversible, while publication is a deliberate gate.
+
+## Slug collisions in directory mode
+
+When `/ingest-raw` walks a directory, the LLM picks the title for each file independently. Two raw files about the same topic can produce the same slug, in which case the second is **skipped** (the existing target is preserved — no data is lost on disk, but the second file is not ingested).
+
+The summary surfaces collisions explicitly:
+
+```
+[ingest-raw] 2 file(s) skipped due to slug collisions:
+    COLLISION raw/_inbox/foo.md
+    COLLISION raw/_inbox/bar.md
+  → re-run each with --title "Distinct Title" to ingest, or accept the loss.
+```
+
+If you actually want to ingest both, re-run the script per file with `--title` overrides.
+
 ## Idempotency
 
 Re-running on the same input refuses to overwrite. Pass `--force` to bypass. The script writes to a `<slug>.md.tmp` then renames so a mid-write crash leaves no half-state.
