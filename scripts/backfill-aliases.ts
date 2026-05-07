@@ -1,8 +1,8 @@
 /**
  * backfill-aliases.ts — CLI tool to suggest and write frontmatter aliases.
  *
- * For each note without aliases (or with empty aliases), calls OpenRouter
- * (Haiku 4.5) to suggest common acronyms and short forms, then writes
+ * For each note without aliases (or with empty aliases), invokes the local
+ * `claude -p` CLI to suggest common acronyms and short forms, then writes
  * the result back into the frontmatter.
  *
  * Usage:
@@ -18,14 +18,10 @@ dotenv.config({ path: ".env.local" })
 import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs"
 import { join, basename, extname } from "node:path"
 import matter from "gray-matter"
-import { callOpenRouter } from "../src/lib/llm/openrouter.ts"
+import { callClaudeMessages, checkClaudeAvailable } from "../src/lib/llm/claude-code.ts"
 import * as readline from "node:readline"
 
-// Why OpenRouter not `claude -p`? Measured cost on Claude Code:
-// `claude -p --model haiku` = ~$0.099/call (79K cache tokens loaded each spawn).
-// OpenRouter Haiku 4.5 = ~$0.001/call. 12+ notes × 100× = matters.
 const CONTENT_DIRS = ["content/notes", "content/posts"]
-const HAIKU_MODEL = "anthropic/claude-haiku-4-5"
 const MAX_ALIASES = 5
 const CONTENT_SNIPPET_CHARS = 1500
 
@@ -136,19 +132,24 @@ async function suggestAliases(title: string, contentSnippet: string): Promise<st
     `and widely-recognised short forms. Return 0-3 aliases. Empty array if none obvious. ` +
     `JSON only, no prose.`
 
-  const response = await callOpenRouter({
-    messages: [
-      { role: "system", content: prompt },
-      { role: "user", content: `Title: ${title}\n\nContent:\n${contentSnippet}` },
-    ],
-    model: HAIKU_MODEL,
-    maxTokens: 200,
-    temperature: 0.3,
-  })
+  const data = await callClaudeMessages([
+    { role: "system", content: prompt },
+    { role: "user", content: `Title: ${title}\n\nContent:\n${contentSnippet}` },
+  ])
 
-  const json = await response.json()
-  const raw = json?.choices?.[0]?.message?.content ?? ""
-  return validateAliasesResponse(raw) ?? []
+  // callClaudeMessages may have already parsed JSON for us, or may return a
+  // raw string if the model added prose around the JSON. Normalize both.
+  if (typeof data === "object" && data !== null) {
+    const obj = data as { aliases?: unknown }
+    if (Array.isArray(obj.aliases)) {
+      return obj.aliases
+        .filter((a): a is string => typeof a === "string" && a.trim().length > 0)
+        .map((a) => a.trim())
+        .slice(0, MAX_ALIASES)
+    }
+  }
+  const text = typeof data === "string" ? data : JSON.stringify(data)
+  return validateAliasesResponse(text) ?? []
 }
 
 // ── CLI prompt ────────────────────────────────────────────────────────────────
@@ -187,8 +188,10 @@ if (isMainModule) {
 
   console.log(`[backfill-aliases] ${candidates.length} notes need alias backfill`)
 
-  if (!process.env.OPENROUTER_API_KEY) {
-    console.error("[backfill-aliases] OPENROUTER_API_KEY is not set — aborting")
+  try {
+    checkClaudeAvailable()
+  } catch (err) {
+    console.error(`[backfill-aliases] ${(err as Error).message}`)
     process.exit(1)
   }
 

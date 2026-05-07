@@ -11,7 +11,7 @@
  */
 
 import { z } from "zod"
-import type { ChatMessage } from "../openrouter"
+import type { ChatMessage } from "../claude-code.ts"
 import { loadStyleBlock } from "./loader.ts"
 
 export const INGEST_ENRICH_PROMPT_VERSION = "v2"

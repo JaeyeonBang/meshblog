@@ -11,11 +11,18 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import matter from "gray-matter"
 
-vi.mock("../../src/lib/llm/openrouter", () => ({
-  callOpenRouter: vi.fn(),
-}))
+vi.mock("../../src/lib/llm/claude-code", async () => {
+  const actual = await vi.importActual<typeof import("../../src/lib/llm/claude-code.ts")>(
+    "../../src/lib/llm/claude-code.ts"
+  )
+  return {
+    ...actual,
+    callClaudeMessages: vi.fn(),
+    checkClaudeAvailable: vi.fn(),
+  }
+})
 
-import { callOpenRouter } from "../../src/lib/llm/openrouter.ts"
+import { callClaudeMessages } from "../../src/lib/llm/claude-code.ts"
 import {
   collectInputs,
   composeNote,
@@ -26,12 +33,7 @@ import {
   type EntityVocab,
 } from "../ingest-raw.ts"
 
-const mockCallOpenRouter = vi.mocked(callOpenRouter)
-
-function fakeOpenRouterResponse(content: string): Response {
-  const body = JSON.stringify({ choices: [{ message: { content } }] })
-  return new Response(body, { status: 200, headers: { "Content-Type": "application/json" } })
-}
+const mockCallClaudeMessages = vi.mocked(callClaudeMessages)
 
 describe("collectInputs", () => {
   let scratch: string
@@ -119,27 +121,33 @@ describe("llmEnrich", () => {
   beforeEach(() => { vi.clearAllMocks() })
 
   it("validates and returns a parsed IngestEnrich", async () => {
-    mockCallOpenRouter.mockResolvedValueOnce(
-      fakeOpenRouterResponse(
-        JSON.stringify({
-          title: "T",
-          tags: ["rl"],
-          aliases: [],
-          body: "# Body\n",
-          suggested_links: [{ surface: "PPO", target_slug: "09-ppo" }],
-        }),
-      ),
-    )
+    mockCallClaudeMessages.mockResolvedValueOnce({
+      title: "T",
+      tags: ["rl"],
+      aliases: [],
+      body: "# Body\n",
+      suggested_links: [{ surface: "PPO", target_slug: "09-ppo" }],
+    })
     const r = await llmEnrich("raw", [], [])
     expect(r.title).toBe("T")
     expect(r.suggested_links).toHaveLength(1)
   })
 
   it("propagates Zod errors when LLM returns invalid shape", async () => {
-    mockCallOpenRouter.mockResolvedValueOnce(
-      fakeOpenRouterResponse(JSON.stringify({ title: "" })),
-    )
+    mockCallClaudeMessages.mockResolvedValueOnce({ title: "" })
     await expect(llmEnrich("raw", [], [])).rejects.toThrow()
+  })
+
+  it("accepts a raw JSON string from the model and parses it", async () => {
+    mockCallClaudeMessages.mockResolvedValueOnce(
+      "Here is the result:\n```json\n" +
+      JSON.stringify({
+        title: "X", tags: [], aliases: [], body: "B", suggested_links: [],
+      }) +
+      "\n```"
+    )
+    const r = await llmEnrich("raw", [], [])
+    expect(r.title).toBe("X")
   })
 })
 
@@ -159,7 +167,7 @@ describe("ingestOne — single file end-to-end (mocked LLM)", () => {
   })
 
   function setMockLLM(payload: object) {
-    mockCallOpenRouter.mockResolvedValueOnce(fakeOpenRouterResponse(JSON.stringify(payload)))
+    mockCallClaudeMessages.mockResolvedValueOnce(payload)
   }
 
   it("writes a draft note for a single .md input", async () => {
@@ -178,7 +186,7 @@ describe("ingestOne — single file end-to-end (mocked LLM)", () => {
       src,
       { autoLink: true, refresh: false, force: false, dryRun: false, estimate: false },
       {
-        callOpenRouter,
+        callClaudeMessages,
         vocab: [{ name: "PPO", slug: "09-ppo", title: "PPO" }],
         existingTags: ["rl"],
       },
@@ -206,7 +214,7 @@ describe("ingestOne — single file end-to-end (mocked LLM)", () => {
     const r = await ingestOne(
       src,
       { autoLink: true, refresh: false, force: false, dryRun: true, estimate: false },
-      { callOpenRouter, vocab: [], existingTags: [] },
+      { callClaudeMessages, vocab: [], existingTags: [] },
     )
     expect(r.status).toBe("written")
     expect(existsSync(join(scratch, "content/notes/dry.md"))).toBe(false)
@@ -218,12 +226,12 @@ describe("ingestOne — single file end-to-end (mocked LLM)", () => {
     const r = await ingestOne(
       src,
       { autoLink: true, refresh: false, force: false, dryRun: false, estimate: true },
-      { callOpenRouter, vocab: [], existingTags: [] },
+      { callClaudeMessages, vocab: [], existingTags: [] },
     )
     expect(r.status).toBe("estimated")
     expect(r.estimate?.chars).toBe(4000)
     expect(r.estimate?.estTokens).toBeGreaterThan(0)
-    expect(mockCallOpenRouter).not.toHaveBeenCalled()
+    expect(mockCallClaudeMessages).not.toHaveBeenCalled()
   })
 
   it("refuses to overwrite existing target without --force", async () => {
@@ -243,7 +251,7 @@ describe("ingestOne — single file end-to-end (mocked LLM)", () => {
     const r = await ingestOne(
       src,
       { autoLink: true, refresh: false, force: false, dryRun: false, estimate: false },
-      { callOpenRouter, vocab: [], existingTags: [] },
+      { callClaudeMessages, vocab: [], existingTags: [] },
     )
     expect(r.status).toBe("skipped")
     expect(r.reason).toMatch(/slug collision/)
@@ -269,7 +277,7 @@ describe("ingestOne — single file end-to-end (mocked LLM)", () => {
     const r = await ingestOne(
       src,
       { autoLink: false, refresh: false, force: false, dryRun: false, estimate: false },
-      { callOpenRouter, vocab: [], existingTags: [] },
+      { callClaudeMessages, vocab: [], existingTags: [] },
     )
     // For .md/.txt we proceed regardless of length; this just confirms the
     // happy path doesn't trip on a "scanned-pdf" check intended for PDFs only.
@@ -293,7 +301,7 @@ describe("ingestOne — single file end-to-end (mocked LLM)", () => {
       src,
       { autoLink: true, refresh: false, force: false, dryRun: false, estimate: false },
       {
-        callOpenRouter,
+        callClaudeMessages,
         vocab: [{ name: "PPO", slug: "09-ppo", title: "PPO" }],
         existingTags: [],
       },

@@ -35,12 +35,11 @@ import {
   ingestEnrichSchema,
   type IngestEnrich,
 } from "../src/lib/llm/prompts/ingest-enrich.ts"
-import { callOpenRouter } from "../src/lib/llm/openrouter.ts"
+import { callClaudeMessages } from "../src/lib/llm/claude-code.ts"
 import { extractJsonObject } from "../src/lib/rag/graph.ts"
 import { slugify } from "./lib/slugify.ts"
 import { createDb, queryMany } from "../src/lib/db/index.ts"
 
-const HAIKU_MODEL = "anthropic/claude-haiku-4-5"
 const SUPPORTED_EXTS = [".pdf", ".docx", ".pptx", ".md", ".txt"]
 const NOTES_DIR = "content/notes"
 const DB_PATH = process.env.MESHBLOG_DB ?? ".data/index.db"
@@ -65,7 +64,7 @@ export type EntityVocab = {
 export type IngestRunResult = {
   written: string[]
   skipped: { path: string; reason: string }[]
-  estimates?: { path: string; chars: number; estTokens: number; estCostUsd: number }[]
+  estimates?: { path: string; chars: number; estTokens: number }[]
 }
 
 /** Return all entity → note mappings for the LLM vocab (top by mention_count). */
@@ -147,7 +146,7 @@ export function atomicWrite(targetPath: string, content: string): void {
 }
 
 export type EnrichDeps = {
-  callOpenRouter: typeof callOpenRouter
+  callClaudeMessages: typeof callClaudeMessages
 }
 
 /** Call the LLM enrich step, validate via Zod, return structured result. */
@@ -155,19 +154,14 @@ export async function llmEnrich(
   rawText: string,
   vocab: EntityVocab[],
   existingTags: string[],
-  deps: EnrichDeps = { callOpenRouter }
+  deps: EnrichDeps = { callClaudeMessages }
 ): Promise<IngestEnrich> {
   const messages = buildIngestEnrichPrompt(rawText, existingTags, vocab)
-  const response = await deps.callOpenRouter({
-    messages,
-    model: HAIKU_MODEL,
-    maxTokens: 6000,
-    temperature: 0.3,
-  })
-  const json = await response.json() as { choices: { message: { content: string } }[] }
-  const content = json.choices?.[0]?.message?.content ?? ""
-  const jsonStr = extractJsonObject(content)
-  const parsed = JSON.parse(jsonStr) as unknown
+  const data = await deps.callClaudeMessages(messages)
+  const parsed =
+    typeof data === "string"
+      ? JSON.parse(extractJsonObject(data))
+      : data
   return ingestEnrichSchema.parse(parsed)
 }
 
@@ -184,8 +178,8 @@ export function filterValidLinks(
 export async function ingestOne(
   filePath: string,
   options: IngestOptions,
-  deps: { callOpenRouter: typeof callOpenRouter; vocab?: EntityVocab[]; existingTags?: string[] } = { callOpenRouter }
-): Promise<{ status: "written" | "skipped" | "estimated"; path?: string; reason?: string; estimate?: { chars: number; estTokens: number; estCostUsd: number } }> {
+  deps: { callClaudeMessages: typeof callClaudeMessages; vocab?: EntityVocab[]; existingTags?: string[] } = { callClaudeMessages }
+): Promise<{ status: "written" | "skipped" | "estimated"; path?: string; reason?: string; estimate?: { chars: number; estTokens: number } }> {
   const { text, format, warnings } = await extractText(filePath)
   for (const w of warnings) console.warn(`[ingest-raw] ${filePath}: ${w}`)
 
@@ -196,15 +190,13 @@ export async function ingestOne(
   if (options.estimate) {
     const chars = text.length
     const estTokens = Math.ceil(chars / 4)
-    // Haiku 4.5 input ~$0.001/1K tokens — generous estimate including output
-    const estCostUsd = (estTokens / 1000) * 0.0015
-    return { status: "estimated", estimate: { chars, estTokens, estCostUsd } }
+    return { status: "estimated", estimate: { chars, estTokens } }
   }
 
   const vocab = deps.vocab ?? loadEntityVocab()
   const existingTags = deps.existingTags ?? Array.from(new Set(vocab.flatMap(() => []))) // tags vocab may be empty; the LLM still gets the entity list
 
-  const enriched = await llmEnrich(text, vocab, existingTags, { callOpenRouter: deps.callOpenRouter })
+  const enriched = await llmEnrich(text, vocab, existingTags, { callClaudeMessages: deps.callClaudeMessages })
 
   const titleFinal = options.titleOverride ?? enriched.title
   const slug = slugify(titleFinal)
@@ -312,9 +304,15 @@ if (isMainModule) {
       process.exit(1)
     }
 
-    if (!options.estimate && !options.dryRun && !process.env.OPENROUTER_API_KEY) {
-      console.error("[ingest-raw] OPENROUTER_API_KEY is not set — aborting (use --estimate for cost preview)")
-      process.exit(1)
+    if (!options.estimate && !options.dryRun) {
+      try {
+        // Lazy-import to avoid loading the spawn machinery in --dry-run / --estimate.
+        const { checkClaudeAvailable } = await import("../src/lib/llm/claude-code.ts")
+        checkClaudeAvailable()
+      } catch (err) {
+        console.error(`[ingest-raw] ${(err as Error).message}`)
+        process.exit(1)
+      }
     }
 
     const result: IngestRunResult = { written: [], skipped: [], estimates: [] }
@@ -327,13 +325,13 @@ if (isMainModule) {
           vocab = loadEntityVocab()
           console.log(`[ingest-raw] entity vocab: ${vocab.length} entries`)
         }
-        const r = await ingestOne(filePath, options, { callOpenRouter, vocab })
+        const r = await ingestOne(filePath, options, { callClaudeMessages, vocab })
         if (r.status === "written" && r.path) result.written.push(r.path)
         else if (r.status === "skipped") result.skipped.push({ path: filePath, reason: r.reason ?? "" })
         else if (r.status === "estimated" && r.estimate) {
           result.estimates!.push({ path: filePath, ...r.estimate })
           console.log(
-            `[ingest-raw] [estimate] ${filePath}: ${r.estimate.chars} chars / ~${r.estimate.estTokens} tokens / ~$${r.estimate.estCostUsd.toFixed(4)}`
+            `[ingest-raw] [estimate] ${filePath}: ${r.estimate.chars} chars / ~${r.estimate.estTokens} tokens`
           )
         }
       } catch (err) {
@@ -349,8 +347,8 @@ if (isMainModule) {
     console.log(`  written: ${result.written.length}`)
     console.log(`  skipped: ${result.skipped.length}${collisions.length > 0 ? ` (${collisions.length} slug collisions)` : ""}`)
     if (options.estimate) {
-      const total = result.estimates!.reduce((s, e) => s + e.estCostUsd, 0)
-      console.log(`  estimated total cost: ~$${total.toFixed(4)}`)
+      const totalTokens = result.estimates!.reduce((s, e) => s + e.estTokens, 0)
+      console.log(`  estimated total tokens: ~${totalTokens.toLocaleString()}`)
     }
     for (const s of otherSkips) console.log(`    SKIP ${s.path}: ${s.reason}`)
     if (collisions.length > 0) {

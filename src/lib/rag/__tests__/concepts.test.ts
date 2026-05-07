@@ -5,25 +5,25 @@ import {
   buildConceptNamingPromptString,
 } from "../../llm/prompts/concept-naming.ts"
 
-// Mock callOpenRouter before importing concepts (so the import-time wiring
-// resolves to the mock). We use OpenRouter not `claude -p` for cost reasons —
-// see the comment block in concepts.ts:nameCommunity.
-vi.mock("../../llm/openrouter", () => ({
-  callOpenRouter: vi.fn(),
-}))
+// Mock the claude-code module before importing concepts (so the import-time
+// wiring resolves to the mock). All LLM calls in this project go through
+// `claude -p` via callClaudeMessages.
+vi.mock("../../llm/claude-code", async () => {
+  const actual = await vi.importActual<typeof import("../../llm/claude-code.ts")>(
+    "../../llm/claude-code.ts"
+  )
+  return {
+    ...actual,
+    callClaudeMessages: vi.fn(),
+    checkClaudeAvailable: vi.fn(),
+  }
+})
 
-import { callOpenRouter } from "../../llm/openrouter.ts"
+import { callClaudeMessages, checkClaudeAvailable } from "../../llm/claude-code.ts"
 import { nameCommunity } from "../concepts.ts"
 
-const mockCallOpenRouter = vi.mocked(callOpenRouter)
-
-/** Build a fake OpenRouter Response carrying `content` as the assistant message. */
-function fakeResponse(content: string): Response {
-  const body = JSON.stringify({
-    choices: [{ message: { content } }],
-  })
-  return new Response(body, { status: 200, headers: { "Content-Type": "application/json" } })
-}
+const mockCallClaudeMessages = vi.mocked(callClaudeMessages)
+const mockCheckClaudeAvailable = vi.mocked(checkClaudeAvailable)
 
 describe("conceptNameSchema", () => {
   it("accepts a valid shape", () => {
@@ -133,34 +133,28 @@ describe("buildConceptNamingPromptString (single-string form, kept for future si
 })
 
 describe("nameCommunity", () => {
-  const originalKey = process.env.OPENROUTER_API_KEY
-
   afterEach(() => {
-    if (originalKey === undefined) {
-      delete process.env.OPENROUTER_API_KEY
-    } else {
-      process.env.OPENROUTER_API_KEY = originalKey
-    }
     vi.clearAllMocks()
   })
 
-  it("returns heuristic when OPENROUTER_API_KEY is not set", async () => {
-    delete process.env.OPENROUTER_API_KEY
+  it("returns heuristic when claude CLI is unavailable", async () => {
+    mockCheckClaudeAvailable.mockImplementationOnce(() => {
+      throw new Error("claude not in PATH")
+    })
 
     const result = await nameCommunity(["self-attention", "cross-attention"])
     expect(result.name).toBe("self-attention")
     expect(result.description).toContain("self-attention")
     expect(result.description).toContain("cross-attention")
+    expect(mockCallClaudeMessages).not.toHaveBeenCalled()
   })
 
-  it("returns LLM-named label when callOpenRouter returns valid JSON", async () => {
-    process.env.OPENROUTER_API_KEY = "test-key"
-
-    const llmJson = JSON.stringify({
+  it("returns LLM-named label when callClaudeMessages returns valid JSON", async () => {
+    mockCheckClaudeAvailable.mockReturnValue(undefined)
+    mockCallClaudeMessages.mockResolvedValueOnce({
       name: "Attention Mechanisms",
       description: "Concepts related to how transformer models compute weighted token relationships.",
     })
-    mockCallOpenRouter.mockResolvedValueOnce(fakeResponse(llmJson))
 
     const result = await nameCommunity(["self-attention", "cross-attention", "multi-head attention"])
     expect(result.name).toBe("Attention Mechanisms")
@@ -168,41 +162,36 @@ describe("nameCommunity", () => {
   })
 
   it("retries once and falls back to heuristic when both LLM calls return invalid JSON", async () => {
-    process.env.OPENROUTER_API_KEY = "test-key"
-
-    mockCallOpenRouter.mockResolvedValue(fakeResponse("not valid json at all {{}"))
+    mockCheckClaudeAvailable.mockReturnValue(undefined)
+    mockCallClaudeMessages.mockResolvedValue("not valid json at all {{}")
 
     const result = await nameCommunity(["PPO", "GRPO", "RLHF"])
     expect(result.name).toBe("PPO")
     expect(result.description).toContain("PPO")
-    expect(mockCallOpenRouter).toHaveBeenCalledTimes(2)
+    expect(mockCallClaudeMessages).toHaveBeenCalledTimes(2)
   })
 
   it("retries once and falls back to heuristic when LLM returns Zod-invalid shape twice", async () => {
-    process.env.OPENROUTER_API_KEY = "test-key"
-
-    const badJson = JSON.stringify({ name: "", description: "Some description." })
-    mockCallOpenRouter.mockResolvedValue(fakeResponse(badJson))
+    mockCheckClaudeAvailable.mockReturnValue(undefined)
+    mockCallClaudeMessages.mockResolvedValue({ name: "", description: "Some description." })
 
     const result = await nameCommunity(["transformer", "encoder", "decoder"])
     expect(result.name).toBe("transformer")
     expect(result.description).toContain("transformer")
-    expect(mockCallOpenRouter).toHaveBeenCalledTimes(2)
+    expect(mockCallClaudeMessages).toHaveBeenCalledTimes(2)
   })
 
   it("succeeds on retry when first call fails but second returns valid JSON", async () => {
-    process.env.OPENROUTER_API_KEY = "test-key"
-
-    const goodJson = JSON.stringify({
-      name: "Reinforcement Learning Methods",
-      description: "Methods for training agents through reward signals including PPO and GRPO.",
-    })
-    mockCallOpenRouter
-      .mockResolvedValueOnce(fakeResponse("not json"))
-      .mockResolvedValueOnce(fakeResponse(goodJson))
+    mockCheckClaudeAvailable.mockReturnValue(undefined)
+    mockCallClaudeMessages
+      .mockResolvedValueOnce("not json")
+      .mockResolvedValueOnce({
+        name: "Reinforcement Learning Methods",
+        description: "Methods for training agents through reward signals including PPO and GRPO.",
+      })
 
     const result = await nameCommunity(["PPO", "GRPO"])
     expect(result.name).toBe("Reinforcement Learning Methods")
-    expect(mockCallOpenRouter).toHaveBeenCalledTimes(2)
+    expect(mockCallClaudeMessages).toHaveBeenCalledTimes(2)
   })
 })

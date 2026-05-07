@@ -48,9 +48,9 @@ The script never sees the URL itself. This keeps the bash entry point focused on
 
 ## Cost
 
-Haiku 4.5 input ~$0.001 / 1K tokens. Body cap is 16K chars. Per file: ~$0.001-0.005. Run `--estimate` first for batch ingests to preview spend before committing.
+LLM enrichment runs through the local `claude -p` CLI, so the marginal monetary cost is whatever your Claude Code session bills (zero on Pro/Max, included subscription minutes otherwise). Wall time is ~3-10s per file thanks to subprocess overhead — heavier than a flat HTTP call but not significant for a personal blog.
 
-Why Haiku not `claude -p`: measured `claude -p --model haiku` at ~$0.099 / call (79K cache tokens loaded each spawn) vs OpenRouter Haiku ~$0.001 / call. 100× cost ratio. Same rationale documented in `src/lib/rag/concepts.ts`.
+Run `--estimate` first for batch ingests to preview total token volume (no LLM call).
 
 ## Next step: review + promote
 

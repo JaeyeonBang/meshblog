@@ -1,5 +1,5 @@
 import { z } from "zod"
-import type { ChatMessage } from "../openrouter"
+import type { ChatMessage } from "../claude-code.ts"
 import { loadStyleBlock } from "./loader.ts"
 
 /** Bump when the system prompt changes — invalidates downstream caches. */

@@ -4,11 +4,18 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import matter from "gray-matter"
 
-vi.mock("../../src/lib/llm/openrouter", () => ({
-  callOpenRouter: vi.fn(),
-}))
+vi.mock("../../src/lib/llm/claude-code", async () => {
+  const actual = await vi.importActual<typeof import("../../src/lib/llm/claude-code.ts")>(
+    "../../src/lib/llm/claude-code.ts"
+  )
+  return {
+    ...actual,
+    callClaudeMessages: vi.fn(),
+    checkClaudeAvailable: vi.fn(),
+  }
+})
 
-import { callOpenRouter } from "../../src/lib/llm/openrouter.ts"
+import { callClaudeMessages } from "../../src/lib/llm/claude-code.ts"
 import {
   unionTags,
   composePost,
@@ -17,12 +24,7 @@ import {
 } from "../draft-post.ts"
 import type { SourceNote } from "../../src/lib/llm/prompts/post-synth.ts"
 
-const mockCallOpenRouter = vi.mocked(callOpenRouter)
-
-function fakeOpenRouterResponse(content: string): Response {
-  const body = JSON.stringify({ choices: [{ message: { content } }] })
-  return new Response(body, { status: 200, headers: { "Content-Type": "application/json" } })
-}
+const mockCallClaudeMessages = vi.mocked(callClaudeMessages)
 
 const goodSynth = {
   title: "Why RLHF is brittle",
@@ -99,10 +101,10 @@ describe("synthesizePost", () => {
   beforeEach(() => { vi.clearAllMocks() })
 
   it("succeeds when LLM returns valid + cited synthesis on first try", async () => {
-    mockCallOpenRouter.mockResolvedValueOnce(fakeOpenRouterResponse(JSON.stringify(goodSynth)))
+    mockCallClaudeMessages.mockResolvedValueOnce(goodSynth)
     const r = await synthesizePost("RLHF brittleness", sources)
     expect(r.sections).toHaveLength(2)
-    expect(mockCallOpenRouter).toHaveBeenCalledTimes(1)
+    expect(mockCallClaudeMessages).toHaveBeenCalledTimes(1)
   })
 
   it("retries once when first response has uncited sections, succeeds on retry", async () => {
@@ -113,22 +115,18 @@ describe("synthesizePost", () => {
         goodSynth.sections[1],
       ],
     }
-    mockCallOpenRouter
-      .mockResolvedValueOnce(fakeOpenRouterResponse(JSON.stringify(uncited)))
-      .mockResolvedValueOnce(fakeOpenRouterResponse(JSON.stringify(goodSynth)))
+    mockCallClaudeMessages
+      .mockResolvedValueOnce(uncited)
+      .mockResolvedValueOnce(goodSynth)
     const r = await synthesizePost("topic", sources)
     expect(r.sections).toHaveLength(2)
-    expect(mockCallOpenRouter).toHaveBeenCalledTimes(2)
+    expect(mockCallClaudeMessages).toHaveBeenCalledTimes(2)
   })
 
   it("throws after retry when both attempts fail Zod validation", async () => {
-    // Use mockImplementation so each call returns a fresh Response (Body can
-    // only be read once per Response instance).
-    mockCallOpenRouter.mockImplementation(async () =>
-      fakeOpenRouterResponse(JSON.stringify({ title: "" }))
-    )
+    mockCallClaudeMessages.mockImplementation(async () => ({ title: "" }))
     await expect(synthesizePost("topic", sources)).rejects.toThrow()
-    expect(mockCallOpenRouter).toHaveBeenCalledTimes(2)
+    expect(mockCallClaudeMessages).toHaveBeenCalledTimes(2)
   })
 
   it("throws after retry when both attempts have uncited sections", async () => {
@@ -139,11 +137,17 @@ describe("synthesizePost", () => {
         { heading: "B", body: "no link b either, also plenty of words to clear the body length gate." },
       ],
     }
-    mockCallOpenRouter.mockImplementation(async () =>
-      fakeOpenRouterResponse(JSON.stringify(uncited))
-    )
+    mockCallClaudeMessages.mockImplementation(async () => uncited)
     await expect(synthesizePost("topic", sources)).rejects.toThrow(/uncited/)
-    expect(mockCallOpenRouter).toHaveBeenCalledTimes(2)
+    expect(mockCallClaudeMessages).toHaveBeenCalledTimes(2)
+  })
+
+  it("accepts a raw JSON string from the model and parses it", async () => {
+    mockCallClaudeMessages.mockResolvedValueOnce(
+      "```json\n" + JSON.stringify(goodSynth) + "\n```"
+    )
+    const r = await synthesizePost("topic", sources)
+    expect(r.sections).toHaveLength(2)
   })
 })
 

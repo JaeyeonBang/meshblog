@@ -27,12 +27,11 @@ import {
   type PostSynth,
   type SourceNote,
 } from "../src/lib/llm/prompts/post-synth.ts"
-import { callOpenRouter } from "../src/lib/llm/openrouter.ts"
+import { callClaudeMessages } from "../src/lib/llm/claude-code.ts"
 import { extractJsonObject } from "../src/lib/rag/graph.ts"
 import { slugify } from "./lib/slugify.ts"
 import { createDb, queryMany } from "../src/lib/db/index.ts"
 
-const SONNET_MODEL = "anthropic/claude-sonnet-4-6"
 const POSTS_DIR = "content/posts"
 const DB_PATH = process.env.MESHBLOG_DB ?? ".data/index.db"
 
@@ -140,14 +139,14 @@ export function atomicWrite(targetPath: string, content: string): void {
 }
 
 export type SynthDeps = {
-  callOpenRouter: typeof callOpenRouter
+  callClaudeMessages: typeof callClaudeMessages
 }
 
 /** Call LLM, validate via Zod + citation check, retry once on failure. */
 export async function synthesizePost(
   title: string,
   sources: SourceNote[],
-  deps: SynthDeps = { callOpenRouter }
+  deps: SynthDeps = { callClaudeMessages }
 ): Promise<PostSynth> {
   const sourceSlugs = sources.map((s) => s.slug)
 
@@ -156,16 +155,11 @@ export async function synthesizePost(
     if (extraInstruction) {
       messages.push({ role: "user", content: extraInstruction })
     }
-    const response = await deps.callOpenRouter({
-      messages,
-      model: SONNET_MODEL,
-      maxTokens: 8000,
-      temperature: 0.5,
-    })
-    const json = await response.json() as { choices: { message: { content: string } }[] }
-    const content = json.choices?.[0]?.message?.content ?? ""
-    const jsonStr = extractJsonObject(content)
-    const parsed = JSON.parse(jsonStr) as unknown
+    const data = await deps.callClaudeMessages(messages)
+    const parsed =
+      typeof data === "string"
+        ? JSON.parse(extractJsonObject(data))
+        : data
     const validated = postSynthSchema.parse(parsed)
 
     const uncited = findUncitedSections(validated, sourceSlugs)
@@ -231,10 +225,15 @@ if (isMainModule) {
       return
     }
 
-    if (!options.dryRun && !process.env.OPENROUTER_API_KEY) {
-      console.error("[draft-post] OPENROUTER_API_KEY is not set — aborting")
-      process.exit(1)
-      return
+    if (!options.dryRun) {
+      try {
+        const { checkClaudeAvailable } = await import("../src/lib/llm/claude-code.ts")
+        checkClaudeAvailable()
+      } catch (err) {
+        console.error(`[draft-post] ${(err as Error).message}`)
+        process.exit(1)
+        return
+      }
     }
 
     const slug = slugify(options.title)

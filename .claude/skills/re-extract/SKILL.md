@@ -1,26 +1,26 @@
 ---
 name: re-extract
-description: Wipe and re-run entity + concept extraction with the current LLM model. Use when concept graphs look sparse, after changing the extraction model/prompt, or after a large content edit. Does NOT touch CI — this is for local validation.
+description: Wipe and re-run entity + concept extraction via the local `claude -p` CLI. Use when concept graphs look sparse, after changing the extraction prompt, or after a large content edit. Does NOT touch CI — this is for local validation.
 ---
 
 # /re-extract
 
-Force a full re-extraction of entities and concepts from `content/notes/`
-using the current LLM model (`MESHBLOG_LLM_MODEL`, defaults to
-`anthropic/claude-haiku-4-5`).
+Force a full re-extraction of entities and concepts from `content/notes/`.
+All LLM calls go through `claude -p` (your local Claude Code session), so
+no API key is needed beyond `OPENAI_API_KEY` for embeddings.
 
 ## When to use
 
 - Concept toggle disappears on most posts (per-post graph degenerate).
-- Just changed `src/lib/rag/graph.ts` model or `entity-extract.ts` prompt.
+- Just changed `src/lib/rag/graph.ts` or `entity-extract.ts` prompt.
 - Added many notes and want fresh clustering.
 - Want to verify before/after stats locally before pushing.
 
 ## Preflight
 
 ```bash
-[ -n "$OPENROUTER_API_KEY" ] || { echo "OPENROUTER_API_KEY not set"; exit 1; }
-[ -n "$OPENAI_API_KEY" ]     || { echo "OPENAI_API_KEY not set (needed for embeddings)"; exit 1; }
+which claude                  || { echo "claude CLI not installed (https://docs.anthropic.com/claude-code)"; exit 1; }
+[ -n "$OPENAI_API_KEY" ]      || { echo "OPENAI_API_KEY not set (needed for embeddings)"; exit 1; }
 git status --short            # confirm clean working tree (or stash first)
 bun run scripts/concept-stats.ts > /tmp/concept-stats.before.txt
 cat /tmp/concept-stats.before.txt
@@ -67,10 +67,7 @@ so the fresh model takes effect automatically.
 
 ## Rollback
 
-If Haiku output is worse than gpt-4o-mini:
-
-```bash
-MESHBLOG_LLM_MODEL=openai/gpt-4o-mini bun run build-index -- --force
-```
-
-Then commit a revert of the model default in `src/lib/rag/graph.ts`.
+If extraction quality regresses, the levers are:
+- The prompt itself (`src/lib/llm/prompts/entity-extract.ts`) — revert via git
+- The model your Claude Code session uses — switch model in Claude Code settings
+  (the CLI honors whatever your active session has)

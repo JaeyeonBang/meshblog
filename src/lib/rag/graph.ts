@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { queryOne, execute, type Database } from "../db/index.ts"
-import { callOpenRouter } from "../llm/openrouter.ts"
+import { callClaudeMessages } from "../llm/claude-code.ts"
 import { buildEntityExtractionPrompt, ENTITY_TYPES } from "../llm/prompts/entity-extract.ts"
 
 const entitySchema = z.object({
@@ -17,8 +17,6 @@ export const extractionResultSchema = z.object({
     relationship: z.string().min(1),
   })).max(25).default([]),
 })
-
-const DEFAULT_MODEL = "anthropic/claude-haiku-4-5"
 
 /**
  * Pull the first complete JSON object out of an LLM response. Handles:
@@ -83,18 +81,15 @@ export async function extractEntities(
       }
 
       const messages = buildEntityExtractionPrompt(noteContent)
-      const response = await callOpenRouter({
-        messages,
-        model: process.env.MESHBLOG_LLM_MODEL ?? DEFAULT_MODEL,
-        maxTokens: 3000,
-        temperature: 0.3,
-      })
+      const data = await callClaudeMessages(messages)
 
-      const json = await response.json()
-      const content = json.choices?.[0]?.message?.content ?? ""
-
-      const jsonStr = extractJsonObject(content)
-      const parsed = JSON.parse(jsonStr)
+      // unwrapClaudeResult may return either an already-parsed object or a
+      // string that still needs json-extracting (e.g. when the model wraps
+      // its answer in prose). Handle both.
+      const parsed =
+        typeof data === "string"
+          ? JSON.parse(extractJsonObject(data))
+          : data
       const result = extractionResultSchema.parse(parsed)
 
       const normalizedEntities = result.entities.map((e) => ({

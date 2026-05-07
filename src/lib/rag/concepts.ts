@@ -1,7 +1,7 @@
 import { queryOne, queryMany, execute, type Database } from "../db/index.ts"
 import { z } from "zod"
 import { computeEntityCommunities } from "./graph-topology.ts"
-import { callOpenRouter } from "../llm/openrouter.ts"
+import { callClaudeMessages, checkClaudeAvailable } from "../llm/claude-code.ts"
 import { buildConceptNamingPrompt, conceptNameSchema } from "../llm/prompts/concept-naming.ts"
 import { extractJsonObject } from "./graph.ts"
 
@@ -32,18 +32,10 @@ export type ContradictionResult = z.infer<typeof contradictionSchema>
 
 // --- Community Naming ---
 //
-// We use OpenRouter (Haiku 4.5) for concept naming, NOT the Claude Code CLI
-// subprocess (`claude -p`). Reasoning measured 2026-05-05 on this machine:
-//   • `claude -p` with default Opus 4.7 1M: ~$0.348/call (55K cache tokens)
-//   • `claude -p --model haiku`:             ~$0.099/call (79K cache tokens)
-//   • OpenRouter Haiku 4.5:                  ~$0.001/call
-// Concept naming runs 5-15× per refresh. OpenRouter is 50-100× cheaper for
-// this per-refresh workload. The `--bare` flag would help but requires
-// ANTHROPIC_API_KEY (Claude Code OAuth/keychain auth is blocked under --bare).
-//
-// Keyless mode: if OPENROUTER_API_KEY is missing, fall back to heuristic.
-
-const CONCEPT_LLM_MODEL = process.env.MESHBLOG_LLM_MODEL ?? "anthropic/claude-haiku-4-5"
+// All LLM calls go through `claude -p` (callClaudeMessages). The CLI inherits
+// the user's local Claude Code session, so no separate API key is required.
+// If the `claude` binary is missing (e.g. CI without the CLI installed) we
+// fall back to a heuristic name so refresh still completes.
 
 /** Keyless / fallback heuristic: use first member name as concept name. */
 function heuristicName(memberNames: string[]): { name: string; description: string } {
@@ -54,41 +46,45 @@ function heuristicName(memberNames: string[]): { name: string; description: stri
   }
 }
 
+/** Wrap `checkClaudeAvailable()` as a boolean so we can short-circuit cleanly. */
+function isClaudeAvailable(): boolean {
+  try {
+    checkClaudeAvailable()
+    return true
+  } catch {
+    return false
+  }
+}
+
 /**
- * Name a Louvain community via OpenRouter (with 1 retry + heuristic fallback).
+ * Name a Louvain community via `claude -p` (with 1 retry + heuristic fallback).
  * Exported for testing; internal callers pass memberDescriptions for richer context.
  */
 export async function nameCommunity(
   memberNames: string[],
   memberDescriptions?: string[]
 ): Promise<{ name: string; description: string }> {
-  if (!process.env.OPENROUTER_API_KEY) {
+  if (!isClaudeAvailable()) {
     return heuristicName(memberNames)
   }
 
-  async function attempt(temperature: number): Promise<{ name: string; description: string }> {
+  async function attempt(): Promise<{ name: string; description: string }> {
     const messages = buildConceptNamingPrompt(memberNames, memberDescriptions)
-    const response = await callOpenRouter({
-      messages,
-      model: CONCEPT_LLM_MODEL,
-      maxTokens: 200,
-      temperature,
-    })
-    const json = await response.json() as { choices: { message: { content: string } }[] }
-    const content = json.choices[0].message.content
-    const jsonStr = extractJsonObject(content)
-    const parsed = JSON.parse(jsonStr) as unknown
-    const validated = conceptNameSchema.parse(parsed)
-    return validated
+    const data = await callClaudeMessages(messages)
+    const parsed =
+      typeof data === "string"
+        ? JSON.parse(extractJsonObject(data))
+        : data
+    return conceptNameSchema.parse(parsed)
   }
 
   try {
-    const result = await attempt(0.3)
+    const result = await attempt()
     console.info(`[concepts] LLM-named: ${result.name}`)
     return result
   } catch {
     try {
-      const result = await attempt(0.1)
+      const result = await attempt()
       console.info(`[concepts] LLM-named (retry): ${result.name}`)
       return result
     } catch (err) {
