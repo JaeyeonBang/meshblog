@@ -24,6 +24,7 @@ import {
   todayISO,
   isSafePath,
   parseArgs,
+  findPiiHits,
 } from "../promote.ts"
 
 const DRAFT_NOTE = `---
@@ -255,6 +256,78 @@ describe("isDraft + composePromoted + promoteOne", () => {
     writeFileSync("d.md", DRAFT_NOTE)
     const out = composePromoted("d.md", "2026-05-07")
     expect(() => matter(out)).not.toThrow()
+  })
+})
+
+describe("findPiiHits", () => {
+  let cwdBefore: string
+  let scratch: string
+  beforeEach(() => {
+    cwdBefore = process.cwd()
+    scratch = mkdtempSync(join(tmpdir(), "promote-pii-"))
+    process.chdir(scratch)
+  })
+  afterEach(() => {
+    process.chdir(cwdBefore)
+    rmSync(scratch, { recursive: true, force: true })
+  })
+
+  it("returns [] for a clean dataset-style note", () => {
+    writeFileSync(
+      "clean.md",
+      "---\ntitle: GSM8K\ntags: [dataset]\n---\n# GSM8K\nA grade-school math benchmark."
+    )
+    expect(findPiiHits("clean.md")).toEqual([])
+  })
+
+  it("flags an email address", () => {
+    writeFileSync("email.md", "---\ntitle: x\ntags: [t]\n---\nContact: foo@example.com")
+    const hits = findPiiHits("email.md")
+    expect(hits.length).toBeGreaterThan(0)
+    expect(hits.some((h) => h.match.includes("@example.com"))).toBe(true)
+  })
+
+  it("flags a Korean phone number", () => {
+    writeFileSync("phone.md", "---\ntitle: x\ntags: [t]\n---\n전화: 010-1234-5678")
+    const hits = findPiiHits("phone.md")
+    expect(hits.some((h) => h.match.includes("010-1234-5678"))).toBe(true)
+  })
+
+  it("flags a Korean name with honorific (matches the ODQA team-table pattern)", () => {
+    writeFileSync(
+      "honorific.md",
+      "---\ntitle: x\ntags: [t]\n---\n방재연 (T8092) (팀장) - 리팩토링 담당"
+    )
+    const hits = findPiiHits("honorific.md")
+    expect(hits.some((h) => h.match.includes("팀장"))).toBe(true)
+  })
+
+  it("flags a `사람: <name>` line (the untitled.md pattern that slipped past v1)", () => {
+    writeFileSync(
+      "untitled-style.md",
+      "---\ntitle: x\ntags: [t]\n---\n사람: 호준 이\n\n뭐 작업할지 정리"
+    )
+    const hits = findPiiHits("untitled-style.md")
+    expect(hits.some((h) => h.match.includes("호준"))).toBe(true)
+  })
+
+  it("does NOT flag dataset names that happen to contain hangul (false-positive guard)", () => {
+    // "데이터셋" alone, "AI 모델" alone — these aren't names. The 사람: prefix is
+    // what makes the prior case a hit; without it we should stay quiet.
+    writeFileSync(
+      "fp-guard.md",
+      "---\ntitle: x\ntags: [t]\n---\n# 데이터셋\n수학 데이터: GSM8K\nAI 모델 비교."
+    )
+    expect(findPiiHits("fp-guard.md")).toEqual([])
+  })
+
+  it("includes line number with each hit", () => {
+    writeFileSync(
+      "lined.md",
+      "---\ntitle: x\ntags: [t]\n---\n\n\n사람: 호준 이"
+    )
+    const hits = findPiiHits("lined.md")
+    expect(hits[0]?.line).toBeGreaterThan(0)
   })
 })
 

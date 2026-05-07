@@ -59,3 +59,11 @@ Phase 1 review proposed those as gates; Opus outer voice in the Phase 3 review c
 ## Path safety
 
 Refuses paths with `..` segments (rejection happens before any read or write). All operations stay inside the current working directory tree.
+
+## PII advisory grep
+
+After the promote summary, every input file is scanned for common PII patterns: email addresses, Korean phone numbers, names with honorifics (e.g. `방재연 (T8092) (팀장)`), and `사람: <name>` / `이름: <name>` / `담당자: <name>` style prefixes. Hits are printed as warnings.
+
+This is **advisory only — promote does NOT block**. False-positive cost is too high to fail-close (a sentence about "팀장 결정" would trigger). Use the warnings to trigger your own eyeball review before the public deploy.
+
+If you redact a file after promotion and want to re-ship the redacted version, edit the file (it's already `draft: false`) and just commit + push — `/promote` doesn't need to run again. To force a re-promote (e.g. to update `published_at`), pass `--force` flow via the underlying file edit; promote itself is currently idempotent on already-published files by design.

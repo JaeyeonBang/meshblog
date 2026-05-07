@@ -65,6 +65,25 @@ Workflow:
 
 This is intentional: `/ingest-raw` is meant to be cheap and reversible, while publication is a deliberate gate.
 
+## Cross-link limitation in batch ingest
+
+`/ingest-raw <dir>` loads the entity vocab **once** before walking the directory. Notes ingested earlier in the same batch are not yet visible in the vocab when later notes are processed, so siblings can't auto-link to each other in a single run.
+
+Workaround when you want sibling cross-links: run the batch in two passes.
+
+```bash
+bun run ingest-raw _inbox/                  # first pass — write all notes
+bun run promote content/notes/*.md          # promote the new notes (vocab-eligible after build-index)
+bun run refresh                             # entity extract + rebuild
+bun run ingest-raw _inbox/ --force          # second pass with sibling vocab populated
+```
+
+The auto-link prompt explicitly requires the surface phrase to appear verbatim in the body — fabricated links are not produced. So the worst case for a thin source like a 5-line dataset stub is "no auto-link", not a wrong link.
+
+## "Untitled" rejection
+
+If the LLM returns `Untitled` (or whitespace) as the title — usually because the source is too ambiguous to name confidently — the file is **skipped**, not written as `untitled.md`. The skip reason tells you to either re-run with `--title "Some Distinct Title"` or fix the source heading. This prevents the silent-collision-on-untitled.md trap surfaced by the bulk-ingest dogfood (PR #106).
+
 ## Slug collisions in directory mode
 
 When `/ingest-raw` walks a directory, the LLM picks the title for each file independently. Two raw files about the same topic can produce the same slug, in which case the second is **skipped** (the existing target is preserved — no data is lost on disk, but the second file is not ingested).

@@ -128,6 +128,63 @@ export function todayISO(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10)
 }
 
+export type PiiHit = {
+  pattern: string
+  line: number
+  match: string
+}
+
+// Patterns we surface as PII candidates. Advisory only — /promote prints
+// these but does NOT block (false-positive cost is too high for hard-fail).
+//
+// The ODQA team-table redaction (PR #105) and the bulk-ingest dogfood
+// (PR #106 → finding) drove this list. Honorifics catch the "방재연 팀장"
+// pattern; the `사람:` rule catches `사람: 호준 이` which the v1 honorific-
+// only regex missed.
+const PII_PATTERNS: { name: string; re: RegExp }[] = [
+  { name: "email", re: /[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}/g },
+  { name: "kr-phone", re: /\b010-?\d{4}-?\d{4}\b/g },
+  {
+    // Catches both "방재연 팀장" and "방재연 (T8092) (팀장)" — the optional paren
+    // groups (one before, one wrapping the honorific) cover the ODQA team-
+    // table shape and the bare prose form.
+    name: "kr-honorific",
+    re: /[가-힣]{2,4}(?:\s*\([^)]*\))?\s*\(?\s*(?:님|씨|연구원|매니저|TL|PM|팀장)\s*\)?/g,
+  },
+  {
+    name: "person-prefix",
+    re: /^\s*(?:사람|이름|작성자|담당자|연락처)\s*[:：]\s*[가-힣]{2,4}(?:\s+[가-힣]+)?/gm,
+  },
+]
+
+/**
+ * Scan a file for advisory PII patterns. Returns one entry per match with
+ * line number. Empty array means the file looks clean — but this is regex,
+ * not a guarantee; the operator should still eyeball before committing
+ * obvious-PII-shaped content.
+ */
+export function findPiiHits(filePath: string): PiiHit[] {
+  let raw: string
+  try {
+    raw = readFileSync(filePath, "utf-8")
+  } catch {
+    return []
+  }
+  const lines = raw.split(/\r?\n/)
+  const hits: PiiHit[] = []
+  for (const { name, re } of PII_PATTERNS) {
+    const flagsForLines = re.flags.includes("m") ? re.flags : `${re.flags}m`
+    const lineRe = new RegExp(re.source, flagsForLines)
+    lines.forEach((line, i) => {
+      const matches = line.matchAll(lineRe)
+      for (const m of matches) {
+        hits.push({ pattern: name, line: i + 1, match: m[0] })
+      }
+    })
+  }
+  return hits
+}
+
 /** Returns true when frontmatter currently has draft:true. */
 export function isDraft(filePath: string): boolean {
   const raw = readFileSync(filePath, "utf-8")
@@ -265,6 +322,26 @@ if (isMainModule) {
     for (const o of promoted) console.log(`    PROMOTED ${o.path}${o.reason ? ` (${o.reason})` : ""}`)
     for (const o of already) console.log(`    SKIP     ${o.path} (already published)`)
     for (const o of failed) console.log(`    FAIL     ${o.path} — ${o.reason ?? "unknown"}`)
+
+    // Advisory PII grep on every input file (not just the promoted ones —
+    // a future re-run might promote the rest, and the warning is cheap).
+    // Print warnings; do NOT block, false-positive cost is too high.
+    const piiByFile = new Map<string, PiiHit[]>()
+    for (const filePath of inputs) {
+      const hits = findPiiHits(filePath)
+      if (hits.length > 0) piiByFile.set(filePath, hits)
+    }
+    if (piiByFile.size > 0) {
+      console.log(`\n[promote] PII candidates in ${piiByFile.size} file(s) — review before relying on the public deploy:`)
+      for (const [path, hits] of piiByFile) {
+        console.log(`    ${path}`)
+        for (const h of hits.slice(0, 5)) {
+          console.log(`      L${h.line} (${h.pattern}): ${h.match}`)
+        }
+        if (hits.length > 5) console.log(`      ... and ${hits.length - 5} more`)
+      }
+      console.log(`  (advisory only — promote did NOT block. Redact + re-promote --force if you want to ship the redacted version.)`)
+    }
 
     if (failed.length > 0) {
       process.exit(1)

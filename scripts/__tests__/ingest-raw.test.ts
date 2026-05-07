@@ -284,6 +284,60 @@ describe("ingestOne — single file end-to-end (mocked LLM)", () => {
     expect(r.status).toBe("written")
   })
 
+  it("rejects 'Untitled' / empty / whitespace title from the LLM with actionable reason", async () => {
+    // Three sub-cases share the same skeleton; we exercise them sequentially
+    // with a fresh source file each time so existsSync doesn't trip.
+    // Truly empty title is rejected by the Zod schema before reaching this
+    // logic (title.min(1)). We cover the cases that pass Zod but should still
+    // be skipped: literal "Untitled" capitalization variants and whitespace-only.
+    const cases = ["Untitled", "untitled", "  "] as const
+    for (const [i, badTitle] of cases.entries()) {
+      const src = join(scratch, `bad-${i}.md`)
+      writeFileSync(src, `body ${i}`)
+      setMockLLM({
+        title: badTitle,
+        tags: ["t"],
+        aliases: [],
+        body: "Some body.",
+        suggested_links: [],
+      })
+      const r = await ingestOne(
+        src,
+        { autoLink: false, refresh: false, force: false, dryRun: false, estimate: false },
+        { callClaudeMessages, vocab: [], existingTags: [] },
+      )
+      expect(r.status).toBe("skipped")
+      expect(r.reason).toMatch(/declined to title/i)
+      expect(r.reason).toMatch(/--title/)
+    }
+  })
+
+  it("--title override bypasses the untitled rejection (user knows best)", async () => {
+    const src = join(scratch, "src.md")
+    writeFileSync(src, "body")
+    setMockLLM({
+      title: "Untitled",
+      tags: ["t"],
+      aliases: [],
+      body: "Some body.",
+      suggested_links: [],
+    })
+    const r = await ingestOne(
+      src,
+      {
+        titleOverride: "Operator Provided Title",
+        autoLink: false,
+        refresh: false,
+        force: false,
+        dryRun: false,
+        estimate: false,
+      },
+      { callClaudeMessages, vocab: [], existingTags: [] },
+    )
+    expect(r.status).toBe("written")
+    expect(r.path).toBe(join("content/notes", "operator-provided-title.md"))
+  })
+
   it("filters auto-link suggestions to only those in vocab", async () => {
     const src = join(scratch, "raw.md")
     writeFileSync(src, "Body")

@@ -199,6 +199,20 @@ export async function ingestOne(
   const enriched = await llmEnrich(text, vocab, existingTags, { callClaudeMessages: deps.callClaudeMessages })
 
   const titleFinal = options.titleOverride ?? enriched.title
+  // Reject the LLM's "I don't know what to call this" fallback. Without this,
+  // ambiguous Notion exports collapse to slug `untitled.md` and silently
+  // collide on the second one. `--title` lets the operator override.
+  if (
+    !options.titleOverride &&
+    /^(untitled|)$/i.test(titleFinal.trim())
+  ) {
+    return {
+      status: "skipped",
+      reason:
+        `LLM declined to title source (got "${titleFinal}"). ` +
+        `Re-run with --title "Some Distinct Title" to ingest, or fix the source heading.`,
+    }
+  }
   const slug = slugify(titleFinal)
   const targetPath = join(NOTES_DIR, `${slug}.md`)
 
