@@ -1,4 +1,4 @@
-import type { ChatMessage } from "../openrouter"
+import type { ChatMessage } from "../claude-code.ts"
 
 const ENTITY_TYPES = ["person", "technology", "project", "concept", "organization", "other"] as const
 

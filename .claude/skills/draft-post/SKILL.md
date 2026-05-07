@@ -50,9 +50,9 @@ The expected flow when starting from raw files:
 
 ## Cost
 
-Sonnet 4.6 with 8K output budget. Per post: ~$0.05-0.20 depending on source body length (each source body capped at 8K chars). Posts are infrequent — a few per week — so the synthesis-quality premium over Haiku is worth it.
+Synthesis runs through the local `claude -p` CLI. Marginal monetary cost is whatever your Claude Code session bills (zero on Pro/Max). Each call loads your session context (~55-79K cache tokens) so wall time is ~10-30s per post; for a few posts per week the latency is a non-issue.
 
-Run `--dry-run` first to confirm source loading + size before paying for synthesis.
+Run `--dry-run` first to confirm source loading + size before invoking the LLM.
 
 ## Style guarantees
 

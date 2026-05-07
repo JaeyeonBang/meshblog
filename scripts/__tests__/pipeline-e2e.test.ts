@@ -20,11 +20,18 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import matter from "gray-matter"
 
-vi.mock("../../src/lib/llm/openrouter", () => ({
-  callOpenRouter: vi.fn(),
-}))
+vi.mock("../../src/lib/llm/claude-code", async () => {
+  const actual = await vi.importActual<typeof import("../../src/lib/llm/claude-code.ts")>(
+    "../../src/lib/llm/claude-code.ts"
+  )
+  return {
+    ...actual,
+    callClaudeMessages: vi.fn(),
+    checkClaudeAvailable: vi.fn(),
+  }
+})
 
-import { callOpenRouter } from "../../src/lib/llm/openrouter.ts"
+import { callClaudeMessages } from "../../src/lib/llm/claude-code.ts"
 import { ingestOne } from "../ingest-raw.ts"
 import {
   synthesizePost,
@@ -41,17 +48,10 @@ import {
 } from "../promote.ts"
 import type { SourceNote } from "../../src/lib/llm/prompts/post-synth.ts"
 
-const mockCallOpenRouter = vi.mocked(callOpenRouter)
-
-function fakeOpenRouterResponse(content: string): Response {
-  const body = JSON.stringify({ choices: [{ message: { content } }] })
-  return new Response(body, { status: 200, headers: { "Content-Type": "application/json" } })
-}
+const mockCallClaudeMessages = vi.mocked(callClaudeMessages)
 
 function setMockLLM(payload: object) {
-  mockCallOpenRouter.mockImplementationOnce(async () =>
-    fakeOpenRouterResponse(JSON.stringify(payload))
-  )
+  mockCallClaudeMessages.mockImplementationOnce(async () => payload)
 }
 
 describe("Phase 1+2+3 pipeline handoff", () => {
@@ -84,7 +84,7 @@ describe("Phase 1+2+3 pipeline handoff", () => {
     const ingestResult = await ingestOne(
       src,
       { autoLink: false, refresh: false, force: false, dryRun: false, estimate: false },
-      { callOpenRouter, vocab: [], existingTags: ["rl"] },
+      { callClaudeMessages, vocab: [], existingTags: ["rl"] },
     )
 
     expect(ingestResult.status).toBe("written")
@@ -123,7 +123,7 @@ describe("Phase 1+2+3 pipeline handoff", () => {
     const r = await ingestOne(
       src,
       { autoLink: false, refresh: false, force: false, dryRun: false, estimate: false },
-      { callOpenRouter, vocab: [], existingTags: [] },
+      { callClaudeMessages, vocab: [], existingTags: [] },
     )
     expect(r.status).toBe("written")
 
@@ -150,7 +150,7 @@ describe("Phase 1+2+3 pipeline handoff", () => {
     const ingest = await ingestOne(
       src,
       { autoLink: false, refresh: false, force: false, dryRun: false, estimate: false },
-      { callOpenRouter, vocab: [], existingTags: [] },
+      { callClaudeMessages, vocab: [], existingTags: [] },
     )
     expect(ingest.status).toBe("written")
 
@@ -239,7 +239,7 @@ describe("Phase 1+2+3 pipeline handoff", () => {
       src,
       { autoLink: true, refresh: false, force: false, dryRun: false, estimate: false },
       {
-        callOpenRouter,
+        callClaudeMessages,
         vocab: [{ name: "attention", slug: "attention-mechanism", title: "Attention" }],
         existingTags: [],
       },
@@ -267,7 +267,7 @@ describe("Phase 1+2+3 pipeline handoff", () => {
     const r = await ingestOne(
       src,
       { autoLink: false, refresh: false, force: false, dryRun: false, estimate: false },
-      { callOpenRouter, vocab: [], existingTags: [] },
+      { callClaudeMessages, vocab: [], existingTags: [] },
     )
     const notePath = r.path!
 
