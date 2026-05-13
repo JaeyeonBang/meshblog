@@ -174,12 +174,45 @@ export function filterValidLinks(
   return proposed.filter((p) => validSlugs.has(p.target_slug))
 }
 
+/**
+ * Append a freshly-written note's title + aliases to an existing entity vocab.
+ * Used by the CLI loop so that sibling files later in a batch can auto-link
+ * to notes the same batch just produced. Returns a NEW array (no mutation).
+ *
+ * Dedupes by `{name, slug}` — if the vocab already contains an entry with the
+ * same surface pointing at the same slug we don't add a duplicate row.
+ */
+export function augmentVocabWithWritten(
+  vocab: EntityVocab[],
+  written: { slug: string; title: string; aliases: string[] },
+): EntityVocab[] {
+  const out = [...vocab]
+  const seen = new Set(out.map((e) => `${e.name}::${e.slug}`))
+  const candidates = [written.title, ...written.aliases]
+  for (const name of candidates) {
+    const trimmed = name.trim()
+    if (trimmed.length === 0) continue
+    const key = `${trimmed}::${written.slug}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ name: trimmed, slug: written.slug, title: written.title })
+  }
+  return out
+}
+
 /** Process a single file end-to-end. Returns the written path or throws. */
 export async function ingestOne(
   filePath: string,
   options: IngestOptions,
   deps: { callClaudeMessages: typeof callClaudeMessages; vocab?: EntityVocab[]; existingTags?: string[] } = { callClaudeMessages }
-): Promise<{ status: "written" | "skipped" | "estimated"; path?: string; reason?: string; estimate?: { chars: number; estTokens: number } }> {
+): Promise<{
+  status: "written" | "skipped" | "estimated"
+  path?: string
+  reason?: string
+  estimate?: { chars: number; estTokens: number }
+  /** Metadata the CLI loop uses to augment vocab for sibling cross-links. Absent on dry-run/skipped. */
+  written?: { slug: string; title: string; aliases: string[] }
+}> {
   const { text, format, warnings } = await extractText(filePath)
   for (const w of warnings) console.warn(`[ingest-raw] ${filePath}: ${w}`)
 
@@ -259,7 +292,11 @@ export async function ingestOne(
   const finalContent = composeNote(titleFinal, body, enriched.tags, enriched.aliases)
   atomicWrite(targetPath, finalContent)
   console.log(`[ingest-raw] wrote ${targetPath} (format: ${format})`)
-  return { status: "written", path: targetPath }
+  return {
+    status: "written",
+    path: targetPath,
+    written: { slug, title: titleFinal, aliases: enriched.aliases },
+  }
 }
 
 export function spawnRefresh(): Promise<void> {
@@ -340,7 +377,16 @@ if (isMainModule) {
           console.log(`[ingest-raw] entity vocab: ${vocab.length} entries`)
         }
         const r = await ingestOne(filePath, options, { callClaudeMessages, vocab })
-        if (r.status === "written" && r.path) result.written.push(r.path)
+        if (r.status === "written" && r.path) {
+          result.written.push(r.path)
+          // Make this freshly-written note visible to subsequent files in the
+          // same batch. Without this the vocab is a snapshot from before the
+          // batch started, so siblings can never auto-link to each other —
+          // exactly the limitation surfaced in PR #106's bulk-ingest dogfood.
+          if (r.written && vocab !== undefined) {
+            vocab = augmentVocabWithWritten(vocab, r.written)
+          }
+        }
         else if (r.status === "skipped") result.skipped.push({ path: filePath, reason: r.reason ?? "" })
         else if (r.status === "estimated" && r.estimate) {
           result.estimates!.push({ path: filePath, ...r.estimate })

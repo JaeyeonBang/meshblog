@@ -65,18 +65,11 @@ Workflow:
 
 This is intentional: `/ingest-raw` is meant to be cheap and reversible, while publication is a deliberate gate.
 
-## Cross-link limitation in batch ingest
+## Sibling cross-linking in batch ingest
 
-`/ingest-raw <dir>` loads the entity vocab **once** before walking the directory. Notes ingested earlier in the same batch are not yet visible in the vocab when later notes are processed, so siblings can't auto-link to each other in a single run.
+`/ingest-raw <dir>` loads the entity vocab once before walking the directory, then **augments it after each successful write** with the new note's title + aliases. This means files later in the same batch CAN auto-link to siblings ingested earlier in the same loop — no two-pass workaround needed.
 
-Workaround when you want sibling cross-links: run the batch in two passes.
-
-```bash
-bun run ingest-raw _inbox/                  # first pass — write all notes
-bun run promote content/notes/*.md          # promote the new notes (vocab-eligible after build-index)
-bun run refresh                             # entity extract + rebuild
-bun run ingest-raw _inbox/ --force          # second pass with sibling vocab populated
-```
+The augmentation is in-memory only; it does not write to the entity DB (that still happens via `build-index` after refresh). The augmentation also runs in dependency order: file 2 can link to file 1, but file 1 cannot link to file 2 (LLM saw an older vocab when it ran). Order the input directory accordingly if a specific cross-link matters.
 
 The auto-link prompt explicitly requires the surface phrase to appear verbatim in the body — fabricated links are not produced. So the worst case for a thin source like a 5-line dataset stub is "no auto-link", not a wrong link.
 
