@@ -32,7 +32,7 @@ vi.mock("../../src/lib/llm/claude-code", async () => {
 })
 
 import { callClaudeMessages } from "../../src/lib/llm/claude-code.ts"
-import { ingestOne } from "../ingest-raw.ts"
+import { ingestOne, augmentVocabWithWritten, type EntityVocab } from "../ingest-raw.ts"
 import {
   synthesizePost,
   composePost,
@@ -252,6 +252,50 @@ describe("Phase 1+2+3 pipeline handoff", () => {
     // The promoted file should preserve the wikilink verbatim
     const promoted = composePromoted(r.path!, todayISO())
     expect(promoted).toContain("[[attention-mechanism|attention]]")
+  })
+
+  it("sibling-aware batch: file 2 can auto-link to file 1's slug ingested earlier in the same loop", async () => {
+    // File 1: introduces GSM8K
+    const src1 = join(scratch, "1.md")
+    writeFileSync(src1, "intro")
+    setMockLLM({
+      title: "GSM8K",
+      tags: ["dataset"],
+      aliases: ["gsm8k"],
+      body: "Grade school math word problems.",
+      suggested_links: [],
+    })
+    const r1 = await ingestOne(
+      src1,
+      { autoLink: true, refresh: false, force: false, dryRun: false, estimate: false },
+      { callClaudeMessages, vocab: [], existingTags: [] },
+    )
+    expect(r1.status).toBe("written")
+    expect(r1.written).toBeDefined()
+
+    // Augment vocab the way the CLI loop does.
+    let vocab: EntityVocab[] = []
+    if (r1.written) vocab = augmentVocabWithWritten(vocab, r1.written)
+    expect(vocab.some((e) => e.slug === "gsm8k")).toBe(true)
+
+    // File 2: mentions GSM8K — should be able to auto-link.
+    const src2 = join(scratch, "2.md")
+    writeFileSync(src2, "second file")
+    setMockLLM({
+      title: "Reasoning bench notes",
+      tags: ["reasoning"],
+      aliases: [],
+      body: "We compare against GSM8K and friends.",
+      suggested_links: [{ surface: "GSM8K", target_slug: "gsm8k" }],
+    })
+    const r2 = await ingestOne(
+      src2,
+      { autoLink: true, refresh: false, force: false, dryRun: false, estimate: false },
+      { callClaudeMessages, vocab, existingTags: [] },
+    )
+    expect(r2.status).toBe("written")
+    const body2 = readFileSync(r2.path!, "utf-8")
+    expect(body2).toContain("[[gsm8k|GSM8K]]")
   })
 
   it("promote is idempotent: running twice does not re-stamp published_at", async () => {

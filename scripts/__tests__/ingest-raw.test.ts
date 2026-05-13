@@ -30,6 +30,7 @@ import {
   filterValidLinks,
   llmEnrich,
   ingestOne,
+  augmentVocabWithWritten,
   type EntityVocab,
 } from "../ingest-raw.ts"
 
@@ -92,6 +93,109 @@ describe("atomicWrite", () => {
     const target = join(scratch, "x.md")
     atomicWrite(target, "x")
     expect(existsSync(`${target}.tmp`)).toBe(false)
+  })
+})
+
+describe("augmentVocabWithWritten", () => {
+  it("appends title and each alias as new vocab entries pointing to slug", () => {
+    const base: EntityVocab[] = [{ name: "PPO", slug: "09-ppo", title: "PPO" }]
+    const out = augmentVocabWithWritten(base, {
+      slug: "gsm8k",
+      title: "GSM8K",
+      aliases: ["gsm-8k", "grade-school-math"],
+    })
+    expect(out).toHaveLength(4)
+    expect(out).toContainEqual({ name: "PPO", slug: "09-ppo", title: "PPO" })
+    expect(out).toContainEqual({ name: "GSM8K", slug: "gsm8k", title: "GSM8K" })
+    expect(out).toContainEqual({ name: "gsm-8k", slug: "gsm8k", title: "GSM8K" })
+    expect(out).toContainEqual({ name: "grade-school-math", slug: "gsm8k", title: "GSM8K" })
+  })
+
+  it("skips empty/whitespace aliases", () => {
+    const out = augmentVocabWithWritten([], {
+      slug: "x",
+      title: "X",
+      aliases: ["", "  ", "real-alias"],
+    })
+    expect(out).toHaveLength(2)
+    expect(out.map((e) => e.name)).toEqual(["X", "real-alias"])
+  })
+
+  it("returns a new array (does not mutate input)", () => {
+    const base: EntityVocab[] = [{ name: "A", slug: "a", title: "A" }]
+    const original = [...base]
+    augmentVocabWithWritten(base, { slug: "b", title: "B", aliases: [] })
+    expect(base).toEqual(original)
+  })
+
+  it("dedupes when an alias already exists in the vocab", () => {
+    const base: EntityVocab[] = [{ name: "GSM8K", slug: "gsm8k", title: "GSM8K" }]
+    const out = augmentVocabWithWritten(base, {
+      slug: "gsm8k",
+      title: "GSM8K",
+      aliases: ["GSM8K", "gsm-8k"],
+    })
+    // Title already there; "GSM8K" alias collides with title; only "gsm-8k" is new.
+    expect(out).toHaveLength(2)
+    expect(out.map((e) => e.name)).toEqual(["GSM8K", "gsm-8k"])
+  })
+})
+
+describe("ingestOne returns written metadata for batch vocab augmentation", () => {
+  let scratch: string
+  let cwdBefore: string
+
+  beforeEach(() => {
+    cwdBefore = process.cwd()
+    scratch = mkdtempSync(join(tmpdir(), "ingest-written-"))
+    process.chdir(scratch)
+    vi.clearAllMocks()
+  })
+  afterEach(() => {
+    process.chdir(cwdBefore)
+    rmSync(scratch, { recursive: true, force: true })
+  })
+
+  it("returns written.{slug,title,aliases} on a successful ingest", async () => {
+    const src = join(scratch, "in.md")
+    writeFileSync(src, "body")
+    mockCallClaudeMessages.mockResolvedValueOnce({
+      title: "Some Note",
+      tags: ["t"],
+      aliases: ["alias1", "alias2"],
+      body: "Body.",
+      suggested_links: [],
+    })
+    const r = await ingestOne(
+      src,
+      { autoLink: false, refresh: false, force: false, dryRun: false, estimate: false },
+      { callClaudeMessages, vocab: [], existingTags: [] },
+    )
+    expect(r.status).toBe("written")
+    expect(r.written).toEqual({
+      slug: "some-note",
+      title: "Some Note",
+      aliases: ["alias1", "alias2"],
+    })
+  })
+
+  it("does NOT return written metadata on dry-run (nothing actually persisted)", async () => {
+    const src = join(scratch, "dry.md")
+    writeFileSync(src, "body")
+    mockCallClaudeMessages.mockResolvedValueOnce({
+      title: "Dry",
+      tags: [],
+      aliases: [],
+      body: "Body.",
+      suggested_links: [],
+    })
+    const r = await ingestOne(
+      src,
+      { autoLink: false, refresh: false, force: false, dryRun: true, estimate: false },
+      { callClaudeMessages, vocab: [], existingTags: [] },
+    )
+    expect(r.status).toBe("written")
+    expect(r.written).toBeUndefined()
   })
 })
 
