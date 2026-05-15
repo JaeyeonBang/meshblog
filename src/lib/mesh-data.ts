@@ -27,7 +27,7 @@ function loadManifest(): Record<string, ManifestEntry> | null {
 }
 
 /** Reset the module-level manifest cache. Exposed for test isolation only. */
-export function _resetManifestCache(): void {
+function _resetManifestCache(): void {
   _manifestCache = undefined
 }
 
@@ -426,7 +426,7 @@ function getEntityNeighbors(noteId: string, withBase: (p: string) => string): Me
 
 // ── Per-post concept subgraph (Task 7) ──────────────────────────────────────
 
-export type ConceptGraphNode = {
+type ConceptGraphNode = {
   id: string
   label: string
   /** Louvain cluster index from concept-l3.json (mod 12 → palette slot) */
@@ -437,7 +437,7 @@ export type ConceptGraphNode = {
   weight: number
 }
 
-export type ConceptGraphLink = { source: string; target: string; weight: number }
+type ConceptGraphLink = { source: string; target: string; weight: number }
 
 export type PostConceptGraph = {
   nodes: ConceptGraphNode[]

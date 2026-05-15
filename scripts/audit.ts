@@ -180,11 +180,9 @@ function checkThreePxBorders(): CheckResult {
 
   // Allowlist: relative paths from repo root.
   // These are the documented locations where `border-top: 3px` is the intended emphasis:
-  //   - PullQuote.astro / article.css: pull-quote top rule
   //   - PageQa.astro: "ask this page" top rule
   //   - QaCard.astro / QAChips.module.css: expanded QA-answer top-tab (A3 flip)
   const ALLOWLIST = [
-    'src/components/ui/molecules/PullQuote.astro',
     'src/components/ui/molecules/PageQa.astro',
     'src/components/ui/molecules/QaCard.astro',
     'src/components/QAChips.module.css',

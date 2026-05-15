@@ -28,7 +28,7 @@ const contradictionResultSchema = z.object({
 })
 
 export type ConceptResult = z.infer<typeof conceptSchema>
-export type ContradictionResult = z.infer<typeof contradictionSchema>
+type ContradictionResult = z.infer<typeof contradictionSchema>
 
 // --- Community Naming ---
 //
@@ -368,7 +368,7 @@ export async function buildConceptsFromCommunities(
 
 // --- Concept Search ---
 
-export type ConceptSearchResult = {
+type ConceptSearchResult = {
   id: string
   title: string
   content: string

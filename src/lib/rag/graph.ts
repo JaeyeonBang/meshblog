@@ -55,12 +55,12 @@ const CANONICAL_ALIASES: Record<string, string> = {
   "github actions": "github-actions", "gh actions": "github-actions",
 }
 
-export function normalizeName(name: string): string {
+function normalizeName(name: string): string {
   const cleaned = name.replace(/<[^>]*>/g, "").trim().toLowerCase()
   return CANONICAL_ALIASES[cleaned] ?? cleaned
 }
 
-export function sanitizeText(text: string): string {
+function sanitizeText(text: string): string {
   return text.replace(/<[^>]*>/g, "").trim().slice(0, 200)
 }
 

@@ -22,7 +22,7 @@ bun run audit
 | 1 | No hex color literals outside `tokens.css` / `fonts.css` | FAIL |
 | 2 | No raw `letter-spacing: 0.Xem` (use `var(--track-*)`) | FAIL |
 | 3 | `cursor: pointer` present — verify selector is an interactive element | WARN |
-| 4 | `border*: 3px` outside allowlist (`PullQuote`, `PageQa`, `QaCard`) | FAIL |
+| 4 | `border*: 3px` outside allowlist (`PageQa`, `QaCard`) | FAIL |
 | 5 | `:hover` in file with no `transition:` declaration | WARN |
 | 6 | Raw `font-size: Npx` — migrate to `var(--fs-*)` | WARN |
 
@@ -60,7 +60,7 @@ Available tokens (check `src/styles/tokens.css`): `--track-eyebrow`, `--track-ba
 
 ### [4] 3px border outside allowlist
 
-Only `PullQuote.astro`, `PageQa.astro`, and `QaCard.astro` may use `border(-top)?: 3px`. Move emphasis styling there or drop the border to 1px.
+Only `PageQa.astro` and `QaCard.astro` may use `border(-top)?: 3px`. Move emphasis styling there or drop the border to 1px.
 
 ### [6] Raw px font-size — migrate to fs token
 

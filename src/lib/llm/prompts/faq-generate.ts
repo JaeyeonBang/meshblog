@@ -7,7 +7,7 @@
 /** Bump on any prompt text change to invalidate Q&A cache (FGR-2). */
 export const PROMPT_VERSION = "1.0.0"
 
-export type FaqTier = "note" | "concept" | "global"
+type FaqTier = "note" | "concept" | "global"
 
 export type FaqPromptArgs = {
   tier: FaqTier
