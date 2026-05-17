@@ -5,7 +5,7 @@
 
 import type { WikilinkResolver, WikilinkTarget } from './resolve-wikilinks'
 
-export type AliasCollision = {
+type AliasCollision = {
   alias: string        // lowercased contested alias
   claimers: string[]   // note slugs claiming this alias
 }

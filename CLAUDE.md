@@ -92,13 +92,13 @@ Full contract: `design-ref/SPEC.md`. Handoff prototype: `design-ref/handoff/proj
 Before committing UI changes, every file under `src/` must satisfy:
 
 1. No hex literals outside `tokens.css` + `fonts.css`.
-2. Hairlines only — `border: 1px solid` default; `3px` reserved for emphasis. Allowlist (enforced by `bun run audit`): `PullQuote.astro`, `PageQa.astro`, `QaCard.astro`, `QAChips.module.css`, `styles/article.css` (blockquote left rule + footnote top rule).
+2. Hairlines only — `border: 1px solid` default; `3px` reserved for emphasis. Allowlist (enforced by `bun run audit`): `PageQa.astro`, `QaCard.astro`, `QAChips.module.css`, `styles/article.css` (blockquote left rule + footnote top rule).
 3. Hover-invert — interactive surfaces flip `background/color` on `:hover` (paper ↔ ink), not subtle opacity. **Documented exception:** `MeshStrip` neighbor labels use typographic-only hover (color + weight shift) because the strip is a wayfinding aid, not a button surface. Mirrors Obsidian Publish's TOC active-state pattern.
 4. Mono eyebrows — uppercase labels use `var(--f-mono)` + `letter-spacing: 0.2em` + 10–11px + `var(--ink-3)`.
 5. One shadow only — `var(--shadow-hard)` on modal panels (`.cmdk`, `.help`, `.mesh-popover`) exclusively. No other shadows anywhere.
 6. Radius ≤ 4px except `--r-pill` for `.kbd` legacy.
 
-Run the `blog-bw-polish` skill to lint these before committing.
+Run `bun run audit` to enforce these before committing.
 
 ## Base path gotcha
 
@@ -121,7 +121,7 @@ This includes `href` on `<a>`, navigation arrays, CmdK result lists, Footer, Top
 | `design-md-sync` | User asks to change a color / font / spacing / any visual token |
 | `theme-variant` | User wants to preview or adopt variant A / B / C |
 | `component-extract` | Given a new HTML prototype section to turn into a scoped Astro component |
-| `blog-bw-polish` | Before any commit touching UI code; or reviewing a new component |
+| `audit` | Before any commit touching UI code; run `bun run audit` |
 
 ## Components
 
@@ -151,7 +151,7 @@ Before marking UI work done:
 3. `bun run build:fixture` — exits 0
 4. `npx vitest run` — all pass (currently 149 tests)
 5. `bun run preview` + curl each page (`/meshblog/`, `/meshblog/notes/<slug>`, `/meshblog/graph`, `/meshblog/404`) and verify expected classes + tokens render
-6. Run `blog-bw-polish` skill — expect empty output from all 6 grep checks
+6. Run `bun run audit` — exit code 0 means all invariants pass
 
 ## Post-push CI/CD verification (MANDATORY)
 

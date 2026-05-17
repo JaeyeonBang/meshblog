@@ -115,7 +115,7 @@ export async function retryWithBackoff<T>(
  * Concatenate a ChatMessage[] into the single-prompt format `claude -p` accepts.
  * The CLI doesn't expose a system/user role split, so we encode it inline.
  */
-export function messagesToPrompt(messages: ChatMessage[]): string {
+function messagesToPrompt(messages: ChatMessage[]): string {
   return messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")
 }
 
@@ -133,7 +133,7 @@ export function messagesToPrompt(messages: ChatMessage[]): string {
  *   • envelope with non-JSON `result: "..."`   → return the raw string
  *   • bare object (no `result` key)            → return as-is (already parsed)
  */
-export function unwrapClaudeResult(response: unknown): unknown {
+function unwrapClaudeResult(response: unknown): unknown {
   if (typeof response !== "object" || response === null || !("result" in response)) {
     return response
   }

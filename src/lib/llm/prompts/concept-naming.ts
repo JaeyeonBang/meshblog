@@ -3,7 +3,7 @@ import type { ChatMessage } from "../claude-code.ts"
 import { loadStyleBlock } from "./loader.ts"
 
 /** Bump when the system prompt changes — invalidates downstream caches. */
-export const CONCEPT_NAMING_PROMPT_VERSION = "v2"
+const CONCEPT_NAMING_PROMPT_VERSION = "v2"
 
 /**
  * Zod schema for LLM-generated concept name + description.
@@ -23,7 +23,7 @@ export const conceptNameSchema = z.object({
     .max(240, "description must not exceed 240 characters"),
 })
 
-export type ConceptName = z.infer<typeof conceptNameSchema>
+type ConceptName = z.infer<typeof conceptNameSchema>
 
 /**
  * USER-EDITABLE STYLE block (override via `prompts/concept-naming.md`).

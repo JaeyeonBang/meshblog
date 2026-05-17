@@ -13,7 +13,7 @@
 import { readFileSync } from "node:fs"
 import { extname } from "node:path"
 
-export type Format = "pdf" | "docx" | "pptx" | "md" | "txt"
+type Format = "pdf" | "docx" | "pptx" | "md" | "txt"
 
 export type ExtractedText = {
   text: string

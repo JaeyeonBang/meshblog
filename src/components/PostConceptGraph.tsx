@@ -24,7 +24,7 @@ import meshStyles from './PostMeshGraph.module.css'
 import conceptStyles from './PostConceptGraph.module.css'
 import './PostConceptGraph.css'
 
-export type ConceptNode = {
+type ConceptNode = {
   id: string
   label: string
   cluster: number
@@ -32,7 +32,7 @@ export type ConceptNode = {
   weight: number
 }
 
-export type ConceptLink = { source: string; target: string; weight: number }
+type ConceptLink = { source: string; target: string; weight: number }
 
 type Props = {
   nodes: ConceptNode[]
