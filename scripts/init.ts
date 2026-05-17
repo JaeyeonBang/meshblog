@@ -6,6 +6,9 @@
  *  2. Prompt for GitHub repo name (optional, auto-detects from git remote)
  *  3. If vault path provided: copy vault into content/notes/ + start fs.watch
  *     If skipped: ensure content/notes/ exists as an empty directory
+ *  3b. If vault path provided AND <vault>/Posts/ exists: additively mirror
+ *     <vault>/Posts/ into content/posts/ + start fs.watch on that subfolder.
+ *     If <vault>/Posts/ does not exist, log a skip message and continue.
  *  4. Write .env.local template if missing
  *  5. Verify .github/workflows/deploy.yml exists (generate minimal one if not)
  *  6. Build the site: real (keyless) pipeline when the vault has notes,
@@ -161,6 +164,88 @@ export function linkVault(
     }
   })
   console.log(`[init] Watching ${vaultPath} — edits will mirror into ${target}`)
+}
+
+/**
+ * Additively mirror <vaultPath>/Posts/ into postsTarget (e.g. content/posts/).
+ *
+ * Key difference from linkVault: this function is ADDITIVE and must NEVER
+ * delete postsTarget before copying. Posts authored directly in content/posts/
+ * are preserved. When vault and repo have a file with the same name, the vault
+ * version wins (force=true overwrites) — vault is canonical for matched names.
+ *
+ * Only activates when <vaultPath>/Posts exists as a directory. If it is absent,
+ * logs a skip message and returns early — this is expected for vault users who
+ * haven't created a Posts/ subfolder yet.
+ *
+ * Windows fs.watch on WSL→Windows paths is known flaky (EPERM/EACCES).
+ * Mirrors linkVault's pattern: catch watcher setup errors and fall back to
+ * copy-only mode (no live watch, but the initial sync still happens).
+ */
+export function linkVaultPosts(
+  vaultPath: string,
+  postsTarget: string,
+  opts: { skipWatch?: boolean } = {},
+): void {
+  const vaultPostsDir = path.join(vaultPath, "Posts")
+
+  // Guard: only proceed if <vault>/Posts/ exists as a directory.
+  let postsExists = false
+  try {
+    postsExists = fs.statSync(vaultPostsDir).isDirectory()
+  } catch {
+    // statSync throws ENOENT when the path doesn't exist — treat as not present.
+  }
+
+  if (!postsExists) {
+    console.log(
+      "[init] vault has no Posts/ subfolder — skipping posts mirror. " +
+        "Create one to enable posts-from-vault sync.",
+    )
+    return
+  }
+
+  // Ensure the target directory exists (additive — never destroy it first).
+  fs.mkdirSync(postsTarget, { recursive: true })
+
+  // Additive copy: overwrite same-named files, leave unmatched target files.
+  fs.cpSync(vaultPostsDir, postsTarget, { recursive: true, force: true, errorOnExist: false })
+
+  // Count mirrored .md files for the log line.
+  const mirrored = countVaultMarkdown(postsTarget)
+  console.log(`[init] Linked vault Posts/ → ${postsTarget} (${mirrored} files mirrored)`)
+
+  // Test seam: tests exercise copy semantics without the persistent watcher
+  // (fs.watch keeps the event loop alive and hangs vitest on teardown).
+  if (opts.skipWatch) return
+
+  try {
+    fs.watch(vaultPostsDir, { recursive: true }, (event, filename) => {
+      if (!filename) return
+      const src = path.join(vaultPostsDir, filename)
+      const dst = path.join(postsTarget, filename)
+      try {
+        if (fs.existsSync(src)) {
+          const dstDir = path.dirname(dst)
+          fs.mkdirSync(dstDir, { recursive: true })
+          fs.copyFileSync(src, dst)
+        }
+      } catch {
+        // Silently skip transient errors (file deleted mid-copy, etc.)
+      }
+    })
+    console.log(
+      `[init] Watching ${vaultPostsDir} — edits will mirror into ${postsTarget}`,
+    )
+  } catch (err) {
+    // WSL→Windows path watch is known to fail with EPERM/EACCES (see CLAUDE.md
+    // "Active risks #2"). Fall back gracefully: copy already happened above,
+    // so the initial sync is intact. Live watch is a nice-to-have, not required.
+    console.warn(
+      `[init] WARNING: could not start watcher on ${vaultPostsDir} (${(err as NodeJS.ErrnoException).code ?? err}). ` +
+        "Posts mirror is copy-only for this session — re-run /init to resync.",
+    )
+  }
 }
 
 /**
@@ -416,6 +501,8 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
     // 3. Link vault (or ensure empty notes/ when vault is skipped)
     if (vaultPath !== null) {
       linkVault(vaultPath, CONTENT_NOTES)
+      // 3b. Optionally mirror <vault>/Posts/ → content/posts/ (additive).
+      linkVaultPosts(vaultPath, path.join(REPO_ROOT, "content", "posts"))
     } else {
       fs.mkdirSync(CONTENT_NOTES, { recursive: true })
       console.log(

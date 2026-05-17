@@ -17,6 +17,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   mkdirSync,
+  mkdtempSync,
   rmSync,
   writeFileSync,
   readFileSync,
@@ -29,7 +30,7 @@ import { tmpdir } from 'node:os'
 import { Readable } from 'node:stream'
 import { createInterface } from 'node:readline'
 
-import { countVaultMarkdown, linkVault, createAskFn } from '../init.ts'
+import { countVaultMarkdown, linkVault, linkVaultPosts, createAskFn } from '../init.ts'
 
 const BASE = join(tmpdir(), `mb-init-test-${process.pid}-${Date.now()}`)
 
@@ -146,6 +147,110 @@ describe('linkVault', () => {
     expect(lstatSync(target).isDirectory()).toBe(true)
     expect(existsSync(join(target, 'real.md'))).toBe(true)
     expect(existsSync(join(target, 'placeholder.md'))).toBe(false)
+  })
+})
+
+// ── linkVaultPosts — vault Posts/ subfolder mirror ────────────────────────────
+
+describe('linkVaultPosts — vault Posts/ subfolder mirror', () => {
+  let tmpDir: string
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'mb-posts-test-'))
+  })
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  it('copies two .md files from vault Posts/ into content/posts/', () => {
+    const vault = join(tmpDir, 'vault')
+    const vaultPosts = join(vault, 'Posts')
+    const postsTarget = join(tmpDir, 'content', 'posts')
+    mkdirSync(vaultPosts, { recursive: true })
+    writeFileSync(join(vaultPosts, 'alpha.md'), '# Alpha')
+    writeFileSync(join(vaultPosts, 'beta.md'), '# Beta')
+
+    linkVaultPosts(vault, postsTarget, { skipWatch: true })
+
+    expect(existsSync(join(postsTarget, 'alpha.md'))).toBe(true)
+    expect(existsSync(join(postsTarget, 'beta.md'))).toBe(true)
+    expect(readFileSync(join(postsTarget, 'alpha.md'), 'utf-8')).toBe('# Alpha')
+    expect(readFileSync(join(postsTarget, 'beta.md'), 'utf-8')).toBe('# Beta')
+  })
+
+  it('overwrites a same-named file in content/posts/ with the vault version', () => {
+    const vault = join(tmpDir, 'vault')
+    const vaultPosts = join(vault, 'Posts')
+    const postsTarget = join(tmpDir, 'content', 'posts')
+    mkdirSync(vaultPosts, { recursive: true })
+    mkdirSync(postsTarget, { recursive: true })
+
+    // Repo-authored version (old content)
+    writeFileSync(join(postsTarget, 'foo.md'), 'old content')
+    // Vault version (should win)
+    writeFileSync(join(vaultPosts, 'foo.md'), 'vault content')
+
+    linkVaultPosts(vault, postsTarget, { skipWatch: true })
+
+    expect(readFileSync(join(postsTarget, 'foo.md'), 'utf-8')).toBe('vault content')
+  })
+
+  it('preserves repo-authored posts not present in vault Posts/ (additive, no deletion)', () => {
+    const vault = join(tmpDir, 'vault')
+    const vaultPosts = join(vault, 'Posts')
+    const postsTarget = join(tmpDir, 'content', 'posts')
+    mkdirSync(vaultPosts, { recursive: true })
+    mkdirSync(postsTarget, { recursive: true })
+
+    // Repo-authored post that has no vault counterpart
+    writeFileSync(join(postsTarget, 'bar.md'), 'repo only')
+    // Vault post
+    writeFileSync(join(vaultPosts, 'vault-only.md'), 'vault only')
+
+    linkVaultPosts(vault, postsTarget, { skipWatch: true })
+
+    // Both must be present after the additive mirror
+    expect(existsSync(join(postsTarget, 'bar.md'))).toBe(true)
+    expect(readFileSync(join(postsTarget, 'bar.md'), 'utf-8')).toBe('repo only')
+    expect(existsSync(join(postsTarget, 'vault-only.md'))).toBe(true)
+  })
+
+  it('logs skip message and leaves content/posts/ unchanged when vault has no Posts/ subfolder', () => {
+    const vault = join(tmpDir, 'vault')
+    // Vault exists but has no Posts/ directory
+    mkdirSync(vault, { recursive: true })
+    const postsTarget = join(tmpDir, 'content', 'posts')
+    mkdirSync(postsTarget, { recursive: true })
+    writeFileSync(join(postsTarget, 'existing.md'), 'existing')
+
+    const logs: string[] = []
+    const origLog = console.log
+    console.log = (...args: unknown[]) => logs.push(args.join(' '))
+    try {
+      linkVaultPosts(vault, postsTarget, { skipWatch: true })
+    } finally {
+      console.log = origLog
+    }
+
+    // Skip message must be logged
+    expect(logs.some(l => l.includes('skipping posts mirror'))).toBe(true)
+    // Existing file must be untouched
+    expect(existsSync(join(postsTarget, 'existing.md'))).toBe(true)
+    expect(readFileSync(join(postsTarget, 'existing.md'), 'utf-8')).toBe('existing')
+  })
+
+  it('mirrors a nested Posts/sub/baz.md recursively', () => {
+    const vault = join(tmpDir, 'vault')
+    const vaultPosts = join(vault, 'Posts')
+    const vaultSub = join(vaultPosts, 'sub')
+    const postsTarget = join(tmpDir, 'content', 'posts')
+    mkdirSync(vaultSub, { recursive: true })
+    writeFileSync(join(vaultSub, 'baz.md'), '# Baz nested')
+
+    linkVaultPosts(vault, postsTarget, { skipWatch: true })
+
+    expect(existsSync(join(postsTarget, 'sub', 'baz.md'))).toBe(true)
+    expect(readFileSync(join(postsTarget, 'sub', 'baz.md'), 'utf-8')).toBe('# Baz nested')
   })
 })
 

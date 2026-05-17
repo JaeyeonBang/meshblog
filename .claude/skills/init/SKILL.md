@@ -14,6 +14,9 @@ One-time setup for a meshblog fork. Run this the first time you clone the repo o
 3. Branches on the vault answer:
    - **Vault provided** → replaces `content/notes/` with a real copy seeded from the vault, then runs `fs.watch` to mirror subsequent edits. Copying (not symlinking) is deliberate so `git add .` captures every note instead of a dangling target path.
    - **Skipped** → ensures `content/notes/` exists as an empty dir and logs `[init] No vault linked — notes/ left empty. Use /new-post to write posts directly.` No watcher is spawned.
+3b. *(Vault path only)* Optionally mirrors `<vault>/Posts/` into `content/posts/`:
+   - **`<vault>/Posts/` exists** → additively copies its contents into `content/posts/` and starts an `fs.watch` to pick up subsequent vault edits. Posts already in `content/posts/` that have no vault counterpart are **preserved** (mirror is additive, not destructive).
+   - **`<vault>/Posts/` absent** → logs `[init] vault has no Posts/ subfolder — skipping posts mirror.` and continues. No watcher is spawned for posts.
 4. Writes `.env.local` template (`OPENAI_API_KEY` commented — keyless mode is the default).
 5. Verifies `.github/workflows/deploy.yml` exists; generates it from the baseline if not.
 6. Builds the site:
@@ -27,8 +30,9 @@ One-time setup for a meshblog fork. Run this the first time you clone the repo o
 | :--- | :--- | :--- |
 | 1. vault path | absolute path | press Enter |
 | 3. notes/ | copy + `fs.watch` mirror | empty dir created |
+| 3b. posts/ | `<vault>/Posts/` merged additively → `content/posts/` + `fs.watch` (skipped if no Posts/ subfolder) | skipped entirely |
 | 6. build | real keyless pipeline | fixture fallback |
-| Authoring | `/new-post` writes posts; vault notes feed graph/RAG | `/new-post` writes posts directly |
+| Authoring | `/new-post` writes posts; vault `Posts/` auto-mirrors; vault notes feed graph/RAG | `/new-post` writes posts directly |
 
 ## Run
 
@@ -42,6 +46,7 @@ bun run init
 - **When a vault is provided**, `content/notes/` is always a real copy, not a symlink — so `git add .` → `git push` works without any manual materialization. Edits in the vault still propagate via `fs.watch`.
 - `/new-post` works with or without a vault — posts land in `content/posts/` either way.
 - `astro.config.mjs` is left alone. The `/meshblog/` base path is already wired.
+- When `<vault>/Posts/` exists, posts written in Obsidian's `Posts/` subfolder auto-mirror to `content/posts/`. Posts authored directly in `content/posts/` are preserved (mirror is additive, not destructive) — but **vault is canonical** when both have the same filename: vault overwrites repo on next sync.
 
 ## Next
 
