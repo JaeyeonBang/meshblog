@@ -48,6 +48,7 @@ describe("loadMeshblogConfig", () => {
     const config = loadMeshblogConfig()
 
     expect(config.l3Visibility).toBe("full")
+    expect(config.notesVisibility).toBe("full")
     expect(warnSpy).toHaveBeenCalledOnce()
     expect(warnSpy.mock.calls[0][0]).toContain("not found")
   })
@@ -59,6 +60,7 @@ describe("loadMeshblogConfig", () => {
     const config = loadMeshblogConfig()
 
     expect(config.l3Visibility).toBe("full")
+    expect(config.notesVisibility).toBe("full")
     expect(warnSpy).toHaveBeenCalledOnce()
     expect(warnSpy.mock.calls[0][0]).toContain("malformed JSON")
   })
@@ -73,6 +75,7 @@ describe("loadMeshblogConfig", () => {
     const config = loadMeshblogConfig()
 
     expect(config.l3Visibility).toBe("full")
+    expect(config.notesVisibility).toBe("full")
     expect(warnSpy).toHaveBeenCalledOnce()
     expect(warnSpy.mock.calls[0][0]).toContain("invalid l3Visibility")
   })
@@ -85,6 +88,7 @@ describe("loadMeshblogConfig", () => {
 
     const config = loadMeshblogConfig()
     expect(config.l3Visibility).toBe("full")
+    expect(config.notesVisibility).toBe("full")
   })
 
   it("parses valid 'keyword-only' config", () => {
@@ -95,6 +99,7 @@ describe("loadMeshblogConfig", () => {
 
     const config = loadMeshblogConfig()
     expect(config.l3Visibility).toBe("keyword-only")
+    expect(config.notesVisibility).toBe("full")
   })
 
   it("returns memoized result on second call (file read once)", () => {
@@ -113,5 +118,51 @@ describe("loadMeshblogConfig", () => {
 
     expect(first).toBe(second) // same object reference — memoized
     expect(second.l3Visibility).toBe("hidden") // not re-read
+  })
+
+  // ── notesVisibility tests ────────────────────────────────────────────────
+
+  it("defaults notesVisibility to 'full' when field is missing", () => {
+    writeFileSync(
+      join(tmpDir, "meshblog.config.json"),
+      JSON.stringify({ l3Visibility: "full" }),
+    )
+
+    const config = loadMeshblogConfig()
+    expect(config.notesVisibility).toBe("full")
+  })
+
+  it("parses valid notesVisibility 'hidden'", () => {
+    writeFileSync(
+      join(tmpDir, "meshblog.config.json"),
+      JSON.stringify({ l3Visibility: "full", notesVisibility: "hidden" }),
+    )
+
+    const config = loadMeshblogConfig()
+    expect(config.notesVisibility).toBe("hidden")
+  })
+
+  it("parses valid notesVisibility 'full'", () => {
+    writeFileSync(
+      join(tmpDir, "meshblog.config.json"),
+      JSON.stringify({ l3Visibility: "full", notesVisibility: "full" }),
+    )
+
+    const config = loadMeshblogConfig()
+    expect(config.notesVisibility).toBe("full")
+  })
+
+  it("warns + defaults to 'full' on invalid notesVisibility value", () => {
+    writeFileSync(
+      join(tmpDir, "meshblog.config.json"),
+      JSON.stringify({ l3Visibility: "full", notesVisibility: "keyword-only" }),
+    )
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+    const config = loadMeshblogConfig()
+
+    expect(config.notesVisibility).toBe("full")
+    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(warnSpy.mock.calls[0][0]).toContain("invalid notesVisibility")
   })
 })

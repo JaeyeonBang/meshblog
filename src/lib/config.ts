@@ -5,13 +5,16 @@ import type Database from "better-sqlite3"
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type L3Visibility = "full" | "keyword-only" | "hidden"
+export type NotesVisibility = "full" | "hidden"
 
 export interface MeshblogConfig {
   l3Visibility: L3Visibility
+  notesVisibility: NotesVisibility
 }
 
 const VALID_MODES: L3Visibility[] = ["full", "keyword-only", "hidden"]
-const DEFAULT_CONFIG: MeshblogConfig = { l3Visibility: "full" }
+const VALID_NOTES_MODES: NotesVisibility[] = ["full", "hidden"]
+const DEFAULT_CONFIG: MeshblogConfig = { l3Visibility: "full", notesVisibility: "full" }
 
 // ── Module-level memoization ─────────────────────────────────────────────────
 
@@ -83,7 +86,22 @@ export function loadMeshblogConfig(): MeshblogConfig {
     return _configCache
   }
 
-  _configCache = { l3Visibility: (parsed as Record<string, unknown>).l3Visibility as L3Visibility }
+  const rec = parsed as Record<string, unknown>
+  let notesVisibility: NotesVisibility = "full"
+  if (!("notesVisibility" in rec)) {
+    // field missing — silently default
+  } else if (!VALID_NOTES_MODES.includes(rec.notesVisibility as NotesVisibility)) {
+    console.warn(
+      `[meshblog] meshblog.config.json has invalid notesVisibility value — using default 'full'. Valid values: ${VALID_NOTES_MODES.join(", ")}`,
+    )
+  } else {
+    notesVisibility = rec.notesVisibility as NotesVisibility
+  }
+
+  _configCache = {
+    l3Visibility: rec.l3Visibility as L3Visibility,
+    notesVisibility,
+  }
   return _configCache
 }
 

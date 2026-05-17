@@ -5,6 +5,11 @@ import T from '../../components/ui/atoms/T.astro'
 import { listNotes } from '../../lib/pages/index.ts'
 import type { NoteRow as NoteRowType } from '../../lib/pages/index.ts'
 import { withBase } from '../../lib/url'
+import { loadMeshblogConfig } from '../../lib/config'
+
+if (loadMeshblogConfig().notesVisibility === 'hidden') {
+  return Astro.redirect(withBase('/404'), 302)
+}
 
 const notes: NoteRowType[] = listNotes()
 const count = notes.length

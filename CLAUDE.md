@@ -114,10 +114,23 @@ import { withBase } from '../lib/url';
 
 This includes `href` on `<a>`, navigation arrays, CmdK result lists, Footer, TopBar. External URLs (`https://`), anchors (`#main`), and asset paths already prefixed by Astro (`/_astro/…`) do not need wrapping.
 
+## Content model (posts-first)
+
+After the **2026-05-17 posts-first pivot**, `content/posts/` is the primary authoring surface. Humans write posts directly via `/new-post`. `content/notes/` still exists for graph / backlinks / RAG context (vault contents feed the knowledge mesh) but is **not user-visible**:
+
+- `meshblog.config.json` → `notesVisibility: "hidden"` makes `/notes/[slug]` build zero pages and `/notes/` redirects to `/404`.
+- TopBar / Footer no longer link to `/notes`.
+- Wikilinks from posts targeting `/notes/<slug>` will 404 — intentional.
+- To re-expose notes routes: set `notesVisibility: "full"` in `meshblog.config.json`.
+
+`/init` no longer requires an Obsidian vault path — press Enter to skip and write posts directly.
+
 ## Skills (`.claude/skills/`)
 
 | Skill | Use when |
 | :--- | :--- |
+| `new-post` | Scaffold a draft post in `content/posts/` (default). `--as=note` writes to `content/notes/` for vault-style atomic notes. |
+| `new-bilingual-post` | Scaffold KO + EN companion files in `content/posts/`. `--as=note` for the legacy notes/ behavior. |
 | `design-md-sync` | User asks to change a color / font / spacing / any visual token |
 | `theme-variant` | User wants to preview or adopt variant A / B / C |
 | `component-extract` | Given a new HTML prototype section to turn into a scoped Astro component |
@@ -150,7 +163,7 @@ Before marking UI work done:
 2. `bunx astro check` — 0 errors
 3. `bun run build:fixture` — exits 0
 4. `npx vitest run` — all pass (currently 149 tests)
-5. `bun run preview` + curl each page (`/meshblog/`, `/meshblog/notes/<slug>`, `/meshblog/graph`, `/meshblog/404`) and verify expected classes + tokens render
+5. `bun run preview` + curl each page (`/meshblog/`, `/meshblog/posts/<slug>`, `/meshblog/graph`, `/meshblog/404`) and verify expected classes + tokens render. `/meshblog/notes/` and `/meshblog/notes/<slug>` are intentionally absent when `notesVisibility: "hidden"`.
 6. Run `bun run audit` — exit code 0 means all invariants pass
 
 ## Post-push CI/CD verification (MANDATORY)

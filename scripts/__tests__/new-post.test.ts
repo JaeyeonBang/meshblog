@@ -4,8 +4,11 @@
  *
  * Tests:
  *  1. slugify — spaces, unicode, emoji, punctuation
- *  2. buildTemplate — correct YAML frontmatter (parsed with gray-matter)
- *  3. No-overwrite guard — exits 1 when target file already exists
+ *  2. buildTemplate (post mode, default) — correct YAML frontmatter
+ *  3. buildTemplate (note mode, --as=note) — legacy note frontmatter
+ *  4. No-overwrite guard — exits 1 when target file already exists
+ *  5. CLI default writes to content/posts/
+ *  6. CLI --as=note writes to content/notes/
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -60,17 +63,17 @@ describe('slugify', () => {
   })
 })
 
-// ── buildTemplate ─────────────────────────────────────────────────────────────
+// ── buildTemplate (post mode — default) ──────────────────────────────────────
 
-describe('buildTemplate', () => {
+describe('buildTemplate (post mode, default)', () => {
   it('produces valid YAML frontmatter parseable by gray-matter', () => {
-    const md = buildTemplate('My Test Note')
+    const md = buildTemplate('My Test Post')
     const parsed = matter(md)
-    expect(parsed.data.title).toBe('My Test Note')
+    expect(parsed.data.title).toBe('My Test Post')
   })
 
   it('sets draft: true', () => {
-    const parsed = matter(buildTemplate('Draft Note'))
+    const parsed = matter(buildTemplate('Draft Post'))
     expect(parsed.data.draft).toBe(true)
   })
 
@@ -80,15 +83,27 @@ describe('buildTemplate', () => {
     expect(parsed.data.tags).toHaveLength(0)
   })
 
-  it('sets aliases to an empty array', () => {
-    const parsed = matter(buildTemplate('Alias Test'))
-    expect(Array.isArray(parsed.data.aliases)).toBe(true)
-    expect(parsed.data.aliases).toHaveLength(0)
+  it('includes a date field (YYYY-MM-DD)', () => {
+    const parsed = matter(buildTemplate('Date Test'))
+    expect(parsed.data.date).toBeTruthy()
+    // gray-matter parses YAML dates into Date objects
+    const dateStr = parsed.data.date instanceof Date
+      ? parsed.data.date.toISOString().slice(0, 10)
+      : String(parsed.data.date)
+    expect(dateStr).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
-  it('sets level_pin to null', () => {
-    const parsed = matter(buildTemplate('Level Test'))
-    expect(parsed.data.level_pin).toBeNull()
+  it('includes an image path referencing /meshblog/og/posts/', () => {
+    const md = buildTemplate('Image Test', 'image-test')
+    const parsed = matter(md)
+    expect(parsed.data.image).toContain('/meshblog/og/posts/')
+    expect(parsed.data.image).toContain('image-test')
+  })
+
+  it('falls back to slugifying title when slug not provided', () => {
+    const md = buildTemplate('No Slug Given')
+    const parsed = matter(md)
+    expect(parsed.data.image).toContain('no-slug-given')
   })
 
   it('includes H1 heading in body', () => {
@@ -99,7 +114,56 @@ describe('buildTemplate', () => {
 
   it('escapes double-quotes in title', () => {
     const md = buildTemplate('She said "hello"')
-    // Must not break YAML parsing
+    const parsed = matter(md)
+    expect(parsed.data.title).toBe('She said "hello"')
+  })
+
+  it('does NOT set aliases or level_pin in post mode', () => {
+    const parsed = matter(buildTemplate('Post Fields'))
+    expect(parsed.data.aliases).toBeUndefined()
+    expect(parsed.data.level_pin).toBeUndefined()
+  })
+})
+
+// ── buildTemplate (note mode — legacy --as=note) ──────────────────────────────
+
+describe('buildTemplate (note mode)', () => {
+  it('produces valid YAML frontmatter parseable by gray-matter', () => {
+    const md = buildTemplate('My Test Note', undefined, 'note')
+    const parsed = matter(md)
+    expect(parsed.data.title).toBe('My Test Note')
+  })
+
+  it('sets draft: true', () => {
+    const parsed = matter(buildTemplate('Draft Note', undefined, 'note'))
+    expect(parsed.data.draft).toBe(true)
+  })
+
+  it('sets tags to an empty array', () => {
+    const parsed = matter(buildTemplate('Tag Test', undefined, 'note'))
+    expect(Array.isArray(parsed.data.tags)).toBe(true)
+    expect(parsed.data.tags).toHaveLength(0)
+  })
+
+  it('sets aliases to an empty array', () => {
+    const parsed = matter(buildTemplate('Alias Test', undefined, 'note'))
+    expect(Array.isArray(parsed.data.aliases)).toBe(true)
+    expect(parsed.data.aliases).toHaveLength(0)
+  })
+
+  it('sets level_pin to null', () => {
+    const parsed = matter(buildTemplate('Level Test', undefined, 'note'))
+    expect(parsed.data.level_pin).toBeNull()
+  })
+
+  it('includes H1 heading in body', () => {
+    const md = buildTemplate('Heading Test', undefined, 'note')
+    const parsed = matter(md)
+    expect(parsed.content.trim()).toContain('# Heading Test')
+  })
+
+  it('escapes double-quotes in title', () => {
+    const md = buildTemplate('She said "hello"', undefined, 'note')
     const parsed = matter(md)
     expect(parsed.data.title).toBe('She said "hello"')
   })
@@ -120,28 +184,12 @@ describe('new-post.ts CLI — no-overwrite guard', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('exits 1 when target file already exists', () => {
-    // Slug for "Existing Note" → "existing-note"
-    const slug = 'existing-note'
-    const notesDir = join(tmpDir, 'content', 'notes')
-    mkdirSync(notesDir, { recursive: true })
-    writeFileSync(join(notesDir, `${slug}.md`), '# already here\n', 'utf-8')
-
-    // Point MESHBLOG_NOTES_DIR at the temp directory so the script
-    // won't touch the real content/notes/.  We achieve this by
-    // overriding the CWD to tmpDir (the script resolves ROOT from
-    // import.meta.url, so we also pass the title that slugifies to an
-    // existing file in that dir).
-    //
-    // Because the script uses import.meta.url to find ROOT, we drive
-    // it via a small wrapper that patches the resolved path.
-    // Simpler: use execSync with the actual repo, but point the
-    // output at a path that already exists by creating it first.
-
-    // Create the collision in the real content/notes/ (cleaned up in afterEach)
-    const realNotesDir = join(REPO_ROOT, 'content', 'notes')
-    mkdirSync(realNotesDir, { recursive: true })
-    const realTarget = join(realNotesDir, `${slug}.md`)
+  it('exits 1 when target file already exists (default posts/ dir)', () => {
+    const slug = 'existing-post'
+    // Create the collision in content/posts/
+    const realPostsDir = join(REPO_ROOT, 'content', 'posts')
+    mkdirSync(realPostsDir, { recursive: true })
+    const realTarget = join(realPostsDir, `${slug}.md`)
     const alreadyExisted = existsSync(realTarget)
     if (!alreadyExisted) {
       writeFileSync(realTarget, '# collision\n', 'utf-8')
@@ -150,7 +198,7 @@ describe('new-post.ts CLI — no-overwrite guard', () => {
     try {
       let threw = false
       try {
-        execSync(`bun run scripts/new-post.ts "Existing Note"`, {
+        execSync(`bun run scripts/new-post.ts "Existing Post"`, {
           cwd: REPO_ROOT,
           encoding: 'utf-8',
           stdio: 'pipe',
@@ -162,20 +210,18 @@ describe('new-post.ts CLI — no-overwrite guard', () => {
       }
       expect(threw).toBe(true)
     } finally {
-      // Clean up only if we created it
       if (!alreadyExisted && existsSync(realTarget)) {
         rmSync(realTarget)
       }
     }
   })
 
-  it('exits 0 and creates file for a fresh title', () => {
-    const realNotesDir = join(REPO_ROOT, 'content', 'notes')
-    mkdirSync(realNotesDir, { recursive: true })
+  it('exits 0 and creates file in content/posts/ for a fresh title (default)', () => {
+    const realPostsDir = join(REPO_ROOT, 'content', 'posts')
+    mkdirSync(realPostsDir, { recursive: true })
     const slug = `new-post-test-${Date.now()}`
-    const target = join(realNotesDir, `${slug}.md`)
+    const target = join(realPostsDir, `${slug}.md`)
 
-    // Ensure it doesn't exist
     if (existsSync(target)) rmSync(target)
 
     try {
@@ -194,6 +240,41 @@ describe('new-post.ts CLI — no-overwrite guard', () => {
       const parsed = matter(readFileSync(target, 'utf-8'))
       expect(parsed.data.draft).toBe(true)
       expect(parsed.data.title).toBe(title)
+      // post-mode fields
+      expect(parsed.data.image).toContain('/meshblog/og/posts/')
+    } finally {
+      if (existsSync(target)) rmSync(target)
+    }
+  })
+
+  it('exits 0 and creates file in content/notes/ when --as=note', () => {
+    const realNotesDir = join(REPO_ROOT, 'content', 'notes')
+    mkdirSync(realNotesDir, { recursive: true })
+    const slug = `new-note-test-${Date.now()}`
+    const target = join(realNotesDir, `${slug}.md`)
+
+    if (existsSync(target)) rmSync(target)
+
+    try {
+      const title = slug
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+
+      execSync(`bun run scripts/new-post.ts "${title}" --as=note`, {
+        cwd: REPO_ROOT,
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      })
+
+      expect(existsSync(target)).toBe(true)
+
+      const parsed = matter(readFileSync(target, 'utf-8'))
+      expect(parsed.data.draft).toBe(true)
+      expect(parsed.data.title).toBe(title)
+      // note-mode fields (no image, has aliases + level_pin)
+      expect(parsed.data.aliases).toBeDefined()
+      expect(parsed.data.level_pin).toBeNull()
+      expect(parsed.data.image).toBeUndefined()
     } finally {
       if (existsSync(target)) rmSync(target)
     }
