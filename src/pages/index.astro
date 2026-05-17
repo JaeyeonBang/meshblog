@@ -1,8 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'
 import PostCard from '../components/ui/molecules/PostCard.astro'
-import NoteRow from '../components/ui/molecules/NoteRow.astro'
-import SectionBreak from '../components/ui/molecules/SectionBreak.astro'
 import TOC from '../components/ui/molecules/TOC.astro'
 import QaCard from '../components/ui/molecules/QaCard.astro'
 import PostMeshGraph from '../components/PostMeshGraph'
@@ -10,13 +8,12 @@ import CategoryList from '../components/ui/molecules/CategoryList.astro'
 import Button from '../components/ui/atoms/Button.astro'
 import T from '../components/ui/atoms/T.astro'
 import QAChips from '../components/QAChips.tsx'
-import { listPosts, listNotes, getHomepageQa } from '../lib/pages/index.ts'
+import { listPosts, getHomepageQa } from '../lib/pages/index.ts'
 import { withBase } from '../lib/url'
 import { getHomeMeshNodes } from '../lib/mesh-data'
 import { plainExcerpt } from '../lib/markdown/plain-excerpt'
 
-const posts = listPosts().slice(0, 5)
-const notes = listNotes().slice(0, 6)
+const posts = listPosts().slice(0, 6)
 const qa = getHomepageQa(10)
 
 const now = Date.now()
@@ -26,14 +23,6 @@ const ONE_MONTH = 30 * 24 * 60 * 60 * 1000
 function getPostBadge(post: { created_at: string; updated_at: string }): 'new' | 'updated' | null {
   const created = new Date(post.created_at).getTime()
   const updated = new Date(post.updated_at).getTime()
-  if (now - created <= NEW_THRESHOLD_MS) return 'new'
-  if (now - updated <= ONE_MONTH) return 'updated'
-  return null
-}
-
-function getNoteBadge(note: { created_at: string; updated_at: string }): 'new' | 'updated' | null {
-  const created = new Date(note.created_at).getTime()
-  const updated = new Date(note.updated_at).getTime()
   if (now - created <= NEW_THRESHOLD_MS) return 'new'
   if (now - updated <= ONE_MONTH) return 'updated'
   return null
@@ -79,23 +68,6 @@ const meshLinks: Array<{ source: string; target: string }> = []
           <p class="feed-empty"><T ko="아직 글이 없습니다." en="still drafting." /></p>
         )}
 
-        <SectionBreak label="notes · atomic" count={`${notes.length} entries`} />
-
-        {notes.length > 0 ? notes.map((note, i) => (
-          <NoteRow
-            number={`N / ${String(i + 1).padStart(2, '0')}`}
-            title={note.title}
-            meta="2 min"
-            href={withBase(`/notes/${note.slug}`)}
-            badge={getNoteBadge(note)}
-          />
-        )) : (
-          <p class="feed-empty"><T ko="노트 준비 중." en="notes incoming." /></p>
-        )}
-
-        <div class="feed-cta">
-          <Button href={withBase('/notes')}><T ko="notes 전체 보기 →" en="all notes →" /></Button>
-        </div>
       </div>
     </div>
 
@@ -216,11 +188,6 @@ const meshLinks: Array<{ source: string; target: string }> = []
   .feed {
     display: flex;
     flex-direction: column;
-  }
-
-  .feed-cta {
-    margin-top: var(--space-8);
-    align-self: flex-start;
   }
 
   /* ── Home side ─────────────────────────────────────────────── */

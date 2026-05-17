@@ -7,7 +7,6 @@ interface Props {
 const { active, showSearch = true } = Astro.props;
 const links = [
   { key: 'posts',  label: 'posts',  href: withBase('/posts') },
-  { key: 'notes',  label: 'notes',  href: withBase('/notes') },
   { key: 'graph',  label: 'graph',  href: withBase('/graph') },
   { key: 'about',  label: 'about',  href: withBase('/about') },
 ] as const;

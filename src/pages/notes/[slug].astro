@@ -38,7 +38,13 @@ import { getNoteMeshNodes, getNoteMeshLinks } from '../../lib/mesh-data'
 import '../../styles/article.css'
 
 export function getStaticPaths() {
-  const { l3Visibility } = loadMeshblogConfig()
+  const { l3Visibility, notesVisibility } = loadMeshblogConfig()
+
+  // When notesVisibility is 'hidden', build no /notes/[slug] pages.
+  if (notesVisibility === 'hidden') {
+    return []
+  }
+
   const allSlugs = listAllNoteSlugs()
   // Use unfiltered list so keyword-only mode still has NoteRow props for L3
   // slugs (needed to render the PrivatePlaceholder with the correct title).

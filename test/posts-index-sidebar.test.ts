@@ -31,11 +31,16 @@ describe('TopBar cleanup', () => {
     expect(TOPBAR).not.toMatch(/'categories'/)
   })
 
-  it('TopBar still has posts, notes, graph, about', () => {
+  it('TopBar still has posts, graph, about', () => {
     expect(TOPBAR).toMatch(/key:\s*['"]posts['"]/)
-    expect(TOPBAR).toMatch(/key:\s*['"]notes['"]/)
     expect(TOPBAR).toMatch(/key:\s*['"]graph['"]/)
     expect(TOPBAR).toMatch(/key:\s*['"]about['"]/)
+  })
+
+  it('TopBar no longer exposes notes in user-visible nav', () => {
+    // posts-first pivot: /notes route still exists for graph/backlinks but is
+    // not advertised in the top nav. See meshblog.config.json `notesVisibility`.
+    expect(TOPBAR).not.toMatch(/key:\s*['"]notes['"]/)
   })
 })
 

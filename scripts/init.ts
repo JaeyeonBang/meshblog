@@ -2,13 +2,14 @@
  * scripts/init.ts — D1 init skill
  *
  * One-time setup for a meshblog fork:
- *  1. Prompt for Obsidian vault absolute path (validates existence)
+ *  1. Prompt for Obsidian vault absolute path (optional — press Enter to skip)
  *  2. Prompt for GitHub repo name (optional, auto-detects from git remote)
- *  3. Symlink content/notes/ → vault path (fallback: cpSync + fs.watch on EPERM/EACCES)
+ *  3. If vault path provided: copy vault into content/notes/ + start fs.watch
+ *     If skipped: ensure content/notes/ exists as an empty directory
  *  4. Write .env.local template if missing
  *  5. Verify .github/workflows/deploy.yml exists (generate minimal one if not)
  *  6. Build the site: real (keyless) pipeline when the vault has notes,
- *     fixture fallback only when it's empty, then spawn `bun run dev`
+ *     fixture fallback only when notes/ is empty, then spawn `bun run dev`
  *
  * Note on readline: we use the base `node:readline` API and consume its
  * async-iterator output. The promise-based `readline/promises` wrapper hangs
@@ -328,12 +329,17 @@ function verifyDeployYml(repoName: string | null): void {
 
 type Ask = (prompt: string) => Promise<string>
 
-async function promptVaultPath(ask: Ask): Promise<string> {
+/**
+ * Prompt for the Obsidian vault path. Returns the validated absolute path,
+ * or null if the user presses Enter without input (vault link is optional).
+ */
+async function promptVaultPath(ask: Ask): Promise<string | null> {
   while (true) {
-    const input = (await ask("Obsidian vault absolute path: ")).trim()
+    const input = (
+      await ask("Obsidian vault absolute path (press Enter to skip): ")
+    ).trim()
     if (!input) {
-      console.error("[init] Path cannot be empty. Please enter an absolute path.")
-      continue
+      return null
     }
     if (!path.isAbsolute(input)) {
       console.error("[init] Must be an absolute path (e.g. /home/user/MyVault or C:\\Users\\…\\MyVault).")
@@ -375,9 +381,13 @@ async function promptRepoName(ask: Ask): Promise<string | null> {
  * Tests use `vaultPath` + `repoName` to bypass readline prompts, and
  * `skipSpawn` to return before launching the dev server (no background
  * processes to clean up).
+ *
+ * `vaultPath: null` explicitly skips vault linking (no-vault mode).
+ * `vaultPath: undefined` (default) prompts interactively; the user may
+ *   still press Enter to skip, which also results in no-vault mode.
  */
 export interface RunInitOptions {
-  vaultPath?: string
+  vaultPath?: string | null
   repoName?: string | null
   skipSpawn?: boolean
 }
@@ -389,8 +399,11 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
   const ask = createAskFn(rl)
 
   try {
-    // 1. Vault path
-    const vaultPath = opts.vaultPath ?? (await promptVaultPath(ask))
+    // 1. Vault path (opts.vaultPath === null → explicit skip; undefined → prompt)
+    const vaultPath: string | null =
+      opts.vaultPath !== undefined
+        ? opts.vaultPath
+        : await promptVaultPath(ask)
 
     // 2. GitHub repo name
     const repoName =
@@ -400,8 +413,15 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
 
     console.log("")
 
-    // 3. Link vault
-    linkVault(vaultPath, CONTENT_NOTES)
+    // 3. Link vault (or ensure empty notes/ when vault is skipped)
+    if (vaultPath !== null) {
+      linkVault(vaultPath, CONTENT_NOTES)
+    } else {
+      fs.mkdirSync(CONTENT_NOTES, { recursive: true })
+      console.log(
+        "[init] No vault linked — notes/ left empty. Use /new-post to write posts directly.",
+      )
+    }
 
     // 4. Write .env.local
     writeEnvLocal()
@@ -410,18 +430,26 @@ export async function runInit(opts: RunInitOptions = {}): Promise<void> {
     verifyDeployYml(repoName)
 
     // 6. Build the site. Keyless users still see their real vault — the
-    //    fixture seed is only used when the vault is genuinely empty.
+    //    fixture seed is only used when notes/ is genuinely empty.
     //    Both paths need the runtime dirs that CI creates explicitly; on a
     //    fresh degit these don't exist yet.
     for (const dir of [".data", "public/graph", "public/og"]) {
       fs.mkdirSync(path.join(REPO_ROOT, dir), { recursive: true })
     }
 
-    const vaultNotes = countVaultMarkdown(vaultPath)
-    console.log(`\n[init] Vault contains ${vaultNotes} markdown file(s)`)
+    // When vault is skipped, count notes/ directly (user may have pre-populated
+    // content/posts/ and/or content/notes/ before running init).
+    const noteSource = vaultPath ?? CONTENT_NOTES
+    const vaultNotes = countVaultMarkdown(noteSource)
+
+    if (vaultPath !== null) {
+      console.log(`\n[init] Vault contains ${vaultNotes} markdown file(s)`)
+    } else {
+      console.log(`\n[init] notes/ contains ${vaultNotes} markdown file(s)`)
+    }
 
     if (vaultNotes === 0) {
-      console.log("[init] Empty vault — falling back to fixture build")
+      console.log("[init] Empty notes — falling back to fixture build")
       execSync("bun run build:fixture", {
         cwd: REPO_ROOT,
         stdio: "inherit",
