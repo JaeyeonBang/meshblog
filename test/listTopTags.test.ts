@@ -17,6 +17,7 @@ function makePost(tags: string[]): PostRow {
     has_en: 0,
     body_en: null,
     title_en: null,
+    relatedSlugs: [],
   }
 }
 

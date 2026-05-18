@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS notes (
   body_en       TEXT,                     -- body markdown from companion *.en.md
   title_en      TEXT,                     -- title from companion frontmatter (if set)
   aliases       TEXT NOT NULL DEFAULT '[]', -- JSON array of alternate lookup names
+  related       TEXT NOT NULL DEFAULT '[]', -- JSON array of related post slugs (frontmatter)
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );

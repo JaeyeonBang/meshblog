@@ -13,9 +13,26 @@
  * low-risk while still letting users tune voice freely.
  */
 
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { z } from "zod"
 import type { ChatMessage } from "../claude-code.ts"
 import { loadStyleBlock } from "./loader.ts"
+
+/**
+ * Loads content/writing_guide.md (if present) and returns it as a system-prompt
+ * block. Returns empty string if the file is missing — the prompt still works,
+ * just without the author-style anchor.
+ */
+function loadWritingGuide(): string {
+  try {
+    const guidePath = join(process.cwd(), "content", "writing_guide.md")
+    const body = readFileSync(guidePath, "utf-8")
+    return `\n\n--- AUTHOR WRITING GUIDE (content/writing_guide.md) ---\n${body}\n--- END WRITING GUIDE ---\n\nFollow the writing guide above for voice, structure, and tone. It reflects the author's actual pattern across 12+ published posts. Treat it as the primary style reference.`
+  } catch {
+    return ""
+  }
+}
 
 export const POST_SYNTH_PROMPT_VERSION = "v2"
 
@@ -83,7 +100,8 @@ Hard rules (do not relax):
 
 function buildSystemPrompt(): string {
   const style = loadStyleBlock("post-synth", POST_SYNTH_STYLE)
-  return `${style.body}\n\n${POST_SYNTH_CONTRACT}`
+  const guide = loadWritingGuide()
+  return `${style.body}${guide}\n\n${POST_SYNTH_CONTRACT}`
 }
 
 export function buildPostSynthPrompt(topic: string, sources: SourceNote[]): ChatMessage[] {

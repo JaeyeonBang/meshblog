@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /** Current schema version. Increment when adding new tables or altering columns. */
-const SCHEMA_VERSION = 7
+const SCHEMA_VERSION = 8
 
 export function applyMigrations(db: Database.Database): void {
   // WAL + busy timeout (Amendment A / DX #3)
@@ -57,6 +57,10 @@ export function applyMigrations(db: Database.Database): void {
       // Phase 6 → Phase 7: aliases column
       if (!cols.has("aliases")) {
         db.exec("ALTER TABLE notes ADD COLUMN aliases TEXT NOT NULL DEFAULT '[]'")
+      }
+      // Phase 7 → Phase 8: related column (frontmatter explicit links)
+      if (!cols.has("related")) {
+        db.exec("ALTER TABLE notes ADD COLUMN related TEXT NOT NULL DEFAULT '[]'")
       }
     }
   }

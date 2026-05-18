@@ -20,6 +20,7 @@ const ALL_DEFAULTS = {
   "post-synth": TS_DEFAULT,
   "ingest-enrich": TS_DEFAULT,
   "concept-naming": TS_DEFAULT,
+  "suggest-links": TS_DEFAULT,
 } as const
 
 describe("loadStyleBlock", () => {

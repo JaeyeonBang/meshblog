@@ -236,6 +236,8 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
     const tags = JSON.stringify(rawTags)
     const rawAliases: string[] = Array.isArray(fm.aliases) ? fm.aliases : []
     const aliases = JSON.stringify(rawAliases)
+    const rawRelated: string[] = Array.isArray(fm.related) ? fm.related.filter((v): v is string => typeof v === 'string') : []
+    const related = JSON.stringify(rawRelated)
     const levelPin = (fm.level_pin as number | undefined) ?? null
     const hash = sha256(content)
 
@@ -269,8 +271,8 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
 
     execute(
       db,
-      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, aliases, level_pin, category_slug, has_en, body_en, title_en)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, aliases, related, level_pin, category_slug, has_en, body_en, title_en)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          title         = excluded.title,
          content       = excluded.content,
@@ -278,13 +280,14 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
          folder_path   = excluded.folder_path,
          tags          = excluded.tags,
          aliases       = excluded.aliases,
+         related       = excluded.related,
          level_pin     = excluded.level_pin,
          category_slug = excluded.category_slug,
          has_en        = excluded.has_en,
          body_en       = excluded.body_en,
          title_en      = excluded.title_en,
          updated_at    = datetime('now')`,
-      [id, slug, title, content, hash, folder, tags, aliases, levelPin, categorySlug, hasEn, bodyEn, titleEn],
+      [id, slug, title, content, hash, folder, tags, aliases, related, levelPin, categorySlug, hasEn, bodyEn, titleEn],
     )
 
     const hashChanged = !existing || existing.content_hash !== hash

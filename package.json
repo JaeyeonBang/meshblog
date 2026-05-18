@@ -36,6 +36,7 @@
     "new-bilingual-post": "tsx scripts/new-bilingual-post.ts",
     "ingest-raw": "tsx scripts/ingest-raw.ts",
     "draft-post": "tsx scripts/draft-post.ts",
+    "suggest-links": "tsx scripts/suggest-links.ts",
     "backfill-aliases": "tsx scripts/backfill-aliases.ts",
     "promote": "tsx scripts/promote.ts",
     "prompts": "tsx scripts/prompts.ts",
