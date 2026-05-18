@@ -19,6 +19,8 @@ import {
   getRelatedNotes,
   openReadonlyDb,
 } from '../../lib/pages/index'
+import { getPostRelated } from '../../lib/pages/posts'
+import type { ResolvedRelated } from '../../lib/pages/posts'
 import type { QaCard } from '../../lib/pages/index'
 import { estimateReadingMinutes } from '../../lib/reading-time'
 import { getReadingStats } from '../../lib/word-count'
@@ -78,8 +80,11 @@ if (db) {
 
 const allQa: QaCard[] = [...noteQa, ...conceptQa]
 
-// --- Related notes ---
+// --- Related notes (entity-overlap based) ---
 const related = getRelatedNotes(post.id, 4)
+
+// --- Frontmatter explicit related posts (related: [...] field) ---
+const frontmatterRelated: ResolvedRelated[] = getPostRelated(post)
 
 // --- Notes manifest for resolving hrefs ---
 type ManifestEntry = { id: string; href: string; title: string; folder: string }
@@ -261,6 +266,19 @@ const conceptGraph = getPostConceptGraph(post.id)
         <RelatedGrid items={relatedItems} />
       )}
 
+      {frontmatterRelated.length > 0 && (
+        <aside class="fm-related" aria-label="관련 글">
+          <p class="fm-related-label">관련 글</p>
+          <ul class="fm-related-list">
+            {frontmatterRelated.map((r) => (
+              <li>
+                <a href={withBase(`/posts/${r.slug}`)}>{r.title}</a>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )}
+
       <Pager
         prev={prevPost ? {
           number: `P / ${String(currentIndex).padStart(2, '0')}`,
@@ -391,6 +409,58 @@ const conceptGraph = getPostConceptGraph(post.id)
     margin: var(--space-4) 0;
     padding-bottom: var(--space-4);
     border-bottom: 1px solid var(--rule-soft);
+  }
+
+  /* ── 관련 글 (frontmatter explicit related posts) ────── */
+  .fm-related {
+    margin-top: var(--space-12);
+    border-top: 1px solid var(--ink);
+    padding-top: var(--space-4);
+  }
+
+  .fm-related-label {
+    font-family: var(--f-mono);
+    font-size: var(--fs-xxs);
+    letter-spacing: var(--track-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink);
+    margin: 0 0 var(--space-4);
+  }
+
+  .fm-related-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--ink);
+  }
+
+  .fm-related-list li {
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .fm-related-list li:last-child {
+    border-bottom: none;
+  }
+
+  .fm-related-list a {
+    display: block;
+    padding: var(--space-3) var(--space-4);
+    font-family: var(--f-disp);
+    font-size: var(--fs-md);
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+    transition: background var(--dur-fast) var(--ease);
+  }
+
+  .fm-related-list a:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .fm-related-list a:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
   }
 </style>
 

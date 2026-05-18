@@ -27,10 +27,10 @@ describe("commandList", () => {
     rmSync(scratch, { recursive: true, force: true })
   })
 
-  it("returns three rows (one per known use)", () => {
+  it("returns one row per known use", () => {
     const rows = commandList()
     const uses = rows.map((r) => r.use).sort()
-    expect(uses).toEqual(["concept-naming", "ingest-enrich", "post-synth"])
+    expect(uses).toEqual(["concept-naming", "ingest-enrich", "post-synth", "suggest-links"])
   })
 
   it("marks all rows as default when no overrides exist", () => {

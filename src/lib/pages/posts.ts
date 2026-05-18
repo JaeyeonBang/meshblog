@@ -12,6 +12,11 @@
 
 import { openReadonlyDb } from './db'
 
+export type ResolvedRelated = {
+  slug: string
+  title: string
+}
+
 export type PostRow = {
   id: string
   slug: string
@@ -25,6 +30,8 @@ export type PostRow = {
   has_en: number
   body_en: string | null
   title_en: string | null
+  /** Raw slugs from frontmatter `related:` field — resolved at render time by getPostRelated(). */
+  relatedSlugs: string[]
 }
 
 const POSTS_FOLDER = 'content/posts'
@@ -33,6 +40,7 @@ function parseRow(row: any): PostRow {
   return {
     ...row,
     tags: row.tags ? JSON.parse(row.tags) : [],
+    relatedSlugs: row.related ? JSON.parse(row.related) : [],
   }
 }
 
@@ -42,7 +50,7 @@ export function listPosts(): PostRow[] {
   try {
     const rows = db
       .prepare(
-        `SELECT id, slug, title, content, tags, created_at, updated_at, level_pin, category_slug, has_en, body_en, title_en
+        `SELECT id, slug, title, content, tags, related, created_at, updated_at, level_pin, category_slug, has_en, body_en, title_en
          FROM notes
          WHERE folder_path = ?
          ORDER BY created_at DESC`
@@ -115,13 +123,40 @@ export function getPostBySlug(slug: string): PostRow | null {
   try {
     const row = db
       .prepare(
-        `SELECT id, slug, title, content, tags, created_at, updated_at, level_pin, category_slug, has_en, body_en, title_en
+        `SELECT id, slug, title, content, tags, related, created_at, updated_at, level_pin, category_slug, has_en, body_en, title_en
          FROM notes
          WHERE slug = ? AND folder_path = ?
          LIMIT 1`
       )
       .get(slug, POSTS_FOLDER) as any
     return row ? parseRow(row) : null
+  } finally {
+    db.close()
+  }
+}
+
+/**
+ * Resolve a post's `relatedSlugs` into `{slug, title}` pairs.
+ * Slugs that do not exist in the posts folder are silently dropped.
+ * Unknown slugs log a warning (build-time only — no noise in production).
+ */
+export function getPostRelated(post: PostRow): ResolvedRelated[] {
+  if (!post.relatedSlugs || post.relatedSlugs.length === 0) return []
+  const db = openReadonlyDb()
+  if (!db) return []
+  try {
+    const results: ResolvedRelated[] = []
+    for (const slug of post.relatedSlugs) {
+      const row = db
+        .prepare(`SELECT slug, title FROM notes WHERE slug = ? AND folder_path = ? LIMIT 1`)
+        .get(slug, POSTS_FOLDER) as { slug: string; title: string } | undefined
+      if (row) {
+        results.push({ slug: row.slug, title: row.title })
+      } else {
+        console.warn(`[posts] getPostRelated: unknown related slug "${slug}" — dropping`)
+      }
+    }
+    return results
   } finally {
     db.close()
   }

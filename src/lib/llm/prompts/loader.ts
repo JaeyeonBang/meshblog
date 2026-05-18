@@ -18,9 +18,9 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import matter from "gray-matter"
 
-export type PromptUse = "post-synth" | "ingest-enrich" | "concept-naming"
+export type PromptUse = "post-synth" | "ingest-enrich" | "concept-naming" | "suggest-links"
 
-const ALL_USES: PromptUse[] = ["post-synth", "ingest-enrich", "concept-naming"]
+const ALL_USES: PromptUse[] = ["post-synth", "ingest-enrich", "concept-naming", "suggest-links"]
 const PROMPTS_DIR = "prompts"
 
 export type StyleResolution = {

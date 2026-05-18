@@ -123,6 +123,12 @@ describe('buildTemplate (post mode, default)', () => {
     expect(parsed.data.aliases).toBeUndefined()
     expect(parsed.data.level_pin).toBeUndefined()
   })
+
+  it('includes related as an empty array', () => {
+    const parsed = matter(buildTemplate('Related Test'))
+    expect(Array.isArray(parsed.data.related)).toBe(true)
+    expect(parsed.data.related).toHaveLength(0)
+  })
 })
 
 // ── buildTemplate (note mode — legacy --as=note) ──────────────────────────────

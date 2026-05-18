@@ -25,6 +25,9 @@ import {
   CONCEPT_NAMING_STYLE,
 } from "../src/lib/llm/prompts/concept-naming.ts"
 import {
+  SUGGEST_LINKS_STYLE,
+} from "../src/lib/llm/prompts/suggest-links.ts"
+import {
   ALL_USES,
   loadStyleBlock,
   listPromptStatus,
@@ -37,6 +40,7 @@ const DEFAULTS: Record<PromptUse, string> = {
   "post-synth": POST_SYNTH_STYLE,
   "ingest-enrich": INGEST_ENRICH_STYLE,
   "concept-naming": CONCEPT_NAMING_STYLE,
+  "suggest-links": SUGGEST_LINKS_STYLE,
 }
 
 // Contracts are intentionally NOT exported from the prompt modules — they
