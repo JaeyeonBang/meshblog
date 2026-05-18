@@ -56,7 +56,7 @@ Run `--dry-run` first to confirm source loading + size before invoking the LLM.
 
 ## Style guarantees
 
-The system prompt explicitly bans common AI-slop phrases ("in conclusion", "furthermore", "delve into", "tapestry", "underscore", etc.) and asks for concise, editorial voice. Quality of long-form synthesis still varies — review the draft before flipping `draft: false`.
+The system prompt includes `content/writing_guide.md` so the LLM follows the author's voice (모드 A vs B, 종결어미 일관성, 영문 용어 보존, `In My opinion` 마무리 등). It also explicitly bans common AI-slop phrases ("in conclusion", "furthermore", "delve into", "tapestry", "underscore", etc.). Quality of long-form synthesis still varies — review the draft before flipping `draft: false`.
 
 ## Idempotency
 
