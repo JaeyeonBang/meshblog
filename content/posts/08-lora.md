@@ -1,9 +1,16 @@
 ---
-title: "LoRA: Low-Rank Adaptation of Large Language Models"
-date: 2025-11-26
-tags: [NLP, Fine-tuning, LoRA, neural-network]
+title: 'LoRA: Low-Rank Adaptation of Large Language Models'
+date: 2025-11-26T00:00:00.000Z
+tags:
+  - NLP
+  - Fine-tuning
+  - LoRA
+  - neural-network
 category: LLM
-image: "/meshblog/og/posts/08-lora.svg"
+image: /meshblog/og/posts/08-lora.svg
+related:
+  - 09-ppo
+  - 10-deepseek-math
 ---
 [[paper link]](https://arxiv.org/abs/2106.09685)
 

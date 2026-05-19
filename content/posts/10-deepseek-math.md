@@ -1,9 +1,20 @@
 ---
-title: "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models"
-date: 2026-01-03
-tags: [RL, NLP, LLM, neural-network]
+title: >-
+  DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language
+  Models
+date: 2026-01-03T00:00:00.000Z
+tags:
+  - RL
+  - NLP
+  - LLM
+  - neural-network
 category: LLM
-image: "/meshblog/og/posts/10-deepseek-math.svg"
+image: /meshblog/og/posts/10-deepseek-math.svg
+related:
+  - 01-deep-rl-from-human-preferences
+  - 08-lora
+  - 09-ppo
+  - 11-rlpr
 ---
 [[paper link]](https://arxiv.org/abs/2402.03300)
 

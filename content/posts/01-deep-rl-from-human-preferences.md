@@ -1,9 +1,18 @@
 ---
-title: "Deep Reinforcement Learning from Human Preferences"
-date: 2025-11-18
-tags: [RL, NLP, LLM, neural-network]
+title: Deep Reinforcement Learning from Human Preferences
+date: 2025-11-18T00:00:00.000Z
+tags:
+  - RL
+  - NLP
+  - LLM
+  - neural-network
 category: LLM
-image: "/meshblog/og/posts/01-deep-rl-from-human-preferences.svg"
+image: /meshblog/og/posts/01-deep-rl-from-human-preferences.svg
+related:
+  - 04-agentic-llms-survey-reasoning
+  - 09-ppo
+  - 10-deepseek-math
+  - 11-rlpr
 ---
 RLHF: [**Deep reinforcement learning from human preferences**](https://arxiv.org/abs/1706.03741)
 

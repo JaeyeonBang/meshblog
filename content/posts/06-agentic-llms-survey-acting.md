@@ -1,9 +1,19 @@
 ---
-title: "Agentic Large Language Models, a survey, review: Acting"
-date: 2025-11-22
-tags: [AI Agent, NLP, LLM, ai-agent]
+title: 'Agentic Large Language Models, a survey, review: Acting'
+date: 2025-11-22T00:00:00.000Z
+tags:
+  - AI Agent
+  - NLP
+  - LLM
+  - ai-agent
 category: Agent
-image: "/meshblog/og/posts/06-agentic-llms-survey-acting.svg"
+image: /meshblog/og/posts/06-agentic-llms-survey-acting.svg
+related:
+  - 02-agent-ai-paper-list
+  - 03-agentic-llms-survey-intro
+  - 04-agentic-llms-survey-reasoning
+  - 07-agentic-llms-survey-interacting
+  - a2a-protocol
 ---
 [[paper link]](https://arxiv.org/abs/2503.23037)
 

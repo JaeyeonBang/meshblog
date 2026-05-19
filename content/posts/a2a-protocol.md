@@ -1,12 +1,22 @@
 ---
-title: "A2A Protocol  — 에이전트 간 협업의 핵심 개념"
-date: 2026-05-19
+title: A2A Protocol  — 에이전트 간 협업의 핵심 개념
+date: 2026-05-19T00:00:00.000Z
 draft: false
-tags: [A2A, agent, protocol, interoperability, multi-agent, MCP, JSON-RPC, LLM]
+tags:
+  - A2A
+  - agent
+  - protocol
+  - interoperability
+  - multi-agent
+  - MCP
+  - JSON-RPC
+  - LLM
 category: Agent
-image: "/meshblog/og/posts/a2a-protocol.png"
+image: /meshblog/og/posts/a2a-protocol.png
 related:
+  - 02-agent-ai-paper-list
   - 03-agentic-llms-survey-intro
+  - 06-agentic-llms-survey-acting
   - 07-agentic-llms-survey-interacting
 ---
 

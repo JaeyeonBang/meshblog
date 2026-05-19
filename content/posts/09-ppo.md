@@ -1,9 +1,19 @@
 ---
-title: "PPO 개념 간단 요약"
-date: 2025-12-03
-tags: [RL, NLP, LLM, neural-network]
+title: PPO 개념 간단 요약
+date: 2025-12-03T00:00:00.000Z
+tags:
+  - RL
+  - NLP
+  - LLM
+  - neural-network
 category: LLM
-image: "/meshblog/og/posts/09-ppo.svg"
+image: /meshblog/og/posts/09-ppo.svg
+related:
+  - 01-deep-rl-from-human-preferences
+  - 04-agentic-llms-survey-reasoning
+  - 08-lora
+  - 10-deepseek-math
+  - 11-rlpr
 ---
 [[paper link]](https://arxiv.org/abs/1707.06347)
 

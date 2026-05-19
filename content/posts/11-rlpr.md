@@ -1,9 +1,17 @@
 ---
-title: "RLPR: EXTRAPOLATING RLVR TO GENERAL DO MAINS WITHOUT VERIFIERS"
-date: 2026-01-03
-tags: [RL, NLP, LLM, neural-network]
+title: 'RLPR: EXTRAPOLATING RLVR TO GENERAL DO MAINS WITHOUT VERIFIERS'
+date: 2026-01-03T00:00:00.000Z
+tags:
+  - RL
+  - NLP
+  - LLM
+  - neural-network
 category: LLM
-image: "/meshblog/og/posts/11-rlpr.svg"
+image: /meshblog/og/posts/11-rlpr.svg
+related:
+  - 01-deep-rl-from-human-preferences
+  - 09-ppo
+  - 10-deepseek-math
 ---
 [[paper link]](https://arxiv.org/pdf/2506.18254)
 

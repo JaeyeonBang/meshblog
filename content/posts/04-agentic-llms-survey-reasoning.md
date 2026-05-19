@@ -1,9 +1,20 @@
 ---
-title: "Agentic Large Language Models, a survey, review: Reasoning"
-date: 2025-11-19
-tags: [AI Agent, NLP, LLM, ai-agent]
+title: 'Agentic Large Language Models, a survey, review: Reasoning'
+date: 2025-11-19T00:00:00.000Z
+tags:
+  - AI Agent
+  - NLP
+  - LLM
+  - ai-agent
 category: Agent
-image: "/meshblog/og/posts/04-agentic-llms-survey-reasoning.svg"
+image: /meshblog/og/posts/04-agentic-llms-survey-reasoning.svg
+related:
+  - 01-deep-rl-from-human-preferences
+  - 02-agent-ai-paper-list
+  - 03-agentic-llms-survey-intro
+  - 06-agentic-llms-survey-acting
+  - 07-agentic-llms-survey-interacting
+  - 09-ppo
 ---
 [[paper link]](https://arxiv.org/abs/2503.23037)
 
