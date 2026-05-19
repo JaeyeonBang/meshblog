@@ -2,7 +2,7 @@
 title: "Agentic Large Language Models, a survey, review: Intro"
 date: 2025-11-19
 tags: [AI Agent, NLP, LLM, ai-agent]
-category: ai
+category: Agent
 image: "/meshblog/og/posts/03-agentic-llms-survey-intro.svg"
 ---
 [[paper link]](https://arxiv.org/abs/2503.23037)
