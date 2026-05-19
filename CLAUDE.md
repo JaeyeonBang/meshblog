@@ -127,14 +127,22 @@ After the **2026-05-17 posts-first pivot**, `content/posts/` is the primary auth
 
 ## Skills (`.claude/skills/`)
 
+**Use skills first for routine workflows.** This repo has skills wired up for the common multi-step jobs (publishing, shipping, refreshing the index, drafting). Do NOT hand-run the underlying `bun run ...` + `git ...` + `gh pr ...` sequence when a skill matches — it wastes turns and bypasses guardrails the skill author built in. Scan this table before reaching for Bash.
+
 | Skill | Use when |
 | :--- | :--- |
 | `new-post` | Scaffold a draft post in `content/posts/` (default). `--as=note` writes to `content/notes/` for vault-style atomic notes. |
 | `new-bilingual-post` | Scaffold KO + EN companion files in `content/posts/`. `--as=note` for the legacy notes/ behavior. |
+| `draft-post` | User asks to draft / fill body content for a post from a source (URL, paper, notes). Reads `content/writing_guide.md` first. |
+| `publish` | User says "publish", "release", "let's ship this post", "이거 올려줘", "배포". Runs the post-publish pipeline (build-og → audit → astro check → fixture build → commit → push → PR / CI watch). |
+| `refresh` | After bulk content edits: `build-tokens → build-index → build-backlinks → preview`. Use when wikilinks/backlinks/graph need to catch up. |
+| `suggest-links` | Fill `related:` frontmatter on a post by suggesting sibling slugs from the index. |
+| `audit` | Before any commit touching UI code; runs the 6 editorial invariants. |
 | `design-md-sync` | User asks to change a color / font / spacing / any visual token |
 | `theme-variant` | User wants to preview or adopt variant A / B / C |
 | `component-extract` | Given a new HTML prototype section to turn into a scoped Astro component |
-| `audit` | Before any commit touching UI code; run `bun run audit` |
+
+**Fallback rule**: only walk the manual steps if (a) no skill matches, or (b) the user explicitly asks for granular control ("just commit, don't push", "skip the build"). When a skill covers 80% but the user has a custom ask (e.g. two separate commits), still invoke the skill and patch on top — don't bypass it.
 
 ## Components
 
