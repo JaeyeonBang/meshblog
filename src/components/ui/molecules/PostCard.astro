@@ -136,6 +136,23 @@ const tagsAttr = JSON.stringify(tags);
     gap: 28px;
     align-items: start;
   }
+  /* Grid items default to min-width:auto (=min-content), which forces the
+     1fr column to expand to its longest unbreakable word — long English titles
+     blow past narrow mobile viewports. Allow shrinking. */
+  .post-card.with-thumb .post-card-link > * {
+    min-width: 0;
+  }
+  /* Mobile: drop the 160px thumb column so titles and excerpts get the
+     full content width. Below 480px the thumb is barely useful anyway. */
+  @media (max-width: 480px) {
+    .post-card.with-thumb .post-card-link {
+      grid-template-columns: 1fr;
+      gap: var(--space-3);
+    }
+    .post-card.with-thumb .thumb {
+      display: none;
+    }
+  }
 
   /* ── Featured variant ─────────────────────────────────── */
   .post-card.featured {
