@@ -168,17 +168,23 @@ function categoryToGraphJson(
   }
 
   if (level === 2) {
-    const posts = data.postsByCategory[categorySlug] ?? []
-    const nodes: GraphNode[] = posts.map(p => ({
+    // L2 shows ALL posts across every category, not just the one clicked at L1.
+    // The selected category gets full pagerank weight (larger circle); other
+    // categories render at a lower weight so the drill-in cue stays readable
+    // while the user still sees neighbouring categories + their cross-edges.
+    // colorByCategory (set on the force-simulation hook) distinguishes them
+    // and populates the legend with every category present.
+    const allPosts = Object.values(data.postsByCategory).flat()
+    const nodes: GraphNode[] = allPosts.map(p => ({
       id: p.id,
       label: p.label,
       type: 'note' as NodeKind,
       level: 2 as const,
-      pagerank: 0,
+      pagerank: p.categorySlug === categorySlug ? 1 : 0.4,
       pinned: false,
       categorySlug: p.categorySlug,
     }))
-    const visibleIds = new Set(posts.map(p => p.id))
+    const visibleIds = new Set(allPosts.map(p => p.id))
     const links = globalNoteEdges ? filterEdgesToNodeSet(globalNoteEdges, visibleIds) : []
     return { nodes, links }
   }
