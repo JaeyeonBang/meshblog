@@ -267,9 +267,22 @@ export default function GraphView() {
         const next = n as Level
         setLevel(next)
         setTaxonomy(prev => {
-          // If clicking L2/L3 with no category selected, auto-select biggest category
+          // If clicking L2/L3 with no category selected, auto-select biggest category.
+          // Mirror the setCategory dispatch so the SELECTED · CATEGORY sidebar
+          // populates with the chosen category's counts — otherwise the sidebar
+          // stays on its placeholder (or stale state from a prior click).
           if ((next === 2 || next === 3) && !prev.categorySlug && categoryData) {
             const biggest = categoryData.categories[0]
+            if (biggest) {
+              window.dispatchEvent(new CustomEvent('graph:setCategory', {
+                detail: {
+                  slug: biggest.id,
+                  label: normalizeLabel(biggest.id, biggest.label),
+                  noteCount: biggest.noteCount,
+                  postCount: biggest.postCount,
+                },
+              }))
+            }
             return { level: next, categorySlug: biggest?.id }
           }
           return { ...prev, level: next }

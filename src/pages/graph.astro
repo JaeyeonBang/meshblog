@@ -220,13 +220,16 @@ import { withBase } from '../lib/url'
     }
   })
 
-  // ── graph:setCategory listener — dispatched when an L1 category node is clicked.
+  // ── graph:setCategory listener — dispatched when an L1 category node is clicked
+  //    OR when L2/L3 auto-selects the biggest category (no L1 click required).
+  //    Counts are optional: synthetic dispatchers (tests, devtools) may omit
+  //    them, and the auto-select path before categoryData hydrates also may.
   window.addEventListener('graph:setCategory', (e: Event) => {
     const detail = (e as CustomEvent<{
       slug: string
       label: string
-      noteCount: number
-      postCount: number
+      noteCount?: number
+      postCount?: number
     }>).detail
     const titleEl = document.getElementById('graphSelectedTitle')
     const metaEl = document.getElementById('graphSelectedMeta')
@@ -234,9 +237,18 @@ import { withBase } from '../lib/url'
     const openBtn = document.getElementById('graphOpenBtn') as HTMLAnchorElement | null
     const blockLabel = document.querySelector<HTMLElement>('.graph-aside .block-label')
 
+    // Format counts: drop zero-segments so "0 notes · 7 posts" reads as "7 posts".
+    // Fall back to '—' when both are missing or zero (matches the placeholder).
+    const noteN = typeof detail.noteCount === 'number' ? detail.noteCount : 0
+    const postN = typeof detail.postCount === 'number' ? detail.postCount : 0
+    const parts: string[] = []
+    if (noteN > 0) parts.push(`${noteN} note${noteN === 1 ? '' : 's'}`)
+    if (postN > 0) parts.push(`${postN} post${postN === 1 ? '' : 's'}`)
+    const metaText = parts.length > 0 ? parts.join(' · ') : '—'
+
     if (blockLabel) blockLabel.textContent = 'selected · category'
     if (titleEl) titleEl.textContent = detail.label
-    if (metaEl) metaEl.textContent = `${detail.noteCount} notes · ${detail.postCount} posts`
+    if (metaEl) metaEl.textContent = metaText
     if (excerptEl) excerptEl.textContent = `slug: ${detail.slug}`
     if (openBtn) {
       const catHref = `/meshblog/categories/${detail.slug}/`
