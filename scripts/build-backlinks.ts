@@ -31,6 +31,8 @@ export type NoteStub = {
   category_slug?: string | null
   /** JSON-serialised string[] — e.g. '["PPO","RLHF"]'. Defaults to '[]'. */
   aliases?: string
+  /** JSON-serialised string[] of related slugs from frontmatter. Defaults to '[]'. */
+  related?: string
 }
 
 export type BacklinksJson = {
@@ -54,7 +56,7 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
   // 1. Load all notes if not provided
   const allNotes: NoteStub[] =
     opts.notes ??
-    queryMany<NoteStub>(db, "SELECT id, title, content, category_slug, aliases FROM notes", [])
+    queryMany<NoteStub>(db, "SELECT id, title, content, category_slug, aliases, related FROM notes", [])
 
   // 2. Build alias-aware resolver using shared factory
   const notesForResolver = allNotes.map((n) => {
@@ -160,12 +162,18 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
   const nodeSet = new Set<string>()
   const edges: BacklinksJson["edges"] = []
 
+  // Dedupe key for (source, target) pairs across wikilink + related sources.
+  const edgeKey = (s: string, t: string) => `${s}${t}`
+  const seenEdges = new Set<string>()
+
   for (const row of rows) {
     if (row.target_id === null) continue
-    // hidden mode: skip any edge that touches an L3 node
     if (l3Visibility === "hidden" && (l3Slugs.has(row.source_id) || l3Slugs.has(row.target_id))) {
       continue
     }
+    const k = edgeKey(row.source_id, row.target_id)
+    if (seenEdges.has(k)) continue
+    seenEdges.add(k)
     nodeSet.add(row.source_id)
     nodeSet.add(row.target_id)
     const edge: BacklinksJson["edges"][number] = {
@@ -174,6 +182,38 @@ export function runBuildBacklinks(opts: BuildBacklinksOptions): BacklinksJson {
     }
     if (row.alias) edge.alias = row.alias
     edges.push(edge)
+  }
+
+  // Also fold in frontmatter `related:` edges. These have no surface alias
+  // (the relation is declared in YAML, not inline body text). We treat them
+  // as plain backlink edges so /graph?mode=backlinks shows the curated mesh
+  // without requiring [[wikilink]] body syntax.
+  const knownIds = new Set(allNotes.map((n) => n.id))
+  let relatedEdgesAdded = 0
+  for (const note of allNotes) {
+    if (!note.related) continue
+    let relSlugs: string[]
+    try {
+      const parsed = JSON.parse(note.related)
+      relSlugs = Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === "string") : []
+    } catch {
+      continue
+    }
+    for (const target of relSlugs) {
+      if (!knownIds.has(target)) continue
+      if (note.id === target) continue
+      if (l3Visibility === "hidden" && (l3Slugs.has(note.id) || l3Slugs.has(target))) continue
+      const k = edgeKey(note.id, target)
+      if (seenEdges.has(k)) continue
+      seenEdges.add(k)
+      nodeSet.add(note.id)
+      nodeSet.add(target)
+      edges.push({ source: note.id, target })
+      relatedEdgesAdded++
+    }
+  }
+  if (relatedEdgesAdded > 0) {
+    console.log(`[build-backlinks] +${relatedEdgesAdded} edges from related: frontmatter`)
   }
 
   // Build title + category maps from allNotes
