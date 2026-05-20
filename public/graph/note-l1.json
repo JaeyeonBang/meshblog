@@ -1,0 +1,71 @@
+{
+  "nodes": [
+    {
+      "id": "fixture-ts-generics",
+      "label": "TypeScript Generics: A Practical Guide",
+      "type": "note",
+      "categorySlug": "engineering",
+      "level": 1,
+      "pagerank": 0.07244540220248104,
+      "pinned": false
+    },
+    {
+      "id": "fixture-sqlite-patterns",
+      "label": "Better-SQLite3 Patterns",
+      "type": "note",
+      "categorySlug": "engineering",
+      "level": 1,
+      "pagerank": 0.050253984300586425,
+      "pinned": true
+    },
+    {
+      "id": "01-deep-rl-from-human-preferences",
+      "label": "Deep Reinforcement Learning from Human Preferences",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 1,
+      "pagerank": 0.07711646202225853,
+      "pinned": false
+    },
+    {
+      "id": "08-lora",
+      "label": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 1,
+      "pagerank": 0.08255583252716639,
+      "pinned": false
+    },
+    {
+      "id": "11-rlpr",
+      "label": "RLPR: EXTRAPOLATING RLVR TO GENERAL DO MAINS WITHOUT VERIFIERS",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 1,
+      "pagerank": 0.09499997421835447,
+      "pinned": false
+    }
+  ],
+  "links": [
+    {
+      "source": "01-deep-rl-from-human-preferences",
+      "target": "08-lora",
+      "weight": 2
+    },
+    {
+      "source": "01-deep-rl-from-human-preferences",
+      "target": "11-rlpr",
+      "weight": 3
+    },
+    {
+      "source": "08-lora",
+      "target": "11-rlpr",
+      "weight": 1
+    },
+    {
+      "source": "fixture-sqlite-patterns",
+      "target": "fixture-ts-generics",
+      "weight": 1
+    }
+  ]
+}

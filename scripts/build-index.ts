@@ -381,9 +381,9 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
   // ── Stage 4: Backlinks (D4) ───────────────────────────────────────────────
   try {
     const { runBuildBacklinks } = await import("./build-backlinks.ts")
-    const allNotes = queryMany<{ id: string; title: string; content: string; category_slug: string | null; aliases: string }>(
+    const allNotes = queryMany<{ id: string; title: string; content: string; category_slug: string | null; aliases: string; related: string }>(
       db,
-      "SELECT id, title, content, category_slug, aliases FROM notes",
+      "SELECT id, title, content, category_slug, aliases, related FROM notes",
       [],
     )
     runBuildBacklinks({ db, notes: allNotes })

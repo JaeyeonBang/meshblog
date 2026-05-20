@@ -1,0 +1,273 @@
+{
+  "nodes": [
+    {
+      "id": "fixture-ts-generics",
+      "label": "TypeScript Generics: A Practical Guide",
+      "type": "note",
+      "categorySlug": "engineering",
+      "level": 1,
+      "pagerank": 0.07244540220248104,
+      "pinned": false
+    },
+    {
+      "id": "fixture-sqlite-patterns",
+      "label": "Better-SQLite3 Patterns",
+      "type": "note",
+      "categorySlug": "engineering",
+      "level": 1,
+      "pagerank": 0.050253984300586425,
+      "pinned": true
+    },
+    {
+      "id": "fixture-rag-overview",
+      "label": "RAG: Retrieval-Augmented Generation",
+      "type": "note",
+      "categorySlug": "ai",
+      "level": 2,
+      "pagerank": 0.07244540220248104,
+      "pinned": false
+    },
+    {
+      "id": "fixture-graph-algorithms",
+      "label": "Graph Algorithms with Graphology",
+      "type": "note",
+      "categorySlug": "engineering",
+      "level": 2,
+      "pagerank": 0.050253984300586425,
+      "pinned": true
+    },
+    {
+      "id": "01-deep-rl-from-human-preferences",
+      "label": "Deep Reinforcement Learning from Human Preferences",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 1,
+      "pagerank": 0.07711646202225853,
+      "pinned": false
+    },
+    {
+      "id": "02-agent-ai-paper-list",
+      "label": "Agent AI 논문 리스트 — 카테고리별 정리와 핵심 기여",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 2,
+      "pagerank": 0.06731683481134329,
+      "pinned": false
+    },
+    {
+      "id": "03-agentic-llms-survey-intro",
+      "label": "Agentic Large Language Models, a survey, review: Intro",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 2,
+      "pagerank": 0.06825819448128402,
+      "pinned": false
+    },
+    {
+      "id": "07-agentic-llms-survey-interacting",
+      "label": "Agentic Large Language Models, a survey, review: Interacting",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 2,
+      "pagerank": 0.06731223707840706,
+      "pinned": false
+    },
+    {
+      "id": "08-lora",
+      "label": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 1,
+      "pagerank": 0.08255583252716639,
+      "pinned": false
+    },
+    {
+      "id": "09-ppo",
+      "label": "PPO 개념 간단 요약",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 2,
+      "pagerank": 0.06202739359997132,
+      "pinned": false
+    },
+    {
+      "id": "10-deepseek-math",
+      "label": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 2,
+      "pagerank": 0.054339871930250166,
+      "pinned": false
+    },
+    {
+      "id": "11-rlpr",
+      "label": "RLPR: EXTRAPOLATING RLVR TO GENERAL DO MAINS WITHOUT VERIFIERS",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 1,
+      "pagerank": 0.09499997421835447,
+      "pinned": false
+    },
+    {
+      "id": "12-transformer-self-attention",
+      "label": "트랜스포머(Transformer) 완벽 이해 — Self-Attention, Multi-Head, Positional Encoding",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 2,
+      "pagerank": 0.05311957752989963,
+      "pinned": false
+    }
+  ],
+  "links": [
+    {
+      "source": "01-deep-rl-from-human-preferences",
+      "target": "03-agentic-llms-survey-intro",
+      "weight": 2
+    },
+    {
+      "source": "01-deep-rl-from-human-preferences",
+      "target": "07-agentic-llms-survey-interacting",
+      "weight": 1
+    },
+    {
+      "source": "01-deep-rl-from-human-preferences",
+      "target": "08-lora",
+      "weight": 2
+    },
+    {
+      "source": "01-deep-rl-from-human-preferences",
+      "target": "09-ppo",
+      "weight": 4
+    },
+    {
+      "source": "01-deep-rl-from-human-preferences",
+      "target": "10-deepseek-math",
+      "weight": 2
+    },
+    {
+      "source": "01-deep-rl-from-human-preferences",
+      "target": "11-rlpr",
+      "weight": 3
+    },
+    {
+      "source": "02-agent-ai-paper-list",
+      "target": "07-agentic-llms-survey-interacting",
+      "weight": 3
+    },
+    {
+      "source": "02-agent-ai-paper-list",
+      "target": "10-deepseek-math",
+      "weight": 2
+    },
+    {
+      "source": "02-agent-ai-paper-list",
+      "target": "11-rlpr",
+      "weight": 1
+    },
+    {
+      "source": "03-agentic-llms-survey-intro",
+      "target": "07-agentic-llms-survey-interacting",
+      "weight": 1
+    },
+    {
+      "source": "03-agentic-llms-survey-intro",
+      "target": "08-lora",
+      "weight": 5
+    },
+    {
+      "source": "03-agentic-llms-survey-intro",
+      "target": "09-ppo",
+      "weight": 1
+    },
+    {
+      "source": "03-agentic-llms-survey-intro",
+      "target": "10-deepseek-math",
+      "weight": 1
+    },
+    {
+      "source": "03-agentic-llms-survey-intro",
+      "target": "11-rlpr",
+      "weight": 1
+    },
+    {
+      "source": "07-agentic-llms-survey-interacting",
+      "target": "08-lora",
+      "weight": 1
+    },
+    {
+      "source": "07-agentic-llms-survey-interacting",
+      "target": "09-ppo",
+      "weight": 1
+    },
+    {
+      "source": "07-agentic-llms-survey-interacting",
+      "target": "10-deepseek-math",
+      "weight": 1
+    },
+    {
+      "source": "07-agentic-llms-survey-interacting",
+      "target": "11-rlpr",
+      "weight": 2
+    },
+    {
+      "source": "08-lora",
+      "target": "09-ppo",
+      "weight": 1
+    },
+    {
+      "source": "08-lora",
+      "target": "11-rlpr",
+      "weight": 1
+    },
+    {
+      "source": "08-lora",
+      "target": "12-transformer-self-attention",
+      "weight": 2
+    },
+    {
+      "source": "09-ppo",
+      "target": "10-deepseek-math",
+      "weight": 1
+    },
+    {
+      "source": "09-ppo",
+      "target": "11-rlpr",
+      "weight": 3
+    },
+    {
+      "source": "10-deepseek-math",
+      "target": "11-rlpr",
+      "weight": 2
+    },
+    {
+      "source": "11-rlpr",
+      "target": "12-transformer-self-attention",
+      "weight": 2
+    },
+    {
+      "source": "fixture-graph-algorithms",
+      "target": "fixture-rag-overview",
+      "weight": 1
+    },
+    {
+      "source": "fixture-graph-algorithms",
+      "target": "fixture-ts-generics",
+      "weight": 1
+    },
+    {
+      "source": "fixture-rag-overview",
+      "target": "fixture-sqlite-patterns",
+      "weight": 1
+    },
+    {
+      "source": "fixture-rag-overview",
+      "target": "fixture-ts-generics",
+      "weight": 1
+    },
+    {
+      "source": "fixture-sqlite-patterns",
+      "target": "fixture-ts-generics",
+      "weight": 1
+    }
+  ]
+}

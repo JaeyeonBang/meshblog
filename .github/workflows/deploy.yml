@@ -54,7 +54,15 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Export graph
-        run: bun run export-graph
+        run: |
+          # Skip when committed JSON exists — CI has no claude CLI to populate
+          # the entity/concept tables, so re-running export-graph would overwrite
+          # the locally-built mesh with empty arrays.
+          if [ -f public/graph/note-l3.json ] && [ -s public/graph/note-l3.json ]; then
+            echo "::notice::public/graph/note-l3.json present + non-empty — using committed JSON"
+          else
+            bun run export-graph
+          fi
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
@@ -67,7 +75,14 @@ jobs:
           fi
 
       - name: Cluster communities (Louvain grayscale differentiation)
-        run: bun run cluster-communities
+        run: |
+          # Same rationale as export-graph: committed JSON already has clusters
+          # assigned. Re-running on empty entities would strip them.
+          if [ -f public/graph/concept-l3.json ] && [ -s public/graph/concept-l3.json ]; then
+            echo "::notice::public/graph/concept-l3.json present + non-empty — using committed JSON"
+          else
+            bun run cluster-communities
+          fi
 
       - name: Build backlinks graph
         run: bun run build-backlinks

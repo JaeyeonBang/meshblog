@@ -1,0 +1,706 @@
+{
+  "nodes": [
+    {
+      "id": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "label": "reinforcement learning methods",
+      "type": "concept",
+      "level": 1,
+      "pagerank": 0.07034194681353884,
+      "pinned": false
+    },
+    {
+      "id": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "label": "rag infrastructure stack",
+      "type": "concept",
+      "level": 1,
+      "pagerank": 0.049460844303949925,
+      "pinned": false
+    },
+    {
+      "id": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "label": "llm math reasoning and rl training",
+      "type": "concept",
+      "level": 1,
+      "pagerank": 0.06409370157730486,
+      "pinned": false
+    },
+    {
+      "id": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "label": "sequence modeling and attention",
+      "type": "concept",
+      "level": 1,
+      "pagerank": 0.05858551083780332,
+      "pinned": false
+    },
+    {
+      "id": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "label": "large language model foundations",
+      "type": "concept",
+      "level": 1,
+      "pagerank": 0.0518857376018247,
+      "pinned": false
+    },
+    {
+      "id": "b23f1859-043f-4998-a3c0-abbf222a735c",
+      "label": "preference-based reinforcement learning",
+      "type": "concept",
+      "level": 2,
+      "pagerank": 0.029958118019325426,
+      "pinned": false
+    },
+    {
+      "id": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "label": "llm reasoning techniques",
+      "type": "concept",
+      "level": 1,
+      "pagerank": 0.051161750450656795,
+      "pinned": false
+    },
+    {
+      "id": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "label": "agentic llm systems",
+      "type": "concept",
+      "level": 2,
+      "pagerank": 0.04822129132506482,
+      "pinned": false
+    },
+    {
+      "id": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "label": "multi-agent social simulation",
+      "type": "concept",
+      "level": 2,
+      "pagerank": 0.046331766142236955,
+      "pinned": false
+    },
+    {
+      "id": "b64d941f-e74b-42b5-8cf4-59453627fa35",
+      "label": "writing and learning practices",
+      "type": "concept",
+      "level": 2,
+      "pagerank": 0.03333333333333333,
+      "pinned": false
+    },
+    {
+      "id": "ac6f9637-d0b6-41b7-bbd8-2d6a327e879c",
+      "label": "llm agents and benchmarks",
+      "type": "concept",
+      "level": 2,
+      "pagerank": 0.029090336925866826,
+      "pinned": false
+    },
+    {
+      "id": "47834bf1-09f4-4c40-9626-27a7177c9ac0",
+      "label": "a2a agent interoperability protocol",
+      "type": "concept",
+      "level": 2,
+      "pagerank": 0.03333333333333333,
+      "pinned": false
+    },
+    {
+      "id": "06-agentic-llms-survey-acting",
+      "label": "Agentic Large Language Models, a survey, review: Acting",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 3,
+      "pagerank": 0.028568187897359213,
+      "pinned": false
+    },
+    {
+      "id": "02-agent-ai-paper-list",
+      "label": "Agent AI 논문 리스트 — 카테고리별 정리와 핵심 기여",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 2,
+      "pagerank": 0.03462928132153857,
+      "pinned": false
+    },
+    {
+      "id": "07-agentic-llms-survey-interacting",
+      "label": "Agentic Large Language Models, a survey, review: Interacting",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 2,
+      "pagerank": 0.03168912360853886,
+      "pinned": false
+    },
+    {
+      "id": "04-agentic-llms-survey-reasoning",
+      "label": "Agentic Large Language Models, a survey, review: Reasoning",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 2,
+      "pagerank": 0.032740930499498014,
+      "pinned": false
+    },
+    {
+      "id": "11-rlpr",
+      "label": "RLPR: EXTRAPOLATING RLVR TO GENERAL DO MAINS WITHOUT VERIFIERS",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 2,
+      "pagerank": 0.03101005721356716,
+      "pinned": false
+    },
+    {
+      "id": "10-deepseek-math",
+      "label": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 2,
+      "pagerank": 0.02561791163629573,
+      "pinned": false
+    },
+    {
+      "id": "01-deep-rl-from-human-preferences",
+      "label": "Deep Reinforcement Learning from Human Preferences",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 3,
+      "pagerank": 0.030884344159788846,
+      "pinned": false
+    },
+    {
+      "id": "09-ppo",
+      "label": "PPO 개념 간단 요약",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 2,
+      "pagerank": 0.021197176166742125,
+      "pinned": false
+    },
+    {
+      "id": "03-agentic-llms-survey-intro",
+      "label": "Agentic Large Language Models, a survey, review: Intro",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 2,
+      "pagerank": 0.026455618989919806,
+      "pinned": false
+    },
+    {
+      "id": "a2a-protocol",
+      "label": "A2A Protocol  — 에이전트 간 협업의 핵심 개념",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 2,
+      "pagerank": 0.03333333333333333,
+      "pinned": false
+    },
+    {
+      "id": "05-seq2seq",
+      "label": "Seq2Seq — Encoder-Decoder 구조와 시퀀스 변환의 시작",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 2,
+      "pagerank": 0.026461123016169034,
+      "pinned": false
+    },
+    {
+      "id": "12-transformer-self-attention",
+      "label": "트랜스포머(Transformer) 완벽 이해 — Self-Attention, Multi-Head, Positional Encoding",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 2,
+      "pagerank": 0.023919747351855928,
+      "pinned": false
+    },
+    {
+      "id": "08-lora",
+      "label": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "type": "note",
+      "categorySlug": "llm",
+      "level": 2,
+      "pagerank": 0.026277178494328545,
+      "pinned": false
+    },
+    {
+      "id": "fixture-글쓰기-철학",
+      "label": "개발자의 글쓰기 철학",
+      "type": "note",
+      "categorySlug": "writing",
+      "level": 2,
+      "pagerank": 0.03333333333333333,
+      "pinned": false
+    },
+    {
+      "id": "fixture-rag-overview",
+      "label": "RAG: Retrieval-Augmented Generation",
+      "type": "note",
+      "categorySlug": "ai",
+      "level": 2,
+      "pagerank": 0.008233992925396994,
+      "pinned": false
+    },
+    {
+      "id": "fixture-ts-generics",
+      "label": "TypeScript Generics: A Practical Guide",
+      "type": "note",
+      "categorySlug": "engineering",
+      "level": 3,
+      "pagerank": 0.0066169964626984976,
+      "pinned": false
+    },
+    {
+      "id": "fixture-sqlite-patterns",
+      "label": "Better-SQLite3 Patterns",
+      "type": "note",
+      "categorySlug": "engineering",
+      "level": 3,
+      "pagerank": 0.0066169964626984976,
+      "pinned": false
+    },
+    {
+      "id": "fixture-graph-algorithms",
+      "label": "Graph Algorithms with Graphology",
+      "type": "note",
+      "categorySlug": "engineering",
+      "level": 3,
+      "pagerank": 0.0066169964626984976,
+      "pinned": false
+    }
+  ],
+  "links": [
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "weight": 2
+    },
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "weight": 3
+    },
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "weight": 2
+    },
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "weight": 1
+    },
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "ac6f9637-d0b6-41b7-bbd8-2d6a327e879c",
+      "weight": 1
+    },
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "weight": 3
+    },
+    {
+      "source": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "target": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "weight": 3
+    },
+    {
+      "source": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "target": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "weight": 2
+    },
+    {
+      "source": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "target": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "weight": 1
+    },
+    {
+      "source": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "target": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "weight": 2
+    },
+    {
+      "source": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "target": "ac6f9637-d0b6-41b7-bbd8-2d6a327e879c",
+      "weight": 1
+    },
+    {
+      "source": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "weight": 3
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "weight": 4
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "weight": 1
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "weight": 6
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "weight": 2
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "ac6f9637-d0b6-41b7-bbd8-2d6a327e879c",
+      "weight": 1
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "b23f1859-043f-4998-a3c0-abbf222a735c",
+      "weight": 2
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "weight": 4
+    },
+    {
+      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "target": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "weight": 1
+    },
+    {
+      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "target": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "weight": 2
+    },
+    {
+      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "target": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "weight": 1
+    },
+    {
+      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "target": "ac6f9637-d0b6-41b7-bbd8-2d6a327e879c",
+      "weight": 1
+    },
+    {
+      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "weight": 3
+    },
+    {
+      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "target": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "weight": 3
+    },
+    {
+      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "target": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "weight": 1
+    },
+    {
+      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "weight": 1
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "weight": 3
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "b23f1859-043f-4998-a3c0-abbf222a735c",
+      "weight": 2
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "weight": 2
+    },
+    {
+      "source": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "target": "b23f1859-043f-4998-a3c0-abbf222a735c",
+      "weight": 1
+    },
+    {
+      "source": "ac6f9637-d0b6-41b7-bbd8-2d6a327e879c",
+      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "weight": 1
+    },
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "06-agentic-llms-survey-acting",
+      "weight": 23,
+      "type": "mentions"
+    },
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "02-agent-ai-paper-list",
+      "weight": 3,
+      "type": "mentions"
+    },
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "07-agentic-llms-survey-interacting",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "0caa0c58-35b6-49a7-befd-b09d4e3fa701",
+      "target": "04-agentic-llms-survey-reasoning",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "target": "07-agentic-llms-survey-interacting",
+      "weight": 22,
+      "type": "mentions"
+    },
+    {
+      "source": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "target": "02-agent-ai-paper-list",
+      "weight": 2,
+      "type": "mentions"
+    },
+    {
+      "source": "21fa5369-798f-4032-aed5-49fe97fcf9a5",
+      "target": "11-rlpr",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "10-deepseek-math",
+      "weight": 21,
+      "type": "mentions"
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "11-rlpr",
+      "weight": 3,
+      "type": "mentions"
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "02-agent-ai-paper-list",
+      "weight": 2,
+      "type": "mentions"
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "01-deep-rl-from-human-preferences",
+      "weight": 2,
+      "type": "mentions"
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "09-ppo",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "07-agentic-llms-survey-interacting",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "04-agentic-llms-survey-reasoning",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
+      "target": "03-agentic-llms-survey-intro",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "47834bf1-09f4-4c40-9626-27a7177c9ac0",
+      "target": "a2a-protocol",
+      "weight": 20,
+      "type": "mentions"
+    },
+    {
+      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "target": "04-agentic-llms-survey-reasoning",
+      "weight": 25,
+      "type": "mentions"
+    },
+    {
+      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "target": "02-agent-ai-paper-list",
+      "weight": 2,
+      "type": "mentions"
+    },
+    {
+      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "target": "11-rlpr",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "target": "03-agentic-llms-survey-intro",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "target": "05-seq2seq",
+      "weight": 25,
+      "type": "mentions"
+    },
+    {
+      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "target": "12-transformer-self-attention",
+      "weight": 21,
+      "type": "mentions"
+    },
+    {
+      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "target": "08-lora",
+      "weight": 3,
+      "type": "mentions"
+    },
+    {
+      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "target": "11-rlpr",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "11-rlpr",
+      "weight": 21,
+      "type": "mentions"
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "09-ppo",
+      "weight": 16,
+      "type": "mentions"
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "01-deep-rl-from-human-preferences",
+      "weight": 4,
+      "type": "mentions"
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "12-transformer-self-attention",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "10-deepseek-math",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "08-lora",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "07-agentic-llms-survey-interacting",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "target": "03-agentic-llms-survey-intro",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "target": "03-agentic-llms-survey-intro",
+      "weight": 22,
+      "type": "mentions"
+    },
+    {
+      "source": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "target": "08-lora",
+      "weight": 21,
+      "type": "mentions"
+    },
+    {
+      "source": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "target": "01-deep-rl-from-human-preferences",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "ac6f9637-d0b6-41b7-bbd8-2d6a327e879c",
+      "target": "02-agent-ai-paper-list",
+      "weight": 17,
+      "type": "mentions"
+    },
+    {
+      "source": "b23f1859-043f-4998-a3c0-abbf222a735c",
+      "target": "01-deep-rl-from-human-preferences",
+      "weight": 20,
+      "type": "mentions"
+    },
+    {
+      "source": "b23f1859-043f-4998-a3c0-abbf222a735c",
+      "target": "09-ppo",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "b64d941f-e74b-42b5-8cf4-59453627fa35",
+      "target": "fixture-글쓰기-철학",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "target": "fixture-rag-overview",
+      "weight": 2,
+      "type": "mentions"
+    },
+    {
+      "source": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "target": "fixture-ts-generics",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "target": "fixture-sqlite-patterns",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "target": "fixture-graph-algorithms",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "target": "11-rlpr",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "target": "07-agentic-llms-survey-interacting",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "target": "04-agentic-llms-survey-reasoning",
+      "weight": 1,
+      "type": "mentions"
+    },
+    {
+      "source": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "target": "02-agent-ai-paper-list",
+      "weight": 1,
+      "type": "mentions"
+    }
+  ]
+}
