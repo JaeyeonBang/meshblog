@@ -180,7 +180,10 @@ function categoryToGraphJson(
       label: p.label,
       type: 'note' as NodeKind,
       level: 2 as const,
-      pagerank: p.categorySlug === categorySlug ? 1 : 0.4,
+      // Visual weight, not graph-pagerank. nodeRadius takes sqrt(pr*500) so
+      // raw 1 → 22px, way past the 12px cap. Use small bounded values that
+      // still let the selected category read as ~1.6× the radius of siblings.
+      pagerank: p.categorySlug === categorySlug ? 0.05 : 0.02,
       pinned: false,
       categorySlug: p.categorySlug,
     }))

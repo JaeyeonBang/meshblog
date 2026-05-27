@@ -6,7 +6,7 @@
       "type": "note",
       "categorySlug": "engineering",
       "level": 1,
-      "pagerank": 0.07244540220248104,
+      "pagerank": 0.05860319579779458,
       "pinned": false
     },
     {
@@ -15,7 +15,7 @@
       "type": "note",
       "categorySlug": "engineering",
       "level": 1,
-      "pagerank": 0.050253984300586425,
+      "pagerank": 0.04065238732875627,
       "pinned": true
     },
     {
@@ -24,7 +24,7 @@
       "type": "note",
       "categorySlug": "ai",
       "level": 2,
-      "pagerank": 0.07244540220248104,
+      "pagerank": 0.05860319579779458,
       "pinned": false
     },
     {
@@ -33,7 +33,7 @@
       "type": "note",
       "categorySlug": "engineering",
       "level": 2,
-      "pagerank": 0.050253984300586425,
+      "pagerank": 0.04065238732875627,
       "pinned": true
     },
     {
@@ -41,8 +41,8 @@
       "label": "Deep Reinforcement Learning from Human Preferences",
       "type": "note",
       "categorySlug": "llm",
-      "level": 1,
-      "pagerank": 0.07711646202225853,
+      "level": 2,
+      "pagerank": 0.04737763169136903,
       "pinned": false
     },
     {
@@ -51,7 +51,7 @@
       "type": "note",
       "categorySlug": "agent",
       "level": 2,
-      "pagerank": 0.06731683481134329,
+      "pagerank": 0.05443370174073498,
       "pinned": false
     },
     {
@@ -59,8 +59,17 @@
       "label": "Agentic Large Language Models, a survey, review: Intro",
       "type": "note",
       "categorySlug": "agent",
+      "level": 1,
+      "pagerank": 0.06452921203842563,
+      "pinned": false
+    },
+    {
+      "id": "06-agentic-llms-survey-acting",
+      "label": "Agentic Large Language Models, a survey, review: Acting",
+      "type": "note",
+      "categorySlug": "agent",
       "level": 2,
-      "pagerank": 0.06825819448128402,
+      "pagerank": 0.022007587798390522,
       "pinned": false
     },
     {
@@ -68,8 +77,8 @@
       "label": "Agentic Large Language Models, a survey, review: Interacting",
       "type": "note",
       "categorySlug": "agent",
-      "level": 2,
-      "pagerank": 0.06731223707840706,
+      "level": 1,
+      "pagerank": 0.0805921354942407,
       "pinned": false
     },
     {
@@ -78,16 +87,7 @@
       "type": "note",
       "categorySlug": "llm",
       "level": 1,
-      "pagerank": 0.08255583252716639,
-      "pinned": false
-    },
-    {
-      "id": "09-ppo",
-      "label": "PPO 개념 간단 요약",
-      "type": "note",
-      "categorySlug": "llm",
-      "level": 2,
-      "pagerank": 0.06202739359997132,
+      "pagerank": 0.06055883015445124,
       "pinned": false
     },
     {
@@ -96,7 +96,7 @@
       "type": "note",
       "categorySlug": "llm",
       "level": 2,
-      "pagerank": 0.054339871930250166,
+      "pagerank": 0.054016371769942714,
       "pinned": false
     },
     {
@@ -104,17 +104,35 @@
       "label": "RLPR: EXTRAPOLATING RLVR TO GENERAL DO MAINS WITHOUT VERIFIERS",
       "type": "note",
       "categorySlug": "llm",
-      "level": 1,
-      "pagerank": 0.09499997421835447,
+      "level": 2,
+      "pagerank": 0.05612170370942863,
       "pinned": false
     },
     {
-      "id": "12-transformer-self-attention",
-      "label": "트랜스포머(Transformer) 완벽 이해 — Self-Attention, Multi-Head, Positional Encoding",
+      "id": "a2a-enterprise-ready",
+      "label": "A2A Protocol — Enterprise-Ready, 기존 엔터프라이즈 위에 얹는다",
       "type": "note",
-      "categorySlug": "llm",
+      "categorySlug": "agent",
       "level": 2,
-      "pagerank": 0.05311957752989963,
+      "pagerank": 0.05267184579034388,
+      "pinned": false
+    },
+    {
+      "id": "a2a-life-of-a-task",
+      "label": "A2A Protocol — Life of a Task, 작업 하나의 일생",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 2,
+      "pagerank": 0.052357497074563275,
+      "pinned": false
+    },
+    {
+      "id": "a2a-protocol",
+      "label": "A2A Protocol  — 에이전트 간 협업의 핵심 개념",
+      "type": "note",
+      "categorySlug": "agent",
+      "level": 1,
+      "pagerank": 0.07395703934028026,
       "pinned": false
     }
   ],
@@ -122,22 +140,17 @@
     {
       "source": "01-deep-rl-from-human-preferences",
       "target": "03-agentic-llms-survey-intro",
-      "weight": 2
+      "weight": 1
     },
     {
       "source": "01-deep-rl-from-human-preferences",
       "target": "07-agentic-llms-survey-interacting",
-      "weight": 1
+      "weight": 2
     },
     {
       "source": "01-deep-rl-from-human-preferences",
       "target": "08-lora",
       "weight": 2
-    },
-    {
-      "source": "01-deep-rl-from-human-preferences",
-      "target": "09-ppo",
-      "weight": 4
     },
     {
       "source": "01-deep-rl-from-human-preferences",
@@ -147,12 +160,17 @@
     {
       "source": "01-deep-rl-from-human-preferences",
       "target": "11-rlpr",
-      "weight": 3
+      "weight": 1
+    },
+    {
+      "source": "02-agent-ai-paper-list",
+      "target": "06-agentic-llms-survey-acting",
+      "weight": 2
     },
     {
       "source": "02-agent-ai-paper-list",
       "target": "07-agentic-llms-survey-interacting",
-      "weight": 3
+      "weight": 2
     },
     {
       "source": "02-agent-ai-paper-list",
@@ -167,7 +185,7 @@
     {
       "source": "03-agentic-llms-survey-intro",
       "target": "07-agentic-llms-survey-interacting",
-      "weight": 1
+      "weight": 2
     },
     {
       "source": "03-agentic-llms-survey-intro",
@@ -176,17 +194,27 @@
     },
     {
       "source": "03-agentic-llms-survey-intro",
-      "target": "09-ppo",
-      "weight": 1
-    },
-    {
-      "source": "03-agentic-llms-survey-intro",
-      "target": "10-deepseek-math",
-      "weight": 1
-    },
-    {
-      "source": "03-agentic-llms-survey-intro",
       "target": "11-rlpr",
+      "weight": 1
+    },
+    {
+      "source": "03-agentic-llms-survey-intro",
+      "target": "a2a-enterprise-ready",
+      "weight": 1
+    },
+    {
+      "source": "03-agentic-llms-survey-intro",
+      "target": "a2a-life-of-a-task",
+      "weight": 1
+    },
+    {
+      "source": "03-agentic-llms-survey-intro",
+      "target": "a2a-protocol",
+      "weight": 1
+    },
+    {
+      "source": "06-agentic-llms-survey-acting",
+      "target": "07-agentic-llms-survey-interacting",
       "weight": 1
     },
     {
@@ -196,13 +224,8 @@
     },
     {
       "source": "07-agentic-llms-survey-interacting",
-      "target": "09-ppo",
-      "weight": 1
-    },
-    {
-      "source": "07-agentic-llms-survey-interacting",
       "target": "10-deepseek-math",
-      "weight": 1
+      "weight": 2
     },
     {
       "source": "07-agentic-llms-survey-interacting",
@@ -210,29 +233,19 @@
       "weight": 2
     },
     {
-      "source": "08-lora",
-      "target": "09-ppo",
+      "source": "07-agentic-llms-survey-interacting",
+      "target": "a2a-enterprise-ready",
       "weight": 1
     },
     {
-      "source": "08-lora",
-      "target": "11-rlpr",
+      "source": "07-agentic-llms-survey-interacting",
+      "target": "a2a-life-of-a-task",
       "weight": 1
     },
     {
-      "source": "08-lora",
-      "target": "12-transformer-self-attention",
-      "weight": 2
-    },
-    {
-      "source": "09-ppo",
-      "target": "10-deepseek-math",
+      "source": "07-agentic-llms-survey-interacting",
+      "target": "a2a-protocol",
       "weight": 1
-    },
-    {
-      "source": "09-ppo",
-      "target": "11-rlpr",
-      "weight": 3
     },
     {
       "source": "10-deepseek-math",
@@ -240,9 +253,19 @@
       "weight": 2
     },
     {
-      "source": "11-rlpr",
-      "target": "12-transformer-self-attention",
+      "source": "a2a-enterprise-ready",
+      "target": "a2a-life-of-a-task",
       "weight": 2
+    },
+    {
+      "source": "a2a-enterprise-ready",
+      "target": "a2a-protocol",
+      "weight": 4
+    },
+    {
+      "source": "a2a-life-of-a-task",
+      "target": "a2a-protocol",
+      "weight": 5
     },
     {
       "source": "fixture-graph-algorithms",

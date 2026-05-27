@@ -15,17 +15,19 @@ export type ZoomController = { zoomIn: () => void; zoomOut: () => void; reset: (
 type SimNode = GraphNode & d3Force.SimulationNodeDatum
 type SimLink = { source: SimNode; target: SimNode; weight: number; type?: string; alias?: string }
 
-/** Base radius per node kind. Tightened ~30% from the original sizing —
- *  at 30+ visible nodes in concept-l3 the previous floors crowded labels
- *  and made the canvas feel chunky. New defaults still keep category hubs
- *  the largest, concept nodes intermediate, notes smallest. */
+/** Base radius per node kind. Capped on both ends so an outlier pagerank
+ *  (e.g. selected-category L2 nodes which use pagerank=1 as a weight signal)
+ *  can't blow the radius past the visual budget. Caps: category 18px,
+ *  concept/note 12px. */
+const MAX_NODE_R = 12
+const MAX_CATEGORY_R = 18
+
 function nodeRadius(node: SimNode): number {
   if (node.type === 'category') {
-    // L1 category hubs: floor 11px (was 14), scale 0.95 instead of 1.4.
-    return Math.max(11, Math.sqrt(node.pagerank * 500) * 0.95)
+    return Math.min(MAX_CATEGORY_R, Math.max(11, Math.sqrt(node.pagerank * 500) * 0.95))
   }
-  const base = node.type === 'concept' ? 5 : 4  // was 7 / 5
-  return Math.max(base, Math.sqrt(node.pagerank * 500))
+  const base = node.type === 'concept' ? 5 : 4
+  return Math.min(MAX_NODE_R, Math.max(base, Math.sqrt(node.pagerank * 500)))
 }
 
 /** Radius scaled by inbound-degree (backlinks/directed mode only) */

@@ -1,123 +1,141 @@
 {
   "nodes": [
     {
-      "id": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
-      "label": "reinforcement learning methods",
+      "id": "287ff5e4-4543-4611-be40-bb17d2f98cd2",
+      "label": "enterprise agent communication infrastructure",
       "type": "concept",
       "level": 1,
-      "pagerank": 0.07034194681353884,
+      "pagerank": 0.06788082692287524,
       "pinned": false
     },
     {
-      "id": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "id": "43a5a05e-dbf9-4d44-9c1b-a928fa5cdb2d",
+      "label": "reinforcement learning from human feedback",
+      "type": "concept",
+      "level": 1,
+      "pagerank": 0.07603538266881102,
+      "pinned": false
+    },
+    {
+      "id": "1b617595-3891-475a-87a5-382317fda2fc",
+      "label": "llm training and agentic reasoning",
+      "type": "concept",
+      "level": 1,
+      "pagerank": 0.05283800964355074,
+      "pinned": false
+    },
+    {
+      "id": "6ba53c2f-8c7b-4315-9b1c-e35d779343d5",
       "label": "rag infrastructure stack",
       "type": "concept",
       "level": 1,
-      "pagerank": 0.049460844303949925,
+      "pagerank": 0.05295451037358162,
       "pinned": false
     },
     {
-      "id": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
-      "label": "llm math reasoning and rl training",
+      "id": "315a138f-3f2e-47b8-94e1-997adeb830a9",
+      "label": "sequence-to-sequence and attention architectures",
       "type": "concept",
       "level": 1,
-      "pagerank": 0.06409370157730486,
+      "pagerank": 0.04339637172270118,
       "pinned": false
     },
     {
-      "id": "948dc018-80f3-48f4-b83c-495e6609d42a",
-      "label": "sequence modeling and attention",
-      "type": "concept",
-      "level": 1,
-      "pagerank": 0.05858551083780332,
-      "pinned": false
-    },
-    {
-      "id": "a398cf04-917f-4848-9b43-164e4f544c80",
-      "label": "large language model foundations",
-      "type": "concept",
-      "level": 1,
-      "pagerank": 0.0518857376018247,
-      "pinned": false
-    },
-    {
-      "id": "494efff0-e667-485a-b4fe-956d3bbd99b2",
+      "id": "57970a45-24c3-428e-91ac-b9733d325ab3",
       "label": "llm reasoning techniques",
       "type": "concept",
       "level": 1,
-      "pagerank": 0.051161750450656795,
+      "pagerank": 0.03662244291709871,
+      "pinned": false
+    },
+    {
+      "id": "69959d22-8002-4903-9451-496a8977f250",
+      "label": "agentic llm tool use",
+      "type": "concept",
+      "level": 1,
+      "pagerank": 0.03609548695060871,
       "pinned": false
     }
   ],
   "links": [
     {
-      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
-      "target": "494efff0-e667-485a-b4fe-956d3bbd99b2",
-      "weight": 4
+      "source": "1b617595-3891-475a-87a5-382317fda2fc",
+      "target": "287ff5e4-4543-4611-be40-bb17d2f98cd2",
+      "weight": 2
     },
     {
-      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
-      "target": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "source": "1b617595-3891-475a-87a5-382317fda2fc",
+      "target": "315a138f-3f2e-47b8-94e1-997adeb830a9",
       "weight": 1
     },
     {
-      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
-      "target": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
+      "source": "1b617595-3891-475a-87a5-382317fda2fc",
+      "target": "43a5a05e-dbf9-4d44-9c1b-a928fa5cdb2d",
+      "weight": 4
+    },
+    {
+      "source": "1b617595-3891-475a-87a5-382317fda2fc",
+      "target": "57970a45-24c3-428e-91ac-b9733d325ab3",
+      "weight": 1
+    },
+    {
+      "source": "1b617595-3891-475a-87a5-382317fda2fc",
+      "target": "69959d22-8002-4903-9451-496a8977f250",
+      "weight": 1
+    },
+    {
+      "source": "1b617595-3891-475a-87a5-382317fda2fc",
+      "target": "6ba53c2f-8c7b-4315-9b1c-e35d779343d5",
+      "weight": 3
+    },
+    {
+      "source": "287ff5e4-4543-4611-be40-bb17d2f98cd2",
+      "target": "43a5a05e-dbf9-4d44-9c1b-a928fa5cdb2d",
+      "weight": 3
+    },
+    {
+      "source": "287ff5e4-4543-4611-be40-bb17d2f98cd2",
+      "target": "57970a45-24c3-428e-91ac-b9733d325ab3",
+      "weight": 1
+    },
+    {
+      "source": "287ff5e4-4543-4611-be40-bb17d2f98cd2",
+      "target": "69959d22-8002-4903-9451-496a8977f250",
+      "weight": 1
+    },
+    {
+      "source": "287ff5e4-4543-4611-be40-bb17d2f98cd2",
+      "target": "6ba53c2f-8c7b-4315-9b1c-e35d779343d5",
       "weight": 6
     },
     {
-      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
-      "target": "a398cf04-917f-4848-9b43-164e4f544c80",
+      "source": "315a138f-3f2e-47b8-94e1-997adeb830a9",
+      "target": "43a5a05e-dbf9-4d44-9c1b-a928fa5cdb2d",
+      "weight": 1
+    },
+    {
+      "source": "43a5a05e-dbf9-4d44-9c1b-a928fa5cdb2d",
+      "target": "57970a45-24c3-428e-91ac-b9733d325ab3",
       "weight": 2
     },
     {
-      "source": "365ed9e9-48e3-4d85-844f-c6f88d1725fd",
-      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
-      "weight": 4
-    },
-    {
-      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
-      "target": "948dc018-80f3-48f4-b83c-495e6609d42a",
+      "source": "43a5a05e-dbf9-4d44-9c1b-a928fa5cdb2d",
+      "target": "69959d22-8002-4903-9451-496a8977f250",
       "weight": 1
     },
     {
-      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
-      "target": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
-      "weight": 2
+      "source": "43a5a05e-dbf9-4d44-9c1b-a928fa5cdb2d",
+      "target": "6ba53c2f-8c7b-4315-9b1c-e35d779343d5",
+      "weight": 5
     },
     {
-      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
-      "target": "a398cf04-917f-4848-9b43-164e4f544c80",
-      "weight": 1
-    },
-    {
-      "source": "494efff0-e667-485a-b4fe-956d3bbd99b2",
-      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "source": "57970a45-24c3-428e-91ac-b9733d325ab3",
+      "target": "6ba53c2f-8c7b-4315-9b1c-e35d779343d5",
       "weight": 3
     },
     {
-      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
-      "target": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
-      "weight": 3
-    },
-    {
-      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
-      "target": "a398cf04-917f-4848-9b43-164e4f544c80",
-      "weight": 1
-    },
-    {
-      "source": "948dc018-80f3-48f4-b83c-495e6609d42a",
-      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
-      "weight": 1
-    },
-    {
-      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
-      "target": "a398cf04-917f-4848-9b43-164e4f544c80",
-      "weight": 3
-    },
-    {
-      "source": "9ee5b938-c3b0-4dcc-b145-033abbefc540",
-      "target": "becf3dbc-72af-46b6-9f9c-f3b4a5497612",
+      "source": "69959d22-8002-4903-9451-496a8977f250",
+      "target": "6ba53c2f-8c7b-4315-9b1c-e35d779343d5",
       "weight": 2
     }
   ]

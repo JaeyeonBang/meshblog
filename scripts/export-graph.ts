@@ -324,6 +324,40 @@ export function assignLevels(
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
+/** Per-node top-K edge pruning. Each node keeps its K strongest edges by
+ *  weight (default K=4). An edge survives if it's in the top-K of EITHER
+ *  endpoint — this prevents pruning from disconnecting a low-degree node's
+ *  only relationship while still capping high-degree hubs. Result: roughly
+ *  ⌈N·K/2⌉ edges max, with the strongest links preserved everywhere.
+ *
+ *  Tunable via env: MESHBLOG_GRAPH_TOPK (positive int, default 4). Set to
+ *  0 to disable pruning. */
+const TOP_K_DEFAULT = parseInt(process.env.MESHBLOG_GRAPH_TOPK ?? "4", 10)
+
+function pruneEdgesTopK(
+  links: Array<{ source: string; target: string; weight: number; type?: string }>,
+  k: number,
+): typeof links {
+  if (k <= 0) return links
+  const perNode = new Map<string, Array<{ idx: number; weight: number }>>()
+  for (let i = 0; i < links.length; i++) {
+    const l = links[i]
+    const w = l.weight ?? 0
+    const a = perNode.get(l.source) ?? []
+    a.push({ idx: i, weight: w })
+    perNode.set(l.source, a)
+    const b = perNode.get(l.target) ?? []
+    b.push({ idx: i, weight: w })
+    perNode.set(l.target, b)
+  }
+  const keep = new Set<number>()
+  for (const [, list] of perNode) {
+    list.sort((a, b) => b.weight - a.weight)
+    for (let i = 0; i < Math.min(k, list.length); i++) keep.add(list[i].idx)
+  }
+  return links.filter((_, i) => keep.has(i))
+}
+
 export function exportLevel(
   g: Graph,
   maxLevel: 1 | 2 | 3,
@@ -341,6 +375,7 @@ export function exportLevel(
     }
   })
 
+  const rawLinks: typeof json.links = []
   g.forEachEdge((_edge, attrs, src, dst) => {
     if (includedNodes.has(src) && includedNodes.has(dst)) {
       const link: { source: string; target: string; weight: number; type?: string } = {
@@ -349,12 +384,18 @@ export function exportLevel(
         weight: attrs.weight as number,
       }
       if (attrs.edgeType) link.type = attrs.edgeType as string
-      json.links.push(link)
+      rawLinks.push(link)
     }
   })
 
+  json.links = pruneEdgesTopK(rawLinks, TOP_K_DEFAULT)
+  const pruned = rawLinks.length - json.links.length
+
   writeFileSync(outPath, JSON.stringify(json, null, 2))
-  console.log(`[export-graph] ${outPath}: ${json.nodes.length} nodes, ${json.links.length} links`)
+  console.log(
+    `[export-graph] ${outPath}: ${json.nodes.length} nodes, ${json.links.length} links` +
+      (pruned > 0 ? ` (pruned ${pruned} from ${rawLinks.length}, top-K=${TOP_K_DEFAULT})` : ""),
+  )
   return json
 }
 
