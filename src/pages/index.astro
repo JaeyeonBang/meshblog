@@ -50,6 +50,10 @@ const meshLinks: Array<{ source: string; target: string }> = []
         <p class="sub"><T ko="심리학적인 베이스를 기반으로 에이전트를 다루는 기획자. " en="Planner working with agents based on psychological foundations." /></p>
       </div>
 
+      <div class="home-cats-mobile">
+        <CategoryList limit={5} />
+      </div>
+
       <div class="feed stagger">
         {posts.length > 0 ? posts.map((post, i) => (
           <PostCard
@@ -234,5 +238,25 @@ const meshLinks: Array<{ source: string; target: string }> = []
     font-style: italic;
     color: var(--ink-3);
     padding: var(--space-6) 0;
+  }
+
+  /* ── Mobile-only categories block ──────────────────────────── */
+  /* Desktop: the right sidebar (home-side) carries CategoryList; the inline
+     copy below the hero is hidden. Mobile: sidebar stacks ~4000px down past
+     6 post cards + Q&A + mesh, so we surface a second copy right under the
+     hero and hide the sidebar one. */
+  .home-cats-mobile {
+    display: none;
+    padding: var(--space-6) 0 var(--space-2);
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: var(--space-8);
+  }
+  @media (max-width: 980px) {
+    .home-cats-mobile {
+      display: block;
+    }
+    .home-side :global(.cat-widget) {
+      display: none;
+    }
   }
 </style>
