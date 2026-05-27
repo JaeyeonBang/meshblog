@@ -86,6 +86,14 @@ const fontPreloadHref = `${BASE}/fonts/Pretendard-Regular.subset.91.woff2`
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    {/* Cache busting — GitHub Pages serves HTML with Cache-Control: max-age=600
+        which forces a 10-minute soft cache. Browsers honor these meta hints
+        for HTML revalidation, so the next navigation re-checks the server via
+        If-None-Match instead of serving stale HTML. Astro already hashes JS/CSS
+        filenames so those bust automatically — this targets the HTML shell. */}
+    <meta http-equiv="Cache-Control" content="no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link
