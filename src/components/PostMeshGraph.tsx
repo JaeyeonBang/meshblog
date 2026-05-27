@@ -107,6 +107,11 @@ const EXPANDED_MODE: SizeMode = {
 
 function deriveId(node: MeshNode, isCentre: boolean): string {
   if (isCentre) return '__center__'
+  // Prefer an explicit per-node id. The href fallback below collapses when
+  // sibling nodes share the same href (e.g. home concept-mesh: all 6 nodes
+  // route to '/graph?mode=concept', so without id the last-segment dedupes
+  // to a single key and the wrapped/dims maps lose 5 of 6 entries).
+  if (node.id) return node.id
   if (node.href) {
     const parts = node.href.split('/')
     const last = parts[parts.length - 1]

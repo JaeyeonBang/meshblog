@@ -51,6 +51,10 @@ export type MeshNode = {
   label: string
   kind?: 'default' | 'hub' | 'concept' | 'selected' | 'note' | 'stub'
   href?: string
+  /** Stable per-node id used by force-sim + label/dim maps. When omitted,
+   *  PostMeshGraph falls back to the last segment of `href` — which collapses
+   *  when sibling nodes share the same href (e.g. all-go-to-/graph buttons). */
+  id?: string
   // x/y are deliberately absent — MiniMesh will compute radial layout
   // NEW optional fields — populated for neighbors only, not center node
   /** ≤160 chars plain text, no HTML. Absent on center node. */
@@ -142,6 +146,11 @@ export function getHomeMeshNodes(withBase: (path: string) => string): MeshNode[]
       label: node.label,
       kind: i === 0 ? ('hub' as const) : ('concept' as const),
       href: withBase('/graph?mode=concept'),
+      // Pass the graph-node id through. Concept nodes all share the same href
+      // (`/graph?mode=concept`), so without a per-node id PostMeshGraph's
+      // deriveId fallback collapses every neighbour to the same key and the
+      // last node's label gets rendered N times.
+      id: node.id,
     }))
   }
 
@@ -156,6 +165,7 @@ export function getHomeMeshNodes(withBase: (path: string) => string): MeshNode[]
       label: node.label,
       kind: (i === 0 ? 'hub' : 'note') as 'hub' | 'note',
       href: withBase(`/notes/${node.id}`),
+      id: node.id,
     }))
   }
 
