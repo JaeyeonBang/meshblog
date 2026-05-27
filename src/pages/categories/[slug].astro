@@ -92,6 +92,7 @@ const allPosts = listPosts()
                   day: '2-digit',
                 })}
                 tags={post.tags ?? []}
+                image={withBase(`/og/posts/${post.slug}.svg`)}
                 tagsAsLinks={true}
               />
             ))}
