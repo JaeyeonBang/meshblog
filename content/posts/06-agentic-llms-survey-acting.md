@@ -15,7 +15,7 @@ related:
   - 07-agentic-llms-survey-interacting
   - a2a-protocol
 ---
-[[paper link]](https://arxiv.org/abs/2503.23037)
+[paper link](https://arxiv.org/abs/2503.23037)
 
 Reasoning파트에 이어 Acting 파트를 정리하고자 합니다.
 

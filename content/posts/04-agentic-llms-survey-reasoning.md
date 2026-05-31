@@ -16,7 +16,7 @@ related:
   - 07-agentic-llms-survey-interacting
   - 09-ppo
 ---
-[[paper link]](https://arxiv.org/abs/2503.23037)
+[paper link](https://arxiv.org/abs/2503.23037)
 
 Intro에 이어 Reasoning 파트를 정리하고자 합니다.
 

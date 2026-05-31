@@ -15,7 +15,7 @@ related:
   - 07-agentic-llms-survey-interacting
   - a2a-protocol
 ---
-[[paper link]](https://arxiv.org/abs/2503.23037)
+[paper link](https://arxiv.org/abs/2503.23037)
 
 
 Agent AI에 발을 담구기에 앞서, 서베이 논문을 읽고자 합니다.

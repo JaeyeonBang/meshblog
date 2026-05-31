@@ -49,4 +49,30 @@ describe('renderMarkdownToHtml — wikilink pipeline integration', { timeout: 15
     expect(html).not.toContain('<a href')
     expect(html).not.toContain('[[')
   })
+
+  // Regression guard for the D3 content fix: every post used to open with
+  // `[[paper link]](url)` — a wikilink shape that resolves to nothing, leaving a
+  // broken wikilink--missing stub plus a literal `(url)` on line 1 of 12 prod
+  // posts. The fix rewrites them to standard `[label](url)`. This asserts that
+  // shape renders as a real external anchor with NO missing-state stub.
+  it('standard external link [label](url) renders as an anchor, never a missing stub', async () => {
+    const html = await renderMarkdownToHtml('[paper link](https://arxiv.org/abs/2106.09685)', {
+      resolver,
+    })
+    expect(html).toContain('href="https://arxiv.org/abs/2106.09685"')
+    expect(html).toContain('>paper link</a>')
+    expect(html).not.toContain('wikilink--missing')
+  })
+
+  // D2: a wikilink whose target resolves to a POST must link to /posts/<slug>.
+  it('post-kind wikilink target routes to /posts/<slug>', async () => {
+    const postResolver: WikilinkResolver = (t) =>
+      t.toLowerCase() === 'ppo' ? { slug: 'ppo', title: 'PPO', kind: 'post' } : null
+    const html = await renderMarkdownToHtml('See [[PPO]].', {
+      resolver: postResolver,
+      hrefFor: (slug, kind) => (kind === 'post' ? `/posts/${slug}` : `/notes/${slug}`),
+    })
+    expect(html).toContain('href="/posts/ppo"')
+    expect(html).not.toContain('/notes/ppo')
+  })
 })

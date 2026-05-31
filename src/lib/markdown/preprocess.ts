@@ -2,7 +2,9 @@ import { resolveWikilinks, type WikilinkResolver } from './resolve-wikilinks'
 
 export interface PreprocessOptions {
   resolver?: WikilinkResolver
-  hrefFor?: (slug: string) => string
+  // `kind` lets callers route post targets to /posts/<slug> and notes to
+  // /notes/<slug>. Optional second arg keeps existing single-arg callers valid.
+  hrefFor?: (slug: string, kind?: 'post' | 'note') => string
 }
 
 // Missing resolver → every wikilink is treated as broken and rendered as plain

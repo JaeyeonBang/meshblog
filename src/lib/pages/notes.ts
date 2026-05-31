@@ -105,13 +105,25 @@ export function listAllNoteSlugs(): Array<{ slug: string; folder_path: string }>
 
 // Minimal projection across every linkable entry (notes + posts, any folder).
 // Used by the wikilink resolver so [[X]] can target anything in the vault.
-export function listAllLinkable(): Array<{ slug: string; title: string }> {
+// `kind` is derived from folder_path so a post target routes to /posts/<slug>
+// and a note target to /notes/<slug> (build-index writes 'content/posts' /
+// 'content/notes'). Substring match tolerates trailing slash / absolute prefix.
+export function listAllLinkable(): Array<{
+  slug: string
+  title: string
+  kind: 'post' | 'note'
+}> {
   const db = openReadonlyDb()
   if (!db) return []
   try {
-    return db
-      .prepare(`SELECT slug, title FROM notes`)
-      .all() as Array<{ slug: string; title: string }>
+    const rows = db
+      .prepare(`SELECT slug, title, folder_path FROM notes`)
+      .all() as Array<{ slug: string; title: string; folder_path: string | null }>
+    return rows.map((r) => ({
+      slug: r.slug,
+      title: r.title,
+      kind: (r.folder_path ?? '').includes('post') ? ('post' as const) : ('note' as const),
+    }))
   } finally {
     db.close()
   }

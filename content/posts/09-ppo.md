@@ -15,7 +15,7 @@ related:
   - 10-deepseek-math
   - 11-rlpr
 ---
-[[paper link]](https://arxiv.org/abs/1707.06347)
+[paper link](https://arxiv.org/abs/1707.06347)
 
 # Introduction
 

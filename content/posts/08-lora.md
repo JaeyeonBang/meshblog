@@ -12,7 +12,7 @@ related:
   - 09-ppo
   - 10-deepseek-math
 ---
-[[paper link]](https://arxiv.org/abs/2106.09685)
+[paper link](https://arxiv.org/abs/2106.09685)
 
 
 __*아래 내용은 간략하게 논문을 정리한 내용입니다. 정리, 번역, 표현에는 오류가 있을 수 있습니다.*__

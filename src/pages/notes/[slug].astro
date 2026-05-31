@@ -141,7 +141,7 @@ const excerpt = plainExcerpt(note.content, 160)
 const { resolve: wikilinkResolver } = buildNoteResolver(listAllLinkable())
 const contentHtml = await renderMarkdownToHtml(stripLeadingH1(note.content), {
   resolver: wikilinkResolver,
-  hrefFor: (slug) => withBase(`/notes/${slug}`),
+  hrefFor: (slug, kind) => withBase(kind === 'post' ? `/posts/${slug}` : `/notes/${slug}`),
 })
 
 const ledeHtml = injectLedeClass(contentHtml)
@@ -151,7 +151,7 @@ let ledeHtmlEn: string | null = null
 if (note.has_en && note.body_en) {
   const contentHtmlEn = await renderMarkdownToHtml(stripLeadingH1(note.body_en), {
     resolver: wikilinkResolver,
-    hrefFor: (slug) => withBase(`/notes/${slug}`),
+    hrefFor: (slug, kind) => withBase(kind === 'post' ? `/posts/${slug}` : `/notes/${slug}`),
   })
   ledeHtmlEn = injectLedeClass(contentHtmlEn)
 }

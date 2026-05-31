@@ -22,7 +22,7 @@ related:
 
 # A2A Protocol — 에이전트 간 협업의 핵심 개념
 
-[[spec link]](https://a2a-protocol.org/latest/topics/key-concepts/)
+[spec link](https://a2a-protocol.org/latest/topics/key-concepts/)
 
 LLM 기반 에이전트가 하나의 시스템에 머무르던 시기는 짧았다. 각자 다른 프레임워크와 도구로 만든 에이전트가 서로의 결과를 받아쓰고, 다시 다른 에이전트에게 일을 넘기는 구조가 빠르게 표준이 되었다. 문제는 이 협업이 늘 임시 통합(ad-hoc integration)으로 묶여 있었다는 점이다. 같은 회사 안에서도 두 에이전트가 만나면 매번 새로 깎아 만든 어댑터를 붙여야 했다.
 

@@ -13,13 +13,13 @@ related:
   - 09-ppo
   - 10-deepseek-math
 ---
-[[paper link]](https://arxiv.org/pdf/2506.18254)
+[paper link](https://arxiv.org/pdf/2506.18254)
 
 ### 한 줄 설명
 
 **정답인지 아닌지 규칙으로 판정하지 않고 모델이 reference answer를 얼마나 높은 확률로 예측하는지를 모델의 확신으로 보고 강화학습 reward로 사용한다.** 
 
-[[Git]](https://github.com/OpenBMB/RLPR)
+[Git](https://github.com/OpenBMB/RLPR)
 
 ### 기존 연구의 한계
 

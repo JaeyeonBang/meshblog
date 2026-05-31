@@ -16,7 +16,14 @@ export type NoteResolverResult = {
 }
 
 export function buildNoteResolver(
-  notes: ReadonlyArray<{ slug: string; title: string; aliases?: string[] }>,
+  notes: ReadonlyArray<{
+    slug: string
+    title: string
+    aliases?: string[]
+    // 'post' → /posts/<slug>, 'note' → /notes/<slug>. Omitted → routed as a
+    // note by the renderer's default hrefFor (backward compat).
+    kind?: 'post' | 'note'
+  }>,
 ): NoteResolverResult {
   const byTitle = new Map<string, WikilinkTarget>()
   const bySlug = new Map<string, WikilinkTarget>()
@@ -25,7 +32,7 @@ export function buildNoteResolver(
 
   // First pass: build slug + title maps
   for (const n of notes) {
-    const entry: WikilinkTarget = { slug: n.slug, title: n.title }
+    const entry: WikilinkTarget = { slug: n.slug, title: n.title, kind: n.kind }
     byTitle.set(n.title.trim().toLowerCase(), entry)
     bySlug.set(n.slug.trim().toLowerCase(), entry)
   }
@@ -56,7 +63,7 @@ export function buildNoteResolver(
       // Safe: find the note and add it
       const note = notes.find((n) => n.slug === claimers[0])
       if (note) {
-        byAlias.set(alias, { slug: note.slug, title: note.title })
+        byAlias.set(alias, { slug: note.slug, title: note.title, kind: note.kind })
       }
     } else {
       collisions.push({ alias, claimers })

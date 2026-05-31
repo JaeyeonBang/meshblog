@@ -16,7 +16,7 @@ related:
   - 09-ppo
   - 11-rlpr
 ---
-[[paper link]](https://arxiv.org/abs/2402.03300)
+[paper link](https://arxiv.org/abs/2402.03300)
 
 ### 한 줄 설명
 
