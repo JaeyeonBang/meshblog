@@ -1,0 +1,13 @@
+{
+  "types": {
+    "date": "date",
+    "tags": "tags",
+    "draft": "checkbox",
+    "public": "checkbox",
+    "category": "text",
+    "title": "text",
+    "image": "text",
+    "related": "multitext",
+    "aliases": "aliases"
+  }
+}

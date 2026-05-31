@@ -53,8 +53,15 @@ public/qa/
 /public/graph/backlinks.json
 /public/graph/categories.json
 
-# local Obsidian vault if symlinked inside repo
-content/.obsidian/
+# Obsidian vault: commit shared settings (app/core-plugins/types), ignore
+# per-machine layout + caches so /edit works for fork users without churn.
+content/.obsidian/workspace.json
+content/.obsidian/workspace-mobile.json
+content/.obsidian/workspace*.json
+content/.obsidian/cache
+content/.obsidian/.cache/
+content/.obsidian/plugins/
+content/.obsidian/snippets/
 
 # /init writes this after spawning the dev server; consumed for cleanup
 .init-dev.pid

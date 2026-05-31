@@ -131,6 +131,7 @@ After the **2026-05-17 posts-first pivot**, `content/posts/` is the primary auth
 
 | Skill | Use when |
 | :--- | :--- |
+| `edit` | User wants to edit posts in Obsidian ("편집", "obsidian 열어", "/edit"). Opens `content/` as a vault via `bun run edit` (3-tier launch fallback). |
 | `new-post` | Scaffold a draft post in `content/posts/` (default). `--as=note` writes to `content/notes/` for vault-style atomic notes. |
 | `new-bilingual-post` | Scaffold KO + EN companion files in `content/posts/`. `--as=note` for the legacy notes/ behavior. |
 | `draft-post` | User asks to draft / fill body content for a post from a source (URL, paper, notes). Reads `content/writing_guide.md` first. |

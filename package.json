@@ -32,6 +32,7 @@
     "build:fixture": "FIXTURE_ONLY=1 bun run build-index && bun run build-backlinks && bun run export-graph && ([ -f scripts/export-category-graph.ts ] && bun run export-category-graph || true) && bun run cluster-communities && bun run build-manifest && bun run build",
     "setup": "cp -n .env.example .env.local 2>/dev/null; mkdir -p .data .data/qa/note .data/qa/concept .data/qa/global content/notes content/posts; echo 'setup done'",
     "init": "bun run scripts/init.ts",
+    "edit": "bun run scripts/open-editor.ts",
     "new-post": "tsx scripts/new-post.ts",
     "new-bilingual-post": "tsx scripts/new-bilingual-post.ts",
     "ingest-raw": "tsx scripts/ingest-raw.ts",
