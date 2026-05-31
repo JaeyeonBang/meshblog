@@ -14,6 +14,20 @@ bun run preview         # static preview @ http://localhost:4321
 
 > **Fixture mode** (`build:fixture`) seeds 5 notes and 30 qa_cards from `test/fixtures/seed.sql` and builds the site — no API keys or `claude` CLI required. Use it for first-clone preview, CI smoke tests, and forks.
 
+## Editing
+
+meshblog is built for **Obsidian power users** — you author posts in Obsidian, not a bespoke web editor, so wikilinks, backlinks, the graph view, and frontmatter Properties all match what the site renders.
+
+```bash
+bun run edit --with-dev   # open content/ in Obsidian + live preview @ localhost:4321
+bun run edit              # just open Obsidian on content/
+bun run edit --folder     # open the content/ folder in a file manager (first run)
+```
+
+`content/.obsidian/` ships with shared vault settings (wikilinks on; graph/backlink/properties plugins); per-machine layout is gitignored. On a fresh clone, run `bun run edit --folder` once and use Obsidian's "Open folder as vault" on `content/`.
+
+Links: a wikilink to a post resolves to `/posts/<slug>`, to a note `/notes/<slug>`; external URLs use standard `[label](url)` (never wikilink syntax — it renders as a broken stub). Full guide: [`docs/editing-workflow.md`](docs/editing-workflow.md).
+
 ## Prerequisites
 
 | Requirement | Purpose | Notes |
