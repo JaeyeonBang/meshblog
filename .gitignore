@@ -53,15 +53,20 @@ public/qa/
 /public/graph/backlinks.json
 /public/graph/categories.json
 
-# Obsidian vault: commit shared settings (app/core-plugins/types), ignore
-# per-machine layout + caches so /edit works for fork users without churn.
-content/.obsidian/workspace.json
-content/.obsidian/workspace-mobile.json
-content/.obsidian/workspace*.json
-content/.obsidian/cache
-content/.obsidian/.cache/
-content/.obsidian/plugins/
-content/.obsidian/snippets/
+# Obsidian vault (content/posts): commit shared settings (app/core-plugins/
+# types), ignore per-machine layout + caches so /edit works for fork users
+# without churn.
+content/posts/.obsidian/workspace.json
+content/posts/.obsidian/workspace-mobile.json
+content/posts/.obsidian/workspace*.json
+content/posts/.obsidian/appearance.json
+content/posts/.obsidian/graph.json
+content/posts/.obsidian/cache
+content/posts/.obsidian/.cache/
+content/posts/.obsidian/plugins/
+content/posts/.obsidian/snippets/
+# stale: vault moved from content/ to content/posts/
+content/.obsidian/
 
 # /init writes this after spawning the dev server; consumed for cleanup
 .init-dev.pid

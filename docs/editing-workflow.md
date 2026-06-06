@@ -26,14 +26,14 @@ mental model the site renders.
 bun run edit --with-dev
 ```
 
-This opens `content/` in Obsidian **and** starts the live preview at
+This opens `content/posts` in Obsidian **and** starts the live preview at
 `http://localhost:4321/meshblog/`. Edit in Obsidian, watch the browser update.
 
 Other forms:
 
 ```bash
-bun run edit            # just open Obsidian on content/
-bun run edit --folder   # open the content/ folder in your file manager (first run)
+bun run edit            # just open Obsidian on content/posts
+bun run edit --folder   # open the content/posts folder in your file manager (first run)
 ```
 
 You can also trigger it from Claude Code with `/edit`.
@@ -56,17 +56,18 @@ folder path instead of failing silently.
 
 ## First run on a fresh clone
 
-On a brand-new clone, the `content/` vault is not yet registered in Obsidian's
-vault list. `bun run edit` launches Obsidian's exe directly with the vault path,
-which registers + opens it on first run (you may see an "Open" / "Trust author"
-confirmation). If that doesn't catch:
+On a brand-new clone, the `content/posts` vault is not yet registered in
+Obsidian's vault list, so the bare `obsidian://open?path=` URI is refused
+("Vault not found"). Either let Obsidian register it (open it once via
+**"Open folder as vault"**), or run:
 
 ```bash
 bun run edit --folder
 ```
 
-opens the folder in your file manager — then in Obsidian choose **"Open folder as
-vault"** and point it at `content/`. After that, `bun run edit` opens it directly.
+which opens the folder in your file manager — then in Obsidian choose **"Open
+folder as vault"** and point it at `content/posts`. After that, `bun run edit`
+opens it directly.
 
 If Obsidian isn't installed, `bun run edit` prints the download link and the
 folder path so nothing fails silently.
@@ -86,8 +87,8 @@ Standard Markdown `[label](url)` is the correct shape for anything off-site.
 
 ## Shared vault settings
 
-`content/.obsidian/` is committed with shared settings so every fork gets the
-same setup:
+`content/posts/.obsidian/` is committed with shared settings so every fork gets
+the same setup:
 
 - `app.json` — wikilinks on (`useMarkdownLinks: false`), shortest link format.
 - `core-plugins.json` — graph, backlink, page-preview, properties, outline,

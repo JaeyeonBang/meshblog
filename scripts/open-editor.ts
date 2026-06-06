@@ -405,9 +405,12 @@ function resolveWinHome(platform: NodeJS.Platform, wsl: boolean): string | null 
 
 function main(): void {
   const repoRoot = process.cwd()
-  const vaultPosix = path.join(repoRoot, 'content')
+  // The vault is content/posts — the primary authoring surface (posts-first).
+  // content/notes feeds the graph/RAG layer but isn't edited directly, so the
+  // vault scopes to posts/ to keep Obsidian's file tree focused.
+  const vaultPosix = path.join(repoRoot, 'content', 'posts')
   if (!fs.existsSync(vaultPosix)) {
-    console.error(`[edit] No content/ directory at ${vaultPosix} — run from the repo root.`)
+    console.error(`[edit] No content/posts/ directory at ${vaultPosix} — run from the repo root.`)
     process.exit(1)
   }
 
