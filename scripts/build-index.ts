@@ -110,6 +110,21 @@ function sha256(s: string): string {
   return createHash("sha256").update(s).digest("hex")
 }
 
+/**
+ * Normalize frontmatter `date` to 'YYYY-MM-DD'.
+ * gray-matter parses YAML `date: 2026-05-27` into a JS Date (UTC midnight);
+ * string values are accepted if they start with an ISO date prefix.
+ * Returns null when absent/invalid → caller falls back to datetime('now').
+ */
+function frontmatterDate(v: unknown): string | null {
+  if (v instanceof Date && !Number.isNaN(v.getTime())) return v.toISOString().slice(0, 10)
+  if (typeof v === "string") {
+    const m = v.trim().match(/^\d{4}-\d{2}-\d{2}/)
+    if (m) return m[0]
+  }
+  return null
+}
+
 /** Strip script-like injection vectors from note content. */
 function sanitizeContent(content: string): string {
   return content
@@ -239,6 +254,7 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
     const rawRelated: string[] = Array.isArray(fm.related) ? fm.related.filter((v): v is string => typeof v === 'string') : []
     const related = JSON.stringify(rawRelated)
     const levelPin = (fm.level_pin as number | undefined) ?? null
+    const fmDate = frontmatterDate(fm.date)
     const hash = sha256(content)
 
     // Resolve category: frontmatter `category` field wins; otherwise derive from tags.
@@ -271,8 +287,8 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
 
     execute(
       db,
-      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, aliases, related, level_pin, category_slug, has_en, body_en, title_en)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO notes (id, slug, title, content, content_hash, folder_path, tags, aliases, related, level_pin, category_slug, has_en, body_en, title_en, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, datetime('now')))
        ON CONFLICT(id) DO UPDATE SET
          title         = excluded.title,
          content       = excluded.content,
@@ -286,8 +302,9 @@ export async function runBuildIndex(options: BuildIndexOptions = {}) {
          has_en        = excluded.has_en,
          body_en       = excluded.body_en,
          title_en      = excluded.title_en,
+         created_at    = COALESCE(?, created_at),
          updated_at    = datetime('now')`,
-      [id, slug, title, content, hash, folder, tags, aliases, related, levelPin, categorySlug, hasEn, bodyEn, titleEn],
+      [id, slug, title, content, hash, folder, tags, aliases, related, levelPin, categorySlug, hasEn, bodyEn, titleEn, fmDate, fmDate],
     )
 
     const hashChanged = !existing || existing.content_hash !== hash
