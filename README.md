@@ -36,6 +36,7 @@ Links: a wikilink to a post resolves to `/posts/<slug>`, to a note `/notes/<slug
 | [Bun](https://bun.sh) | Package manager + runner | `curl -fsSL https://bun.sh/install \| bash` |
 | `OPENAI_API_KEY` | Embeddings (`text-embedding-3-small`) | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | `claude` CLI | Entity extraction, concept naming, Q&A generation, ingest, draft synthesis | [docs.anthropic.com/claude-code](https://docs.anthropic.com/claude-code). Auth piggybacks on your local Claude Code session. Silently skips/falls back if missing. |
+| Obsidian (optional) | Editing posts via `bun run edit` | [obsidian.md/download](https://obsidian.md/download), or `winget install Obsidian.Obsidian` (Windows) / `brew install --cask obsidian` (macOS). Only needed for the `/edit` workflow. |
 
 Copy `.env.example` to `.env.local` and fill in the values.
 

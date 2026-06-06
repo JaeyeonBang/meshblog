@@ -38,10 +38,28 @@ bun run edit --folder   # open the content/ folder in your file manager (first r
 
 You can also trigger it from Claude Code with `/edit`.
 
+## Installing Obsidian
+
+`bun run edit` needs the Obsidian desktop app. Install it once:
+
+| OS | Command / link |
+| :--- | :--- |
+| Windows | `winget install Obsidian.Obsidian` — or [obsidian.md/download](https://obsidian.md/download) |
+| macOS | `brew install --cask obsidian` — or the download link |
+| Linux | [obsidian.md/download](https://obsidian.md/download) (AppImage / Flatpak / Snap) |
+
+`bun run edit` finds the app automatically, including non-standard install
+locations (e.g. `D:\Program Files\Obsidian` on Windows) — it reads the install
+path from the registry, not just the default `%LOCALAPPDATA%` folder. If
+Obsidian isn't installed, the command prints the download link and the vault
+folder path instead of failing silently.
+
 ## First run on a fresh clone
 
 On a brand-new clone, the `content/` vault is not yet registered in Obsidian's
-vault list, so the `obsidian://` URI may silently do nothing. Once:
+vault list. `bun run edit` launches Obsidian's exe directly with the vault path,
+which registers + opens it on first run (you may see an "Open" / "Trust author"
+confirmation). If that doesn't catch:
 
 ```bash
 bun run edit --folder
