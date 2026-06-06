@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+  <rect width="1200" height="630" fill="#f6f4ef"/>
+  <text x="80" y="200" font-family="Georgia, 'Times New Roman', serif" font-size="80" font-weight="500" fill="#2a2620">AP2 — Life of a Transaction, 거래 한 건의 일생</text>
+  <text x="80" y="256" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-style="italic" fill="#6e6658">— an ongoing journal</text>
+  <rect width="1200" height="1" y="570" fill="#d1cbbd"/>
+  <text x="80" y="595" font-family="sans-serif" font-size="20" font-weight="400" fill="#8a8270" letter-spacing="6">MESHBLOG</text>
+</svg>
