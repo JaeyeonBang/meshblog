@@ -4,26 +4,37 @@
  * meshblog's editing story is Obsidian, not a bespoke editor: wikilinks,
  * backlinks, graph, and properties come for free and match the concept-mesh
  * model the site renders. This launches Obsidian on the repo's `content/`
- * folder, with a 3-tier fallback so a fresh fork on any platform gets *some*
- * useful behaviour instead of a silent no-op.
+ * folder, with a fallback chain so any platform gets *some* useful behaviour
+ * instead of a silent no-op.
  *
  * Launch decision splits into PURE functions (path conversion, URI assembly,
- * command selection — unit-tested) and one IMPURE orchestrator (`launch`) that
- * runs execSync and is mocked in tests. GUI launch itself is not CI-testable;
- * it is covered by a one-time manual smoke (prompt_plan §5 2.5).
+ * registry-output parsing, command selection — unit-tested) and one IMPURE
+ * orchestrator (`launch`) that shells out and is mocked in tests. GUI launch
+ * itself is not CI-testable; it is covered by a one-time manual smoke.
  *
  *   FALLBACK CHAIN (each step logged)
- *     Tier 1  obsidian://open?path=<vault>   — needs Obsidian + registered vault
- *        │ (a URI no-op can't be detected; --folder forces tier 2)
- *     Tier 2  open vault folder in file manager — always visible; drag into Obsidian
- *        │ (no Obsidian detected, or tier 1 failed)
- *     Tier 3  print install URL + manual steps
+ *     Tier 1  Obsidian.exe <uri>   — direct exe + URI; works for non-standard
+ *        │                           install dirs (e.g. D:\Program Files) and
+ *        │                           registers/opens the vault on first run.
+ *     Tier 2  obsidian:// URI via shell — when the exe path is unknown but
+ *        │                               Obsidian is installed + URI-registered.
+ *     Tier 3  open vault folder in file manager — drag into Obsidian once.
+ *     Tier 4  print install URL + manual steps.
  *
- * Reuses the platform/WSL spawn shape from scripts/init.ts rather than
- * reinventing it.
+ * Why direct-exe is tier 1 on Windows: a fresh `content/` vault is not in
+ * Obsidian's vault list, so the bare `obsidian://open?path=` URI is refused by
+ * the protocol handler. Invoking the exe with the URI makes Obsidian register
+ * the path and open it. The exe also lives outside %LOCALAPPDATA% for many
+ * installs (D:\Program Files\…), which the old AppData-only probe missed.
+ *
+ * Commands are modelled as {file, args[]} and run via execFileSync (NO shell).
+ * This was a real bug source: routing PowerShell through `sh -c "...$_..."`
+ * ate the `$_` pipeline variables (registry query returned empty), and
+ * `cmd.exe start "" "<path with spaces>"` treated the path as a window title.
+ * Argv arrays sidestep both quoting hazards entirely.
  */
 
-import { execSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
@@ -52,6 +63,21 @@ export function toWinPath(posixPath: string): string {
   return `${drive}:\\${rest}`
 }
 
+// ── Pure: Windows path → WSL POSIX path ──────────────────────────────────────
+
+/**
+ * Inverse of toWinPath: `D:\Program Files\Obsidian\Obsidian.exe` →
+ * `/mnt/d/Program Files/Obsidian/Obsidian.exe`. Used to stat a registry-derived
+ * exe path from inside WSL. Non-drive paths pass through unchanged.
+ */
+export function winToPosix(winPath: string): string {
+  const m = /^([a-zA-Z]):\\(.*)$/.exec(winPath)
+  if (!m) return winPath
+  const drive = m[1].toLowerCase()
+  const rest = m[2].replace(/\\/g, '/')
+  return `/mnt/${drive}/${rest}`
+}
+
 // ── Pure: obsidian:// URI ────────────────────────────────────────────────────
 
 /**
@@ -63,70 +89,192 @@ export function buildObsidianUri(vaultPath: string): string {
   return `obsidian://open?path=${encodeURIComponent(vaultPath)}`
 }
 
-// ── Pure: per-platform launch command ────────────────────────────────────────
+// ── Pure: PowerShell command builders ─────────────────────────────────────────
 
-export type Tier = 'uri' | 'folder'
+/** Escape single quotes for a PowerShell single-quoted string ('' = literal '). */
+export function psQuote(s: string): string {
+  return s.replace(/'/g, "''")
+}
 
 /**
- * Shell command for a given fallback tier, or null when this tier has no
- * command on this platform (caller advances). Pure: everything via arguments.
+ * The registry query as a PowerShell snippet. Exposed for the reader; uses `$_`
+ * which is why this must run via execFileSync (argv), never `sh -c`.
+ */
+export const REGISTRY_PS =
+  `(Get-ItemProperty ` +
+  `'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',` +
+  `'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' ` +
+  `-ErrorAction SilentlyContinue | ` +
+  `Where-Object { $_.DisplayName -like '*Obsidian*' } | ` +
+  `ForEach-Object { $_.DisplayIcon })`
+
+// ── Pure: parse Obsidian.exe path from registry DisplayIcon output ────────────
+
+/**
+ * The Windows uninstall registry stores Obsidian's exe in `DisplayIcon`, e.g.
+ * `D:\Program Files\Obsidian\Obsidian.exe,0` (a trailing `,<index>` icon
+ * selector). Strip the icon index and surrounding quotes/whitespace. Returns
+ * the first line that ends in `Obsidian.exe`, or null.
+ *
+ * Pure: takes the raw multi-line registry output so it is unit-testable without
+ * spawning PowerShell.
+ */
+export function parseObsidianExeFromRegistry(registryOutput: string): string | null {
+  for (const raw of registryOutput.split(/\r?\n/)) {
+    let line = raw.trim()
+    if (!line) continue
+    line = line.replace(/,\d+\s*$/, '') // drop trailing icon index
+    line = line.replace(/^"(.*)"$/, '$1').trim() // strip wrapping quotes
+    if (/Obsidian\.exe$/i.test(line)) return line
+  }
+  return null
+}
+
+// ── Pure: per-tier launch command (argv form, no shell) ───────────────────────
+
+export type Tier = 'exe' | 'uri' | 'folder'
+
+/** A spawnable command: program + argument vector. No shell interpolation. */
+export interface LaunchCommand {
+  file: string
+  args: string[]
+}
+
+/**
+ * Build the {file, args[]} command for a tier, or null when this tier has no
+ * command on this platform / inputs. Pure: everything via arguments.
+ *
+ * Windows/WSL uses PowerShell `Start-Process` (handles spaced paths + detaches)
+ * passed as an argv array so neither the surrounding shell nor cmd's
+ * title-eating `start` can mangle it.
  */
 export function selectLaunchCommand(
   tier: Tier,
   platform: NodeJS.Platform,
   wsl: boolean,
-  args: { uri: string; folderWin: string; folderPosix: string },
-): string | null {
+  args: { uri: string; exeWin: string | null; folderWin: string; folderPosix: string },
+): LaunchCommand | null {
+  const win = wsl || platform === 'win32'
+  if (tier === 'exe') {
+    if (!args.exeWin) return null
+    if (win) {
+      return {
+        file: 'powershell.exe',
+        args: [
+          '-NoProfile',
+          '-Command',
+          `Start-Process -FilePath '${psQuote(args.exeWin)}' -ArgumentList '${psQuote(args.uri)}'`,
+        ],
+      }
+    }
+    return null // non-Windows resolves the app via uri/open instead
+  }
   if (tier === 'uri') {
-    if (wsl || platform === 'win32') return `cmd.exe /c start "" "${args.uri}"`
-    if (platform === 'darwin') return `open "${args.uri}"`
-    if (platform === 'linux') return `xdg-open "${args.uri}"`
+    if (win) {
+      return {
+        file: 'powershell.exe',
+        args: ['-NoProfile', '-Command', `Start-Process '${psQuote(args.uri)}'`],
+      }
+    }
+    if (platform === 'darwin') return { file: 'open', args: [args.uri] }
+    if (platform === 'linux') return { file: 'xdg-open', args: [args.uri] }
     return null
   }
   // tier === 'folder'
-  if (wsl || platform === 'win32') return `explorer.exe "${args.folderWin}"`
-  if (platform === 'darwin') return `open "${args.folderPosix}"`
-  if (platform === 'linux') return `xdg-open "${args.folderPosix}"`
+  if (win) return { file: 'explorer.exe', args: [args.folderWin] }
+  if (platform === 'darwin') return { file: 'open', args: [args.folderPosix] }
+  if (platform === 'linux') return { file: 'xdg-open', args: [args.folderPosix] }
   return null
 }
 
-// ── Pure-ish: Obsidian detection (injectable file check) ─────────────────────
+// ── Pure-ish: Obsidian discovery (injectable file check + registry reader) ────
+
+export interface ObsidianLocation {
+  installed: boolean
+  /** Windows-style exe path when known (registry or standard dir), else null. */
+  exeWin: string | null
+}
 
 /**
- * Best-effort "is Obsidian installed" check. WSL/win32 → Windows config dir or
- * exe; darwin → .app bundle; linux → config dir. `pathExists` injected for
- * tests. A false is a soft signal (detection can miss non-standard installs),
- * so the caller still warns rather than hard-failing.
+ * Locate Obsidian. Order:
+ *   1. Registry DisplayIcon (covers non-standard install dirs like D:\…).
+ *   2. Standard install dirs under the Windows user home / Applications / config.
+ *
+ * `readRegistry` returns the raw registry query output (or '' on non-Windows /
+ * failure); `pathExists` checks a POSIX path. Both injected for tests.
  */
-export function detectObsidian(
+export function locateObsidian(
   platform: NodeJS.Platform,
   wsl: boolean,
   homeWin: string | null,
   homePosix: string,
   pathExists: (p: string) => boolean,
-): boolean {
-  const candidates: string[] = []
-  if (wsl || platform === 'win32') {
+  readRegistry: () => string,
+): ObsidianLocation {
+  const win = wsl || platform === 'win32'
+
+  if (win) {
+    // 1. Registry.
+    const exeWin = parseObsidianExeFromRegistry(readRegistry())
+    if (exeWin) {
+      const probe = wsl ? winToPosix(exeWin) : exeWin
+      if (pathExists(probe)) return { installed: true, exeWin }
+    }
+    // 2. Standard dirs.
+    const stdCandidates: string[] = []
     if (homeWin) {
-      candidates.push(
-        `${homeWin}\\AppData\\Roaming\\obsidian`,
+      stdCandidates.push(
         `${homeWin}\\AppData\\Local\\Obsidian\\Obsidian.exe`,
         `${homeWin}\\AppData\\Local\\Programs\\Obsidian\\Obsidian.exe`,
       )
     }
-  } else if (platform === 'darwin') {
-    candidates.push('/Applications/Obsidian.app', `${homePosix}/Applications/Obsidian.app`)
-  } else {
-    candidates.push(`${homePosix}/.config/obsidian`, `${homePosix}/.var/app/md.obsidian.Obsidian`)
+    for (const c of stdCandidates) {
+      const probe = wsl ? winToPosix(c) : c
+      if (pathExists(probe)) return { installed: true, exeWin: c }
+    }
+    // 3. Config dir = installed-but-exe-unknown (URI fallback may still work).
+    const cfgWin = homeWin ? `${homeWin}\\AppData\\Roaming\\obsidian` : null
+    if (cfgWin && pathExists(wsl ? winToPosix(cfgWin) : cfgWin)) {
+      return { installed: true, exeWin: null }
+    }
+    return { installed: false, exeWin: null }
   }
-  return candidates.some(pathExists)
+
+  if (platform === 'darwin') {
+    const apps = ['/Applications/Obsidian.app', `${homePosix}/Applications/Obsidian.app`]
+    return { installed: apps.some(pathExists), exeWin: null }
+  }
+
+  // linux
+  const cfgs = [`${homePosix}/.config/obsidian`, `${homePosix}/.var/app/md.obsidian.Obsidian`]
+  return { installed: cfgs.some(pathExists), exeWin: null }
 }
 
 // ── Impure: orchestrator ─────────────────────────────────────────────────────
 
-function tryExec(cmd: string): boolean {
+/**
+ * Fire-and-forget launch. Detached + unref'd so the GUI app outlives this
+ * short-lived `bun run edit` process — otherwise the kernel tears the child
+ * down with the parent's process group on Windows (same reason init.ts spawns
+ * the dev server detached; see getDevSpawnOptions there).
+ *
+ * GUI launch has no meaningful exit code (Start-Process / explorer return 0
+ * immediately), so success = "spawn didn't synchronously throw". A bad program
+ * name (ENOENT) throws synchronously and is reported as failure, letting the
+ * fallback chain advance.
+ */
+function tryExec(cmd: LaunchCommand): boolean {
   try {
-    execSync(cmd, { stdio: 'ignore' })
+    const child = spawn(cmd.file, cmd.args, { detached: true, stdio: 'ignore' })
+    let failed = false
+    child.on('error', () => {
+      failed = true
+    })
+    // ENOENT surfaces synchronously on the 'error' event in the same tick for
+    // a missing binary; give it a microtask before unref. In practice spawn
+    // throws synchronously for an unknown file on Windows, caught below.
+    if (failed) return false
+    child.unref()
     return true
   } catch {
     return false
@@ -140,47 +288,64 @@ export interface LaunchDeps {
   homeWin: string | null
   homePosix: string
   pathExists: (p: string) => boolean
-  exec: (cmd: string) => boolean
+  readRegistry: () => string
+  exec: (cmd: LaunchCommand) => boolean
   log: (msg: string) => void
 }
 
 /**
- * Run the 3-tier fallback. Returns the tier that ran. Pure inputs via deps so
- * the whole flow is unit-testable with a mocked exec.
+ * Run the fallback chain. Returns the tier that ran. Pure inputs via deps so the
+ * whole flow is unit-testable with a mocked exec + registry reader.
  */
-export function launch(deps: LaunchDeps): 'uri' | 'folder' | 'install' {
+export function launch(deps: LaunchDeps): 'exe' | 'uri' | 'folder' | 'install' {
   const wsl = isWsl(deps.platform, deps.procVersion)
   const folderWin = toWinPath(deps.vaultPosix)
   const uri = buildObsidianUri(folderWin)
-  const args = { uri, folderWin, folderPosix: deps.vaultPosix }
 
-  const installed = detectObsidian(deps.platform, wsl, deps.homeWin, deps.homePosix, deps.pathExists)
+  const loc = locateObsidian(
+    deps.platform,
+    wsl,
+    deps.homeWin,
+    deps.homePosix,
+    deps.pathExists,
+    deps.readRegistry,
+  )
 
-  if (!installed) {
+  const args = { uri, exeWin: loc.exeWin, folderWin, folderPosix: deps.vaultPosix }
+
+  if (!loc.installed) {
     deps.log(`[edit] Obsidian not detected. Install it: ${OBSIDIAN_DOWNLOAD_URL}`)
     deps.log(`[edit] Then re-run \`bun run edit\`, or open this folder manually: ${deps.vaultPosix}`)
     return 'install'
   }
 
-  // Tier 1 — obsidian:// URI
+  // Tier 1 — direct exe + URI (handles non-standard install dirs + fresh vault).
+  const exeCmd = selectLaunchCommand('exe', deps.platform, wsl, args)
+  if (exeCmd && deps.exec(exeCmd)) {
+    deps.log(`[edit] Opening Obsidian (${loc.exeWin}) on ${deps.vaultPosix}`)
+    deps.log(`[edit] First time? In Obsidian, confirm "Open" / "Trust author" for the vault.`)
+    return 'exe'
+  }
+
+  // Tier 2 — obsidian:// URI via shell (exe path unknown but URI-registered).
   const uriCmd = selectLaunchCommand('uri', deps.platform, wsl, args)
   if (uriCmd && deps.exec(uriCmd)) {
     deps.log(`[edit] Opening Obsidian on ${deps.vaultPosix}`)
     deps.log(
-      `[edit] If nothing opened, the vault may not be registered yet — run ` +
-        `\`bun run edit --folder\` and drag the folder into Obsidian once.`,
+      `[edit] If nothing opened, the vault isn't registered yet — run ` +
+        `\`bun run edit --folder\` and use "Open folder as vault" once.`,
     )
     return 'uri'
   }
 
-  // Tier 2 — open the folder in the file manager
+  // Tier 3 — open the folder in the file manager.
   const folderCmd = selectLaunchCommand('folder', deps.platform, wsl, args)
   if (folderCmd && deps.exec(folderCmd)) {
-    deps.log(`[edit] Opened the vault folder. In Obsidian: "Open folder as vault".`)
+    deps.log(`[edit] Opened the vault folder. In Obsidian: "Open folder as vault" → ${deps.vaultPosix}`)
     return 'folder'
   }
 
-  // Tier 3 — give up with instructions
+  // Tier 4 — give up with instructions.
   deps.log(`[edit] Could not launch automatically. Open this folder in Obsidian: ${deps.vaultPosix}`)
   return 'install'
 }
@@ -196,8 +361,26 @@ function safeRead(p: string): string {
 }
 
 /**
- * Resolve the Windows user home from a WSL/win32 environment so detectObsidian
- * can look under AppData. Best-effort; returns null when undeterminable.
+ * Query the Windows uninstall registry for Obsidian's exe path. Returns the raw
+ * PowerShell output (DisplayIcon lines) or '' on non-Windows / failure. Runs
+ * via execFileSync (argv) so PowerShell's `$_` survives — routing through a
+ * shell ate it and returned empty.
+ */
+function readWindowsRegistry(win: boolean): string {
+  if (!win) return ''
+  try {
+    return execFileSync('powershell.exe', ['-NoProfile', '-Command', REGISTRY_PS], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Resolve the Windows user home from a WSL/win32 environment. Best-effort;
+ * returns null when undeterminable.
  */
 function resolveWinHome(platform: NodeJS.Platform, wsl: boolean): string | null {
   if (platform === 'win32') return process.env.USERPROFILE ?? null
@@ -235,6 +418,7 @@ function main(): void {
   const platform = process.platform
   const procVersion = platform === 'linux' ? safeRead('/proc/version') : ''
   const wsl = isWsl(platform, procVersion)
+  const win = wsl || platform === 'win32'
   const homePosix = process.env.HOME ?? ''
   const homeWin = resolveWinHome(platform, wsl)
 
@@ -242,6 +426,7 @@ function main(): void {
     const folderWin = toWinPath(vaultPosix)
     const cmd = selectLaunchCommand('folder', platform, wsl, {
       uri: '',
+      exeWin: null,
       folderWin,
       folderPosix: vaultPosix,
     })
@@ -264,6 +449,7 @@ function main(): void {
           return false
         }
       },
+      readRegistry: () => readWindowsRegistry(win),
       exec: tryExec,
       log: (m) => console.log(m),
     })
@@ -272,7 +458,7 @@ function main(): void {
   if (withDev) {
     console.log(`[edit] Starting dev server — open http://localhost:4321/meshblog/`)
     try {
-      execSync('bun run dev', { stdio: 'inherit' })
+      execFileSync('bun', ['run', 'dev'], { stdio: 'inherit' })
     } catch {
       // dev server exits on Ctrl-C; nothing to do.
     }
