@@ -6,7 +6,7 @@ tags: [A2A, agent, enterprise, TLS, OAuth2, observability, security, protocol]
 category: Agent
 image: "/meshblog/og/posts/a2a-enterprise-ready.png"
 related:
-  - a2a-protocol
+  - 13-a2a-protocol
   - a2a-agent-discovery
 ---
 

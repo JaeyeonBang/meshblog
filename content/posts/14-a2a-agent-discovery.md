@@ -6,7 +6,7 @@ tags: [A2A, agent, discovery, AgentCard, well-known, registry, protocol, LLM]
 category: Agent
 image: "/meshblog/og/posts/a2a-agent-discovery.png"
 related:
-  - a2a-protocol
+  - 13-a2a-protocol
   - 07-agentic-llms-survey-interacting
 ---
 

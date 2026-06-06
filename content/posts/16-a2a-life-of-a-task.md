@@ -6,7 +6,7 @@ tags: [A2A, agent, task, contextId, artifact, lifecycle, JSON-RPC, protocol]
 category: Agent
 image: "/meshblog/og/posts/a2a-life-of-a-task.png"
 related:
-  - a2a-protocol
+  - 13-a2a-protocol
   - a2a-agent-discovery
 ---
 

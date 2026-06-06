@@ -13,7 +13,7 @@ related:
   - 04-agentic-llms-survey-reasoning
   - 06-agentic-llms-survey-acting
   - 07-agentic-llms-survey-interacting
-  - a2a-protocol
+  - 13-a2a-protocol
 ---
 [paper link](https://arxiv.org/abs/2503.23037)
 
