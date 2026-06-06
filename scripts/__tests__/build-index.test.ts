@@ -199,6 +199,68 @@ describe("build-index smoke (mocked LLM)", () => {
     expect(extractCalls).toBe(r1.processed) // every note re-extracted
   })
 
+  it("uses frontmatter date as created_at when present", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "build-index-date-"))
+    writeFileSync(
+      join(dir, "dated.md"),
+      "---\ntitle: Dated Note\ndate: 2026-05-27\n---\nbody",
+    )
+    writeFileSync(
+      join(dir, "undated.md"),
+      "---\ntitle: Undated Note\n---\nbody",
+    )
+    try {
+      await runBuildIndex({
+        dbPath: TMP_DB,
+        baseDirs: [dir],
+        extract: stubExtract,
+        skipEmbed: true,
+        skipConcepts: true,
+      })
+      const db = createDb(TMP_DB)
+      const dated = db.prepare("SELECT created_at FROM notes WHERE id = ?").get("dated") as { created_at: string }
+      const undated = db.prepare("SELECT created_at FROM notes WHERE id = ?").get("undated") as { created_at: string }
+      // frontmatter date wins
+      expect(dated.created_at).toBe("2026-05-27")
+      // no frontmatter date → fallback to index time (datetime('now') format)
+      expect(undated.created_at).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+      db.close()
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it("re-run keeps frontmatter date and preserves created_at for undated notes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "build-index-date-rerun-"))
+    const datedFile = join(dir, "dated.md")
+    const undatedFile = join(dir, "undated.md")
+    writeFileSync(datedFile, "---\ntitle: Dated\ndate: 2026-05-27\n---\nv1")
+    writeFileSync(undatedFile, "---\ntitle: Undated\n---\nv1")
+    try {
+      await runBuildIndex({ dbPath: TMP_DB, baseDirs: [dir], extract: stubExtract, skipEmbed: true, skipConcepts: true })
+      const db1 = createDb(TMP_DB)
+      const undated1 = (db1.prepare("SELECT created_at FROM notes WHERE id = ?").get("undated") as any).created_at
+      db1.close()
+
+      // Edit bodies + change the dated note's frontmatter date
+      writeFileSync(datedFile, "---\ntitle: Dated\ndate: 2026-06-01\n---\nv2")
+      writeFileSync(undatedFile, "---\ntitle: Undated\n---\nv2")
+      await runBuildIndex({ dbPath: TMP_DB, baseDirs: [dir], extract: stubExtract, skipEmbed: true, skipConcepts: true })
+
+      const db2 = createDb(TMP_DB)
+      const dated2 = (db2.prepare("SELECT created_at FROM notes WHERE id = ?").get("dated") as any).created_at
+      const undated2 = (db2.prepare("SELECT created_at FROM notes WHERE id = ?").get("undated") as any).created_at
+      db2.close()
+
+      // dated note follows the (updated) frontmatter date
+      expect(dated2).toBe("2026-06-01")
+      // undated note keeps its original created_at (NOT reset to now)
+      expect(undated2).toBe(undated1)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it("persists aliases from frontmatter into notes.aliases column", async () => {
     const dir = mkdtempSync(join(tmpdir(), "build-index-aliases-"))
     writeFileSync(
